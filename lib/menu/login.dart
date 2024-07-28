@@ -21,6 +21,7 @@ import 'package:socio/menu/register.dart';
 import 'package:socio/menu/welcome.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key}) : super(key: key);
@@ -44,6 +45,7 @@ class _LoginFormState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final loginController = LoginScreenController();
+
   void _navigateToCardScreenPage() {
     Navigator.push(
       context,
@@ -118,6 +120,7 @@ class _LoginFormState extends State<LoginScreen> {
       },
     );
   }
+  
   Future<void> login() async {
     isChecking?.change(false);
     isHandsUp?.change(false);
@@ -147,6 +150,28 @@ class _LoginFormState extends State<LoginScreen> {
           );
         },
       );
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+      _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
+    } catch (e) {
+      print('Error al iniciar sesión con Apple: $e');
     }
   }
 
@@ -221,80 +246,7 @@ class _LoginFormState extends State<LoginScreen> {
                             style: MyTextStyles.buttonTextStyle3,
                           ),
                           SizedBox(height: 12),
-                          TextField(
-                          controller: _emailController,
-                        
-                          keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(fontSize: 14),
-                          cursorColor: const Color(0xffb04863),
-                          decoration: const InputDecoration(
-                            hintText: "Email/Username",
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(10)),
-                            ),
-                            focusColor: Color(0xffb04863),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: Color(0xffb04863),
-                              ),
-                              borderRadius: BorderRadius.all(Radius.circular(10)),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 15),
-                        TextField(
-                          controller: _passwordController,
-                       
-                          keyboardType: TextInputType.visiblePassword,
-                          obscureText: true,
-                          style: const TextStyle(fontSize: 14),
-                          cursorColor: const Color(0xffb04863),
-                          decoration: const InputDecoration(
-                            hintText: "Password",
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(10)),
-                            ),
-                            focusColor: Color(0xffb04863),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: Color(0xffb04863),
-                              ),
-                              borderRadius: BorderRadius.all(Radius.circular(10)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            //remember me checkbox
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: false,
-                                  onChanged: (value) {},
-                                ),
-                                const Text("Recuerdame"),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                ElevatedButton(
-                                  onPressed: login,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xffb04863),
-                                  ),
-                                  child: const Text("INGRESAR"),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
+                          
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -325,6 +277,44 @@ class _LoginFormState extends State<LoginScreen> {
                                         children: [
                                           Icon(
                                             FontAwesomeIcons.google,
+                                            color: Color(0xFF84090D), // Color del AppBar
+                                          ),
+                                          Text(
+                                            'Inicio',
+                                            style: GoogleFonts.lato(
+                                              color: Color(0xFF84090D), // Color del AppBar
+                                              fontSize: 14, // Ajusta el tamaño del texto
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                               SizedBox(width: 12),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF84090D), // Color del AppBar
+                                  shape: CircleBorder(),
+                                  padding: EdgeInsets.all(8),
+                                ),
+                                onPressed: signInWithApple,
+                                child: CircleAvatar(
+                                  backgroundColor: Colors.white,
+                                  radius: 40,
+                                  child: CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    radius: 37,
+                                    child: CircleAvatar(
+                                      radius: 35,
+                                      backgroundColor: Colors.white,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            FontAwesomeIcons.apple,
                                             color: Color(0xFF84090D), // Color del AppBar
                                           ),
                                           Text(

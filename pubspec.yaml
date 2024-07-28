@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   camera_avfoundation: ^0.9.16
+  sign_in_with_apple: ^6.1.1
   persistent_bottom_nav_bar: any
   cupertino_icons: ^1.0.2
   cloud_firestore: ^5.0.1

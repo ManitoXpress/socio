@@ -59,6 +59,12 @@
     <string>Esta aplicación necesita acceso a la biblioteca de fotos para guardar imágenes.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Esta aplicación necesita acceso a la biblioteca de fotos para guardar imágenes.</string>
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Necesitamos acceso a Apple Music para usar su cuenta de Apple para iniciar sesión.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Necesitamos acceso al micrófono para usar su cuenta de Apple para iniciar sesión.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Necesitamos acceso a Face ID para usar su cuenta de Apple para iniciar sesión.</string>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
     <key>UIBackgroundModes</key>
