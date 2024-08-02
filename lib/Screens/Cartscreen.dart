@@ -188,89 +188,90 @@ class _HistorialState extends State<Historial> {
           'Historial',
           style: MyTextStyles.buttonTextStyle,
         ),
+        iconTheme: IconThemeData(color: Colors.white), // Cambiar el color de la flecha de retroceso a blanco
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: Icon(Icons.refresh, color: Colors.white), // Cambiar el color del icono de refresh a blanco
             onPressed: _refreshHistorial,
           ),
         ],
       ),
       body: Container(
-  color: Colors.white,
-  padding: EdgeInsets.all(30.0),
-  child: ListView.builder(
-    itemCount: serviceRequests.length,
-    itemBuilder: (context, index) {
-      return GestureDetector(
-        onTap: () {
-          // No se realiza ninguna acción al tocar el cuadro
-        },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 30.0),
-          child: CustomPaint(
-            painter: CustomTicketShapePainter(
-              status: serviceRequests[index].status.name,
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(30.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: screenWidth * 0.3,
-                    height: screenWidth * 0.3,
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Image.asset(
-                        'assets/manito.png',
-                      ),
-                    ),
+        color: Colors.white,
+        padding: EdgeInsets.all(30.0),
+        child: ListView.builder(
+          itemCount: serviceRequests.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () {
+                // No se realiza ninguna acción al tocar el cuadro
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 30.0),
+                child: CustomPaint(
+                  painter: CustomTicketShapePainter(
+                    status: serviceRequests[index].status.name,
                   ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Flexible(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                  child: Padding(
+                    padding: EdgeInsets.all(30.0),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          serviceRequests[index].status.name,
-                          style: MyTextStyles.buttonTextStyle,
+                        Container(
+                          width: screenWidth * 0.3,
+                          height: screenWidth * 0.3,
+                          child: FittedBox(
+                            fit: BoxFit.contain,
+                            child: Image.asset(
+                              'assets/manito.png',
+                            ),
+                          ),
                         ),
-                        SizedBox(height: 8.0),
-                        Text(
-                          'Categoría: ',
-                          style: MyTextStyles.ButtonTextStyle,
-                          textAlign: TextAlign.left,
-                        ),
-                        Text(
-                          '${truncateDescription(serviceRequests[index].expertises)}',
-                          style: MyTextStyles.drawerButtonTextStyle5,
-                          textAlign: TextAlign.left,
-                        ),
-                        Text(
-                          'Servicio: ',
-                          style: MyTextStyles.ButtonTextStyle,
-                          textAlign: TextAlign.left,
-                        ),
-                        Text(
-                          '${serviceRequests[index].serviceType.name}',
-                          style: MyTextStyles.drawerButtonTextStyle5,
-                          textAlign: TextAlign.left,
+                        SizedBox(width: screenWidth * 0.04),
+                        Flexible(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                serviceRequests[index].status.name,
+                                style: MyTextStyles.buttonTextStyle,
+                              ),
+                              SizedBox(height: 8.0),
+                              Text(
+                                'Categoría: ',
+                                style: MyTextStyles.ButtonTextStyle,
+                                textAlign: TextAlign.left,
+                              ),
+                              Text(
+                                '${truncateDescription(serviceRequests[index].expertises)}',
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                              Text(
+                                'Servicio: ',
+                                style: MyTextStyles.ButtonTextStyle,
+                                textAlign: TextAlign.left,
+                              ),
+                              Text(
+                                '${serviceRequests[index].serviceType.name}',
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
-      );
-    },
-  ),
-),
-);
-}
+      ),
+    );
+  }
 
   String truncateDescription(String description) {
     final words = description.split(' ');

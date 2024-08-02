@@ -40,11 +40,14 @@ class _LoginFormState extends State<LoginScreen> {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FacebookAuth facebookAuth = FacebookAuth.instance;
   List<ServiceRequest> serviceRequests = [];
+  bool isPasswordVisible = false;
 
   rive.StateMachineController? stateMachineController;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final loginController = LoginScreenController();
+
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   void _navigateToCardScreenPage() {
     Navigator.push(
@@ -120,7 +123,7 @@ class _LoginFormState extends State<LoginScreen> {
       },
     );
   }
-  
+
   Future<void> login() async {
     isChecking?.change(false);
     isHandsUp?.change(false);
@@ -129,9 +132,38 @@ class _LoginFormState extends State<LoginScreen> {
         email: _emailController.text,
         password: _passwordController.text,
       );
-      successTrigger?.fire();
-      _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
+
+      // Verificar si el usuario existe en la colección 'workers'
+      print("Intentando obtener el documento del usuario con UID: ${userCredential.user?.uid}");
+      final userDoc = await _firestore.collection('workers').doc(userCredential.user?.uid).get();
+
+      if (userDoc.exists) {
+        print("Usuario encontrado en la colección de 'workers'.");
+        successTrigger?.fire();
+        _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
+      } else {
+        print("Usuario no encontrado en la colección de 'workers'.");
+        failTrigger?.fire();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Usuario no encontrado"),
+              content: Text("El usuario no existe en la colección de workers."),
+              actions: [
+                TextButton(
+                  child: Text("Aceptar"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
     } catch (e) {
+      print("Error al iniciar sesión: $e");
       failTrigger?.fire();
       showDialog(
         context: context,
@@ -158,7 +190,6 @@ class _LoginFormState extends State<LoginScreen> {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
         ],
       );
 
@@ -177,9 +208,6 @@ class _LoginFormState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       backgroundColor: const Color(0xffd6e2ea),
       appBar: AppBar(
@@ -187,17 +215,16 @@ class _LoginFormState extends State<LoginScreen> {
           children: [
             Flexible(
               child: Container(
-                padding: EdgeInsets.all(screenWidth * 0.01),
-                constraints: BoxConstraints(maxWidth: screenWidth * 0.2),
+                padding: EdgeInsets.all(10.w),
+                constraints: BoxConstraints(maxWidth: 0.2.sw),
                 child: Image.asset(
                   'assets/images/LOGO1_Blanco.png',
-                  width: 90,
-                  height: 90,
+                  width: 0.2.sw,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
-            SizedBox(width: screenWidth * 0.02),
+            SizedBox(width: 10.w),
             Text(
               'ManitoXpress',
               style: TextStyle(
@@ -205,7 +232,7 @@ class _LoginFormState extends State<LoginScreen> {
                 fontFamily: 'Xpress Heavy',
                 fontWeight: FontWeight.normal,
                 fontStyle: FontStyle.italic,
-                fontSize: screenHeight * 0.025,
+                fontSize: 20.sp,
               ),
             ),
           ],
@@ -213,133 +240,133 @@ class _LoginFormState extends State<LoginScreen> {
       ),
       body: SingleChildScrollView(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_teddyArtboard != null)
-                SizedBox(
-                  width: 300,
-                  height: 300,
-                  child: rive.Rive(
-                    artboard: _teddyArtboard!,
-                    fit: BoxFit.fitWidth,
+          child: Container(
+            width: 1.sw,
+            padding: EdgeInsets.symmetric(horizontal: 10.w),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_teddyArtboard != null)
+                  SizedBox(
+                    width: 0.8.sw,
+                    height: 0.38.sh,
+                    child: rive.Rive(
+                      artboard: _teddyArtboard!,
+                      fit: BoxFit.fitWidth,
+                    ),
+                  ),
+                SizedBox(height: 10.h),
+                Text(
+                  'Bienvenidos a Manitos Xpress',
+                  style: MyTextStyles.buttonTextStyle3,
+                ),
+                SizedBox(height: 10.h),
+                TextButton(
+                  onPressed: () {
+                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
+                  },
+                  child: Text(
+                    'Términos y Condiciones de Manitos Xpress',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 15.sp,
+                    ),
                   ),
                 ),
-              Container(
-                alignment: Alignment.center,
-                width: 500,
-                padding: const EdgeInsets.only(bottom: 30),
-                margin: const EdgeInsets.only(bottom: 15 * 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xffd6e2ea), // Cambia el color aquí
-                  borderRadius: BorderRadius.circular(10),
+                SizedBox(height: 30.h),
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.email),
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          SizedBox(height: 12),
-                          Text(
-                            'Bienvenidos a Manitos Xpress',
-                            style: MyTextStyles.buttonTextStyle3,
-                          ),
-                          SizedBox(height: 12),
-                          
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF84090D), // Color del AppBar
-                                  shape: CircleBorder(),
-                                  padding: EdgeInsets.all(8),
-                                ),
-                                onPressed: () {
-                                  try {
-                                    LoginScreenController.signInWithGoogle(context);
-                                  } catch (e) {
-                                    print('Error al iniciar sesión con Google: $e');
-                                  }
-                                },
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.white,
-                                  radius: 40,
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    radius: 37,
-                                    child: CircleAvatar(
-                                      radius: 35,
-                                      backgroundColor: Colors.white,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            FontAwesomeIcons.google,
-                                            color: Color(0xFF84090D), // Color del AppBar
-                                          ),
-                                          Text(
-                                            'Inicio',
-                                            style: GoogleFonts.lato(
-                                              color: Color(0xFF84090D), // Color del AppBar
-                                              fontSize: 14, // Ajusta el tamaño del texto
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                               SizedBox(width: 12),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF84090D), // Color del AppBar
-                                  shape: CircleBorder(),
-                                  padding: EdgeInsets.all(8),
-                                ),
-                                onPressed: signInWithApple,
-                                child: CircleAvatar(
-                                  backgroundColor: Colors.white,
-                                  radius: 40,
-                                  child: CircleAvatar(
-                                    backgroundColor: Colors.white,
-                                    radius: 37,
-                                    child: CircleAvatar(
-                                      radius: 35,
-                                      backgroundColor: Colors.white,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            FontAwesomeIcons.apple,
-                                            color: Color(0xFF84090D), // Color del AppBar
-                                          ),
-                                          Text(
-                                            'Inicio',
-                                            style: GoogleFonts.lato(
-                                              color: Color(0xFF84090D), // Color del AppBar
-                                              fontSize: 14, // Ajusta el tamaño del texto
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                SizedBox(height: 20.h),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !isPasswordVisible,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.lock),
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          isPasswordVisible = !isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: false,
+                          onChanged: (value) {},
+                        ),
+                        const Text("Recuerdame"),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF84090D),
+                            padding: EdgeInsets.all(7.w),
+                          ),
+                          child: const Text("INGRESAR"),
+                        ),
+                        SizedBox(width: 20.w),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => RegisterScreen()),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF84090D),
+                            padding: EdgeInsets.all(7.w),
+                          ),
+                          child: Text("Registrarse"),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
+                SizedBox(height: 10.h),
+                
+                TextButton(
+                  onPressed: () async {
+                    final url = 'https://manitoxpress-cf855.web.app/#/DeletePage';
+                    if (await canLaunch(url)) {
+                      await launch(url);
+                    } else {
+                      print('No se pudo abrir el enlace: $url');
+                    }
+                  },
+                  child: Text(
+                    'Borrar Cuenta',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -3,77 +3,66 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:socio/Utils/styles.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:socio/metods/workers.dart';
+import 'package:flutter/material.dart';
 
-class ServiceScreen extends StatefulWidget {
-  @override
-  _ServiceScreenState createState() => _ServiceScreenState();
-}
 
-class _ServiceScreenState extends State<ServiceScreen> {
+
+class FavoriteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    List<Worker> favoriteWorkers = getFavoriteWorkers();
+
     return Scaffold(
-      backgroundColor: const Color(0xffd6e2ea),
       appBar: AppBar(
-        title: Row(
-          children: [
-            Flexible(
-              child: Container(
-                padding: EdgeInsets.all(screenWidth * 0.01),
-                constraints: BoxConstraints(maxWidth: screenWidth * 0.2),
-                child: Image.asset(
-                  'assets/images/LOGO1_Blanco.png',
-                  width: double.infinity,
-                  height: screenWidth * 0.1,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            SizedBox(width: screenWidth * 0.02),
-            Text(
-              'ManitoXpress Socio',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Xpress Heavy',
-                fontWeight: FontWeight.normal,
-                fontStyle: FontStyle.italic,
-                fontSize: screenHeight * 0.025,
-              ),
-            ),
-          ],
+        title: Text(
+          'Trabajadores Favoritos',
+          style: MyTextStyles.buttonTextStyle,
         ),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(height: screenHeight * 0.1),
-              // Espacio en blanco para separar del AppBar
-              Image.asset(
-                'assets/manito.png',
-                // Reemplaza 'tu_imagen.png' con la ruta de tu imagen
-                width: screenWidth *
-                    0.8, // Ajusta el tamaño de la imagen según sea necesario
-              ),
-              SizedBox(height: screenHeight * 0.05),
-              // Espacio en blanco entre la imagen y el texto
-              Text(
-                '¡Muy pronto llegarán solicitudes!',
-                style: TextStyle(
-                  color: Colors.red, // Cambia el color del texto a rojo
-                  fontSize: screenHeight *
-                      0.03, // Ajusta el tamaño del texto según sea necesario
-                ),
-              ),
-            ],
-          ),
-        ),
+      body: ListView.builder(
+        itemCount: favoriteWorkers.length,
+        itemBuilder: (context, index) {
+          Worker worker = favoriteWorkers[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: AssetImage(worker.profileImage),
+            ),
+            title: Text(worker.name),
+            subtitle: Text(worker.specialty),
+            trailing: IconButton(
+              icon: Icon(Icons.favorite),
+              color: Colors.red,
+              onPressed: () {
+                removeFromFavorites(worker);
+              },
+            ),
+          );
+        },
       ),
     );
+  }
+
+  List<Worker> getFavoriteWorkers() {
+    return [
+      Worker('Juan Pérez', 'Plomero', 'images/plomero.jpg'),
+      Worker('María Rodríguez', 'Electricista', 'images/electricista.jpg'),
+      Worker('Carlos Gutiérrez', 'Jardinería', 'images/jardinero.jpg'),
+      Worker('Laura Martínez', 'Diseñador Gráfico', 'images/designer.jpg'),
+      Worker('Luis Sánchez', 'Programador', 'images/programmer.jpg'),
+      Worker('Ana López', 'Nutricionista', 'images/nutritionist.jpg'),
+      Worker('José González', 'Plomero', 'images/plomero2.jpg'),
+      Worker('Elena Fernández', 'Electricista', 'images/electricista2.jpg'),
+      Worker('Pedro Ramírez', 'Jardinería', 'images/jardinero2.jpg'),
+      Worker('Sofía Torres', 'Diseñador Gráfico', 'images/designer2.jpg'),
+    ];
+  }
+
+  void removeFromFavorites(Worker worker) {
+    // Implementa la lógica para eliminar a un trabajador de favoritos aquí
+    // Esto podría incluir actualizar una base de datos o una lista en memoria.
   }
 }
