@@ -18,8 +18,10 @@ class _ServiceFormState extends State<ServiceForm> {
   late TextEditingController imagesController;
   late TextEditingController offeredPriceController;
   late TextEditingController yourPriceController;
-  late TextEditingController addressController; // Nuevo controlador para la dirección aleatoria
-  late List<TextEditingController> imageControllers; // Controladores para las imágenes
+  late TextEditingController
+      addressController; // Nuevo controlador para la dirección aleatoria
+  late List<TextEditingController>
+      imageControllers; // Controladores para las imágenes
 
   late double rating; // Controlador para la puntuación
   @override
@@ -27,10 +29,14 @@ class _ServiceFormState extends State<ServiceForm> {
     super.initState();
 
     // Inicializa los controladores de texto con los valores iniciales proporcionados
-    serviceTypeController = TextEditingController(text: widget.initialData['serviceType']);
-    descriptionController = TextEditingController(text: widget.initialData['description']);
-    imagesController = TextEditingController(text: widget.initialData['images'].toString());
-    offeredPriceController = TextEditingController(text: widget.initialData['offeredPrice'].toString());
+    serviceTypeController =
+        TextEditingController(text: widget.initialData['serviceType']);
+    descriptionController =
+        TextEditingController(text: widget.initialData['description']);
+    imagesController =
+        TextEditingController(text: widget.initialData['images'].toString());
+    offeredPriceController = TextEditingController(
+        text: widget.initialData['offeredPrice'].toString());
     yourPriceController = TextEditingController();
 
     // Genera una dirección aleatoria, puedes personalizar esto según tus necesidades
@@ -47,85 +53,88 @@ class _ServiceFormState extends State<ServiceForm> {
     final List<String> states = ['State X', 'State Y', 'State Z'];
     final List<String> zipCodes = ['12345', '67890', '54321'];
     final int randomIndex = Random().nextInt(3);
-    final String randomAddress = '${streets[randomIndex]}, ${cities[randomIndex]}, ${states[randomIndex]} ${zipCodes[randomIndex]}';
+    final String randomAddress =
+        '${streets[randomIndex]}, ${cities[randomIndex]}, ${states[randomIndex]} ${zipCodes[randomIndex]}';
     return randomAddress;
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text("Formulario de Servicio"),
-      content: SingleChildScrollView(
-        child: Column(
-          children: [
-            TextFormField(
-              controller: serviceTypeController,
-              decoration: InputDecoration(labelText: "Tipo de servicio"),
-            ),
-            TextFormField(
-              controller: descriptionController,
-              decoration: InputDecoration(labelText: "Descripción"),
-            ),
-            Text("Imágenes:"),
-            Row(
-              children: List.generate(3, (index) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+        title: Text("Formulario de Servicio"),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextFormField(
+                controller: serviceTypeController,
+                decoration: InputDecoration(labelText: "Tipo de servicio"),
+              ),
+              TextFormField(
+                controller: descriptionController,
+                decoration: InputDecoration(labelText: "Descripción"),
+              ),
+              Text("Imágenes:"),
+              Row(
+                children: List.generate(3, (index) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextFormField(
+                        controller: imagesController,
+                        decoration:
+                            InputDecoration(labelText: "Imagen ${index + 1}"),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+              Row(
+                children: [
+                  Expanded(
                     child: TextFormField(
-                      controller: imagesController,
-                      decoration: InputDecoration(labelText: "Imagen ${index + 1}"),
+                      controller: offeredPriceController,
+                      decoration: InputDecoration(labelText: "Precio ofrecido"),
                     ),
                   ),
-                );
-              }),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: offeredPriceController,
-                    decoration: InputDecoration(labelText: "Precio ofrecido"),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: TextFormField(
+                      controller: yourPriceController,
+                      decoration:
+                          InputDecoration(labelText: "Coloca tu precio"),
+                    ),
                   ),
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: TextFormField(
-                    controller: yourPriceController,
-                    decoration: InputDecoration(labelText: "Coloca tu precio"),
-                  ),
-                ),
-              ],
-            ),
-            TextFormField(
-              controller: addressController,
-              decoration: InputDecoration(labelText: "Dirección"),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text("Puntuación"),
-            ),
-            RatingBar.builder(
-              initialRating: rating,
-              minRating: 1,
-              direction: Axis.horizontal,
-              allowHalfRating: true,
-              itemCount: 5,
-              itemSize: 24,
-              itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-              itemBuilder: (context, _) => Icon(
-                Icons.star,
-                color: Colors.amber,
+                ],
               ),
-              onRatingUpdate: (newRating) {
-                setState(() {
-                  rating = newRating;
-                });
-              },
-            ),
-          ],
+              TextFormField(
+                controller: addressController,
+                decoration: InputDecoration(labelText: "Dirección"),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text("Puntuación"),
+              ),
+              RatingBar.builder(
+                initialRating: rating,
+                minRating: 1,
+                direction: Axis.horizontal,
+                allowHalfRating: true,
+                itemCount: 5,
+                itemSize: 24,
+                itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                itemBuilder: (context, _) => Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                ),
+                onRatingUpdate: (newRating) {
+                  setState(() {
+                    rating = newRating;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
-      ),
         actions: [
           Wrap(
             alignment: WrapAlignment.center, // Alinea los elementos al centro
@@ -177,11 +186,11 @@ class _ServiceFormState extends State<ServiceForm> {
                     borderRadius: BorderRadius.circular(30.0),
                   ),
                 ),
-                child: Text("Enviar Oferta", style: TextStyle(color: Colors.white)),
+                child: Text("Enviar Oferta",
+                    style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
-        ]
-    );
+        ]);
   }
 }

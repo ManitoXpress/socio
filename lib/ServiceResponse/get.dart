@@ -140,6 +140,29 @@ class ApiService2 {
       throw Exception('Failed to load expertises');
     }
   }
+  Future<http.Response> fetchServiceByExpertises(
+      String userId, List<String> expertises) async {
+    try {
+      final String? authToken = await AuthUtils.getToken();
+      final Uri url = Uri.parse(
+          '$baseUrl/services/byExpertises?userId=$userId&expertises=${expertises.join(',')}');
+
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $authToken'},
+      );
+
+      if (response.statusCode == 200) {
+        print('Datos recibidos del backend con éxito');
+      } else {
+        _logError(response);
+      }
+      return response;
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      throw Exception('Error al obtener datos del backend');
+    }
+  }
 
   Future<String?> fetchProfileImage(String userId) async {
     try {
@@ -222,6 +245,10 @@ class ApiService2 {
       print('Error en la solicitud HTTP: $e');
       throw Exception('Error al cargar los servicios desde el backend');
     }
+  }
+  void _logError(http.Response response) {
+    print('Error: ${response.statusCode}');
+    print('Mensaje de error: ${response.body}');
   }
 }
 

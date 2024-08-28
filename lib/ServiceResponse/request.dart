@@ -15,16 +15,8 @@ class ServiceRequest {
   String? selectedDate;
   String? selectedTime;
   bool acceptedTerms;
-  String expertises;
+  List<Expertises> expertises; // Cambiado a una lista de Expertises
   late Status status;
-
-  bool isServiceNameEmpty() {
-    return (description == null || description.isEmpty);
-  }
-
-  bool isServiceTypeEmpty() {
-    return (serviceType == null);
-  }
 
   ServiceRequest({
     required this.serviceDateTime,
@@ -39,50 +31,17 @@ class ServiceRequest {
     this.selectedDate,
     this.selectedTime,
     required this.acceptedTerms,
-    required this.expertises,
+    required this.expertises, // Se espera una lista de Expertises
     required this.status,
   });
 
-  ServiceRequest copyWith({
-    String? dateTime,
-    String? id,
-    String? description,
-    List<String>? images,
-    Map<String, double>? location,
-    double? offeredPrice,
-    ServiceType? serviceType,
-    Status? status,
-    String? userId,
-    bool? isFavorite,
-    String? selectedDate,
-    String? selectedTime,
-    bool? acceptedTerms,
-    String? expertises,
-  }) {
-    return ServiceRequest(
-      serviceDateTime: dateTime ?? this.serviceDateTime,
-      id: id ?? this.id,
-      description: description ?? this.description,
-      images: images ?? this.images,
-      location: location ?? this.location,
-      offeredPrice: offeredPrice ?? this.offeredPrice,
-      serviceType: serviceType ?? this.serviceType,
-      status: status ?? this.status,
-      userId: userId ?? this.userId,
-      isFavorite: isFavorite ?? this.isFavorite,
-      selectedDate: selectedDate ?? this.selectedDate,
-      selectedTime: selectedTime ?? this.selectedTime,
-      acceptedTerms: acceptedTerms ?? this.acceptedTerms,
-      expertises: expertises ?? this.expertises,
-    );
-  }
-
+  // Método para convertir la clase en un mapa
   Map<String, dynamic> toMap() {
     return {
       'serviceDateTime': serviceDateTime,
       'id': id,
       'description': description,
-      'status': status.toMap(), // Utiliza toMap en lugar de toJson
+      'status': status.toMap(),
       'images': images,
       'location': location,
       'offeredPrice': offeredPrice,
@@ -92,26 +51,28 @@ class ServiceRequest {
       'selectedDate': selectedDate,
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
-      'expertises': expertises,
+      'expertises': expertises.map((e) => e.toMap()).toList(), // Convertir a Map
     };
   }
 
+  // Método para crear una instancia desde un snapshot/mapa
   factory ServiceRequest.fromSnapshot(Map<String, dynamic> map) {
     return ServiceRequest(
-      serviceDateTime: map['dateTime'] ?? '',
+      serviceDateTime: map['serviceDateTime'] ?? '',
       id: map['id'] ?? '',
       description: map['description'] ?? '',
       images: List<String>.from(map['images'] ?? []),
       location: Map<String, double>.from(map['location'] ?? {}),
-      offeredPrice: _parseOfferedPrice(
-          map['offeredPrice']), // Utiliza la función _parseOfferedPrice
+      offeredPrice: _parseOfferedPrice(map['offeredPrice']),
       serviceType: ServiceType.fromMap(map['serviceType'] ?? {}),
       userId: map['userId'] ?? '',
       isFavorite: map['isFavorite'] ?? false,
       selectedDate: map['selectedDate'],
       selectedTime: map['selectedTime'],
       acceptedTerms: map['acceptedTerms'] ?? false,
-      expertises: map['expertises'] ?? '',
+      expertises: (map['expertises'] as List<dynamic>)
+          .map((e) => Expertises.fromJson(e))
+          .toList(), // Convertir de JSON a lista de Expertises
       status: Status(
         id: map['status'] ?? '',
         name: Status.getNameById(map['status'] ?? ''),
@@ -126,14 +87,15 @@ class ServiceRequest {
         return double.parse(value);
       } catch (e) {
         print('Error al convertir el precio ofrecido a double: $e');
-        return 0.0; // Devuelve un valor predeterminado en caso de error
+        return 0.0;
       }
     } else if (value is num) {
       return value.toDouble();
     }
-    return 0.0; // Devuelve un valor predeterminado si el valor no es String ni num
+    return 0.0;
   }
 }
+
 
 class ServiceType {
   String id;
@@ -409,10 +371,19 @@ class Expertises {
       name: json['name'],
     );
   }
+
+  // Agregar este método para convertir a Map
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
 }
 
+
 class Status {
-  final String id;
+  late final String id;
   final String name;
 
   Status({required this.id, required this.name});
