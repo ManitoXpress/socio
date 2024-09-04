@@ -30,6 +30,9 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
   late final RegistrationData registrationData;
   late TabController _tabController;
   List<String> workerExpertiseIds = [];
+  String workerId = '';
+  int offerServiceCount = 0;
+  
 
   @override
   void initState() {
@@ -87,66 +90,73 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  
   Future<List<String>> fetchWorkerExpertises() async {
-  try {
-    final user = FirebaseAuth.instance.currentUser;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
-      final workerDoc = await FirebaseFirestore.instance
-          .collection('workers')
-          .doc(user.uid)
-          .get();
+      if (user != null) {
+        final workerDoc = await FirebaseFirestore.instance
+            .collection('workers')
+            .doc(user.uid)
+            .get();
 
-      if (workerDoc.exists) {
-        final List<dynamic> workerExpertises = workerDoc.data()?['expertises'] ?? [];
-        return workerExpertises.map((expertise) {
-          return expertise['id'] as String;
-        }).toList();
+        if (workerDoc.exists) {
+          setState(() {
+            workerId = workerDoc.id;
+          });
+
+          final List<dynamic> workerExpertises = workerDoc.data()?['expertises'] ?? [];
+          return workerExpertises.map((expertise) {
+            return expertise['id'] as String;
+          }).toList();
+        }
       }
+      return [];
+    } catch (e) {
+      print('Error al obtener los expertises del trabajador: $e');
+      return [];
     }
-    return [];
-  } catch (e) {
-    print('Error al obtener los expertises del trabajador: $e');
-    return [];
   }
-}
 
-Future<void> _initializeData() async {
-  final workerExpertiseIds = await fetchWorkerExpertises();
-  await fetchServicesByExpertises(workerExpertiseIds);
-}
-
-
-Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
+  Future<void> _initializeData() async {
+    workerExpertiseIds = await fetchWorkerExpertises();
+    await fetchServicesByExpertises(workerExpertiseIds);
+  }
+  Future<double?> fetchOfferedPrice(String serviceId) async {
   try {
-    final user = FirebaseAuth.instance.currentUser;
+    // Consultar Firestore en la colección 'offers'
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: serviceId)
+        .limit(1)
+        .get();
+    
+    if (querySnapshot.docs.isNotEmpty) {
+      // Obtener el precio ofertado
+      final offerData = querySnapshot.docs.first.data();
+      final offeredPrice = offerData['offeredPrice'];
 
-    if (user != null) {
-      final userId = user.uid;
-      final token = await user.getIdToken();
+      // Verificar si el precio ofertado es válido
+      return offeredPrice != null ? double.tryParse(offeredPrice) : null;
+    }
+  } catch (e) {
+    print('Error al obtener el precio ofertado: $e');
+  }
+  return null;
+}
 
-      // Obtener los datos del caché si están disponibles
-      final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null) {
-        print('Datos del caché encontrados. Mostrando datos del caché...');
-        setState(() {
-          serviceRequests = [cachedRequest];
-          statuses = [cachedRequest.status.name];
-        });
-        return; // Terminar si ya hay datos en caché
-      }
+  Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-      // Realizar la solicitud al backend
-      final column = "expertises"; // Puedes ajustar según la estructura de tu backend
-      final value = workerExpertiseIds.join(','); // Unir los IDs de expertises en un solo string
-      final type = ""; // Si necesitas un tipo específico, ajusta aquí
+      if (user != null) {
+        final token = await user.getIdToken();
 
-      final serviceResponse = await ApiService2().getByUserId(userId, token!, column, value, type);
+        // Llamada al backend para obtener los servicios directamente, sin usar caché.
+        final serviceResponse = await ApiService2().getAllServices(token!, "all", "", "");
 
-      print('Respuesta del servidor: ${serviceResponse.body}');
-
-      if (serviceResponse.statusCode == 200) {
-        try {
+        if (serviceResponse.statusCode == 200) {
           final List<dynamic> jsonDataList = json.decode(serviceResponse.body);
 
           final List<ServiceRequest> serviceRequestsList = jsonDataList.map((item) {
@@ -169,17 +179,15 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
               serviceDateTime: item['serviceDateTime'] ?? '',
               description: item['description'] ?? '',
               images: (item['images'] as List<dynamic>?)
-                  ?.map((image) => image ?? '')
-                  .cast<String>()
-                  .toList() ?? [],
+                      ?.map((image) => image ?? '')
+                      .cast<String>()
+                      .toList() ??
+                  [],
               location: Map<String, double>.from(
                 (item['location']?.map((key, value) {
-                  if (value is int) {
-                    return MapEntry(key, value.toDouble());
-                  } else {
-                    return MapEntry(key, value);
-                  }
-                }) ?? {}),
+                      return MapEntry(key, value is int ? value.toDouble() : value);
+                    }) ??
+                      {}),
               ),
               offeredPrice: _parseOfferedPrice(item['offeredPrice']),
               userId: item['userId'] ?? '',
@@ -191,44 +199,40 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
                 id: '',
                 selectedDate: '',
                 selectedTime: '',
-              ),
+              ),subcategoryName: item['subcategoryName'] ?? '',
             );
           }).toList();
 
-          // Filtrar los servicios que coinciden con los expertises del trabajador
+          // Filtrar las solicitudes de servicio según las expertises del trabajador.
           final filteredServiceRequestsList = serviceRequestsList.where((serviceRequest) {
+            // Comprobar si alguna de las expertises de la solicitud de servicio coincide con las expertises del trabajador.
             return serviceRequest.expertises.any((expertise) {
               return workerExpertiseIds.contains(expertise.id);
             });
           }).toList();
 
-          setState(() {
-            serviceRequests = filteredServiceRequestsList;
-            statuses = filteredServiceRequestsList.map((request) => request.status.name).toList();
-          });
+          // Verificar si la lista filtrada no está vacía
+          if (filteredServiceRequestsList.isNotEmpty) {
+            // Actualizar la interfaz de usuario con los datos filtrados.
+            setState(() {
+              serviceRequests = filteredServiceRequestsList;
+              statuses = filteredServiceRequestsList.map((request) => request.status.name).toList();
+            });
 
-          // Guardar en caché los servicios filtrados
-          filteredServiceRequestsList.forEach((request) {
-            LocalCacheService.cacheServiceRequest(request);
-          });
-
-          print('Servicios cargados con éxito. Total de servicios obtenidos del backend: ${filteredServiceRequestsList.length}');
-        } catch (e) {
-          print('Error al decodificar la respuesta JSON: $e');
+            print('Servicios cargados con éxito.');
+          } else {
+            print('No se encontraron servicios que coincidan con las expertises del trabajador.');
+          }
+        } else {
+          print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
         }
       } else {
-        print('Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
+        print('Usuario no autenticado');
       }
-    } else {
-      print('Usuario no autenticado');
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
     }
-  } catch (e) {
-    print('Error en la solicitud HTTP: $e');
   }
-}
-
-
-
 
 
 
@@ -279,10 +283,13 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
     }
   }
 
-  void _refreshHistorial() async {
+  Future<void> _refreshHistorial() async {
+    await LocalCacheService.clearCacheForUser(FirebaseAuth.instance.currentUser!.uid);
+    workerExpertiseIds = await fetchWorkerExpertises();
     await fetchServicesByExpertises(workerExpertiseIds);
     setState(() {});
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -292,7 +299,10 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Historial', style: MyTextStyles.buttonTextStyle),
+        title: const Text(
+          'Historial',
+          style: MyTextStyles.buttonTextStyle,
+        ),
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
@@ -303,12 +313,37 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          tabs: const [
-            Tab(text: 'Disponible'),
-            Tab(text: 'Asignado'),
-            Tab(text: 'En curso'),
-            Tab(text: 'Completado'),
-            Tab(text: 'Cancelado'),
+          labelStyle: MyTextStyles.tabTextStyle,
+          unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
+          tabs: [
+            Tab(text: 'Disponibles'),
+            Tab(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Text('Ofertados'),
+                  if (offerServiceCount > 0)
+                    Positioned(
+                      right: 7,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        child: Text(
+                          offerServiceCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            Tab(text: 'Asignados'),
+            Tab(text: 'Completados'),
+            Tab(text: 'Cancelados'),
           ],
         ),
       ),
@@ -316,7 +351,7 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
         controller: _tabController,
         children: [
           _buildServiceListByStatus('available', screenWidth, screenHeight),
-          _buildServiceListByStatus('assigned', screenWidth, screenHeight),
+          _buildServiceListByStatus('offer', screenWidth, screenHeight),
           _buildServiceListByStatus('in_progress', screenWidth, screenHeight),
           _buildServiceListByStatus('completed', screenWidth, screenHeight),
           _buildServiceListByStatus('cancelled', screenWidth, screenHeight),
@@ -325,93 +360,145 @@ Future<void> fetchServicesByExpertises(List<String> workerExpertiseIds) async {
     );
   }
 
-  Widget _buildServiceListByStatus(String statusId, double screenWidth, double screenHeight) {
-    final filteredRequests = serviceRequests.where((request) => request.status.id == statusId).toList();
+  Widget _buildServiceListByStatus(
+    String statusId, double screenWidth, double screenHeight) {
+  final filteredRequests = serviceRequests
+      .where((request) => request.status.id == statusId)
+      .toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: ListView.builder(
-        itemCount: filteredRequests.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () async {
-              final newStatus = await showDialog<String>(
-                context: context,
-                builder: (BuildContext context) {
-                  return ServiceFormWithTimeline(
-                    serviceRequest: filteredRequests[index],
-                    initialStatus: filteredRequests[index].status.id,
-                    onComplete: (status) {
-                      setState(() {
-                        filteredRequests[index].status.id = status;
-                      });
-                    },
-                    userData: userData,
-                    onStatusChanged: (newStatus) {}, 
-                    token: '',
-                  );
-                },
-              );
-
-              if (newStatus != null && newStatus != filteredRequests[index].status.id) {
-                setState(() {
-                  filteredRequests[index].status.id = newStatus;
-                });
-              }
-            },
-            child: Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.05),
-              child: CustomPaint(
-                size: Size(screenWidth, screenHeight * 0.05),
-                painter: CustomTicketShapePainter(status: filteredRequests[index].status.name),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 15),
-                            const Text('Categoría:', style: MyTextStyles.ButtonTextStyle),
-                            Text(
-                              truncateDescription(filteredRequests[index].expertises.map((e) => e.name).join(', ')),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
-                            ),
-                            SizedBox(height: screenHeight * 0.01),
-                            const Text('Servicio:', style: MyTextStyles.ButtonTextStyle),
-                            Text(
-                              filteredRequests[index].description,
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(filteredRequests[index].status.name),
-                          const SizedBox(height: 16),
-                          Text('\$${filteredRequests[index].offeredPrice.toStringAsFixed(2)}'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  if (statusId == 'offer') {
+    offerServiceCount = filteredRequests.length;
   }
 
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: ListView.builder(
+      itemCount: filteredRequests.length,
+      itemBuilder: (context, index) {
+        return GestureDetector(
+          onTap: () async {
+            final newStatus = await showDialog<String>(
+              context: context,
+              builder: (BuildContext context) {
+                return ServiceFormWithTimeline(
+                  serviceRequest: filteredRequests[index],
+                  initialStatus: statuses[index],
+                  onComplete: (status) {
+                    setState(() {
+                      statuses[index] = status;
+                    });
+                  },
+                  userData: userData,
+                  onStatusChanged: (newStatus) {},
+                  workerId: workerId,
+                );
+              },
+            );
+
+            if (newStatus != null && newStatus != statuses[index]) {
+              setState(() {
+                statuses[index] = newStatus;
+              });
+            }
+          },
+          child: FutureBuilder<double?>(
+            future: fetchOfferedPrice(filteredRequests[index].id),
+            builder: (context, snapshot) {
+              final offeredPrice = snapshot.data ?? 0.0;
+
+              return Container(
+                margin: EdgeInsets.only(bottom: screenHeight * 0.02),
+                child: CustomPaint(
+                  size: Size(screenWidth, screenHeight * 0.05),
+                  painter: CustomTicketShapePainter(
+                    status: filteredRequests[index].status.name,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 15), // Espacio para el título
+                              Text(
+                                'Categoría: ',
+                                style: MyTextStyles.ButtonTextStyle,
+                              ),
+                              Text(
+                                truncateDescription(
+                                    filteredRequests[index].subcategoryName),
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                              SizedBox(height: screenHeight * 0.01),
+                              Text(
+                                'Servicio: ',
+                                style: MyTextStyles.ButtonTextStyle,
+                              ),
+                              Text(
+                                truncateDescription(
+                                  filteredRequests[index]
+                                      .expertises
+                                      .map((e) => e.name)
+                                      .join(', '),
+                                ),
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                                textAlign: TextAlign.left,
+                              ),
+                              SizedBox(height: screenHeight * 0.01),
+                              Text(
+                                'Precio Ofertado: \$${offeredPrice.toStringAsFixed(2)}',
+                                style: MyTextStyles.drawerButtonTextStyle5,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 40), // Espacio entre la imagen y el texto
+                          Image.asset(
+                            'assets/manito.png',
+                            width: 84,
+                            height: 84,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ),
+  );
+}
+
+
   String truncateDescription(String description) {
-    const maxLength = 60;
-    return description.length > maxLength ? '${description.substring(0, maxLength)}...' : description;
+    final words = description.split(' ');
+    if (words.length > 6) {
+      return '${words.take(6).join(' ')}...';
+    }
+    return description;
+  }
+  Color _getTextColorByStatus(String statusId) {
+    final status = StatusUtils.getStatusById(statusId);
+
+    switch (status.id) {
+      case "available":
+        return Colors.green;
+      case "assigned":
+        return Colors.orange;
+      case "in_progress":
+        return Colors.black;
+      case "completed":
+        return Colors.blue;
+      case "cancelled":
+        return const Color(0xFF84090D);
+      default:
+        return Colors.grey;
+    }
   }
 }

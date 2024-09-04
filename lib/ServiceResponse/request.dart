@@ -17,6 +17,7 @@ class ServiceRequest {
   bool acceptedTerms;
   List<Expertises> expertises; // Cambiado a una lista de Expertises
   late Status status;
+  final String subcategoryName;
 
   ServiceRequest({
     required this.serviceDateTime,
@@ -33,6 +34,7 @@ class ServiceRequest {
     required this.acceptedTerms,
     required this.expertises, // Se espera una lista de Expertises
     required this.status,
+    required this.subcategoryName,
   });
 
   // Método para convertir la clase en un mapa
@@ -52,6 +54,7 @@ class ServiceRequest {
       'selectedTime': selectedTime,
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(), // Convertir a Map
+      'subcategoryName':subcategoryName,
     };
   }
 
@@ -71,12 +74,13 @@ class ServiceRequest {
       selectedTime: map['selectedTime'],
       acceptedTerms: map['acceptedTerms'] ?? false,
       expertises: (map['expertises'] as List<dynamic>)
-          .map((e) => Expertises.fromJson(e))
+          .map((e) => Expertises.fromJson(e as Map<String, dynamic>))
           .toList(), // Convertir de JSON a lista de Expertises
       status: Status(
         id: map['status'] ?? '',
         name: Status.getNameById(map['status'] ?? ''),
       ),
+      subcategoryName:map['subcategoryName']?? '',
     );
   }
 
@@ -383,7 +387,7 @@ class Expertises {
 
 
 class Status {
-  late final String id;
+  final String id;
   final String name;
 
   Status({required this.id, required this.name});
@@ -391,8 +395,8 @@ class Status {
   // Mapa inverso para buscar el nombre por ID
   static final Map<String, String> _nameById = {
     "available": "Disponible",
-    "assigned": "Asignado",
-    "in_progress": "En curso",
+    "offer":"Ofertado",
+    "in_progress":"En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",
     // Agrega más asignaciones de ID a nombre según sea necesario
@@ -405,8 +409,8 @@ class Status {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'name': name,
+    'id': id,
+    'name': name,
     };
-  }
+    }
 }

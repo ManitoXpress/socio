@@ -47,10 +47,11 @@ class ApiService2 {
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
-   Future<http.Response> getByUserId(String userId, String authToken,
-      String column, String value, String type) async {
+
+  Future<http.Response> getAllServices(String authToken, String column, String value, String type) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
+
       final response = await http.get(
         Uri.parse('$baseUrl/services?columns=$column&values=$value&type=$type'),
         headers: <String, String>{
@@ -61,7 +62,7 @@ class ApiService2 {
       if (response.statusCode == 200) {
         print('Datos recibidos del backend con éxito');
       } else {
-        print('Solicitud HTTP: ${response.statusCode}');
+        print('Solicitud HTTP fallida con código: ${response.statusCode}');
       }
       return response;
     } catch (e) {
@@ -69,6 +70,7 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
+
 
   Future<http.Response> fetchServicebyExpertises(
       String userId, String authToken, List<String> expertises) async {

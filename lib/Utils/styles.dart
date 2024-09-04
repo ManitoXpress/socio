@@ -15,6 +15,19 @@ class MyTextStyles {
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.normal,
   );
+  static const TextStyle unselectedTabTextStyle = TextStyle(
+    fontSize: 12,
+    fontFamily: 'Xpress Heavy',
+    fontWeight: FontWeight.normal,
+    fontStyle: FontStyle.italic,
+  );
+  static const TextStyle tabTextStyle = TextStyle(
+    fontSize: 12,
+    fontFamily: 'Xpress Heavy',
+    color: Color(0xFFFFFFFF),
+    fontWeight: FontWeight.normal,
+    fontStyle: FontStyle.italic,
+  );
   static const TextStyle buttonTextStyle3 = TextStyle(
     fontSize: 24,
     fontFamily: 'Xpress Heavy',

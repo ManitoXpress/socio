@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -52,37 +53,35 @@ class ApiService {
     }
   }
 
-  Future<http.Response> sendProposalToBackend(
-      ServiceRequest serviceRequest, String token, String offeredPrice) async {
+  Future<void> sendProposalToFirestore(
+    ServiceRequest serviceRequest, 
+    String token, 
+    String offeredPrice,
+    String workerId // Añade el workerId como parámetro
+  ) async {
     try {
-      final formData = {
-        'serviceId':
-            serviceRequest.id, // ID del servicio al que se hace la oferta
+      // Obtén una referencia a la colección "offers"
+      final offersCollection = FirebaseFirestore.instance.collection('offers');
+
+      // Crea un documento con una propuesta en la colección "offers"
+      final newProposalRef = offersCollection.doc(); // Crea un nuevo documento con un ID generado automáticamente
+
+      // Define los datos de la propuesta
+      final proposalData = {
+        'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
         'offeredPrice': offeredPrice,
+        'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
+        'userToken': token, // Token del usuario, si necesitas almacenar esta información
+        'workerId': workerId, // Añade el workerId a los datos de la propuesta
       };
 
-      final Uri url =
-          Uri.parse('$baseUrl/offers?serviceId=${serviceRequest.id}');
+      // Guarda la propuesta en Firestore
+      await newProposalRef.set(proposalData);
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(formData),
-      );
-
-      if (response.statusCode == 201) {
-        print('Oferta enviada con éxito al backend');
-      } else {
-        print('Solicitud HTTP fallida con código: ${response.statusCode}');
-      }
-
-      return response;
+      print('Oferta enviada con éxito a Firestore');
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-      throw Exception('Error al enviar oferta al backend: $e');
+      print('Error al enviar oferta a Firestore: $e');
+      throw Exception('Error al enviar oferta a Firestore: $e');
     }
   }
 
