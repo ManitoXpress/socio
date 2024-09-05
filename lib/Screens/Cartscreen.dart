@@ -377,30 +377,31 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () async {
-            final newStatus = await showDialog<String>(
-              context: context,
-              builder: (BuildContext context) {
-                return ServiceFormWithTimeline(
-                  serviceRequest: filteredRequests[index],
-                  initialStatus: statuses[index],
-                  onComplete: (status) {
-                    setState(() {
-                      statuses[index] = status;
-                    });
-                  },
-                  userData: userData,
-                  onStatusChanged: (newStatus) {},
-                  workerId: workerId,
-                );
-              },
-            );
+          final newStatus = await showDialog<String>(
+            context: context,
+            builder: (BuildContext context) {
+              return ServiceFormWithTimeline(
+                serviceRequest: filteredRequests[index],
+                initialStatus: statuses[index],
+                onComplete: (status) {
+                  setState(() {
+                    statuses[index] = status;
+                  });
+                },
+                userData: userData,
+                onStatusChanged: (newStatus) {},
+                workerId: workerId,
+                images: filteredRequests[index].images,  // Asegúrate de pasar las imágenes
+              );
+            },
+          );
 
-            if (newStatus != null && newStatus != statuses[index]) {
-              setState(() {
-                statuses[index] = newStatus;
-              });
-            }
-          },
+          if (newStatus != null && newStatus != statuses[index]) {
+            setState(() {
+              statuses[index] = newStatus;
+            });
+          }
+        },
           child: FutureBuilder<double?>(
             future: fetchOfferedPrice(filteredRequests[index].id),
             builder: (context, snapshot) {
