@@ -100,20 +100,70 @@ class _LoginFormState extends State<LoginScreen> {
     );
   }
 
-  Future<void> signInWithGoogle() async {
-    setState(() {
-      isLoadingGoogle = true;
-    });
+  Future<void> login() async {
+    isChecking?.change(false);
+    isHandsUp?.change(false);
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
+      final userDoc = await _firestore.collection('workers').doc(userCredential.user?.uid).get();
+
+      if (userDoc.exists) {
+        successTrigger?.fire();
+        LoginScreenController.signInWithGoogle(context);
+      } else {
+        failTrigger?.fire();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Usuario no encontrado"),
+              content: Text("El usuario no existe en la colección de workers."),
+              actions: [
+                TextButton(
+                  child: Text("Aceptar"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      failTrigger?.fire();
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Inicio de sesión fallido"),
+            content: Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
+            actions: [
+              TextButton(
+                child: Text("Aceptar"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    setState(() => isLoadingGoogle = true);
     try {
       await LoginScreenController.signInWithGoogle(context);
-      _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
     } catch (e) {
       print('Error al iniciar sesión con Google: $e');
     } finally {
-      setState(() {
-        isLoadingGoogle = false;
-      });
+      setState(() => isLoadingGoogle = false);
     }
   }
 
@@ -123,26 +173,11 @@ class _LoginFormState extends State<LoginScreen> {
     });
 
     try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-        ],
-      );
-
-      final oauthCredential = OAuthProvider("apple.com").credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
-      );
-
-      final userCredential = await _auth.signInWithCredential(oauthCredential);
-
-      _navigateToCardScreenPage(); // Redirige al perfil si la autenticación es exitosa
+      await LoginScreenController.signInWithApple(context);
     } catch (e) {
-      print('Error al iniciar sesión con Apple: $e');
+      print('Error al iniciar sesión con Google: $e');
     } finally {
-      setState(() {
-        isLoadingApple = false;
-      });
+      setState(() => isLoadingGoogle = false);
     }
   }
 
@@ -294,7 +329,7 @@ class _LoginFormState extends State<LoginScreen> {
                   },
                   icon: Icon(Icons.delete, color: Colors.white),
                   label: Text(
-                    "Solicitar eliminación de cuenta",
+                    "Eliminar cuenta",
                     style: GoogleFonts.karla(
                       color: Colors.white,
                       fontSize: 16.sp,

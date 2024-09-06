@@ -10,6 +10,8 @@ import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
@@ -18,6 +20,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
+  final List<String> images; // Parámetro images
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
@@ -25,12 +28,12 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.onComplete,
     required this.onStatusChanged,
     required this.userData,
-    required this.workerId, required List<String> images,
+    required this.workerId,
+    required this.images, // Asegurarse de que el parámetro esté presente
   });
 
   @override
-  _ServiceFormWithTimelineState createState() =>
-      _ServiceFormWithTimelineState();
+  _ServiceFormWithTimelineState createState() => _ServiceFormWithTimelineState();
 }
 
 class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
@@ -38,14 +41,15 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late TextEditingController _priceController;
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _serviceRequestStream;
   double? _fetchedOfferedPrice;
+  late String _currentStatus;
 
-  // Mapa de IDs de estado a nombres de estado
   final Map<String, String> statusNames = {
     "available": "Disponible",
     "offer": "Ofertado",
     "in_progress": "En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",
+    "blocked": "Bloqueado", // Añadido nuevo estado
   };
 
   @override
@@ -54,7 +58,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _cancelReasonController = TextEditingController();
     _priceController = TextEditingController();
 
-    // Cargar el stream en tiempo real desde Firestore
+    // Stream en tiempo real desde Firestore
     _serviceRequestStream = FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceRequest.id)
@@ -69,6 +73,54 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _cancelReasonController.dispose();
     _priceController.dispose();
     super.dispose();
+  }
+
+  // Nueva función para bloquear la participación del usuario
+  void _blockUserParticipation() async {
+    try {
+      // Añadir el workerId del usuario actual a la lista de usuarios bloqueados
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({
+        'blockedUsers': FieldValue.arrayUnion([widget.workerId])
+      });
+
+      widget.onStatusChanged('blocked');
+      widget.onComplete('blocked');
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('Error al bloquear la participación del usuario: $e');
+    }
+  }
+
+  void _showNoParticipationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('No Participar en el Trabajo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('¿Estás seguro de que no quieres participar en este trabajo?'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _blockUserParticipation,
+              child: Text('Confirmar No Participar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _fetchOfferedPrice() async {
@@ -86,7 +138,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
   Future<double?> fetchOfferedPrice(String serviceId) async {
     try {
-      // Consultar Firestore en la colección 'offers'
       final querySnapshot = await FirebaseFirestore.instance
           .collection('offers')
           .where('serviceId', isEqualTo: serviceId)
@@ -94,11 +145,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
-        // Obtener el precio ofertado
         final offerData = querySnapshot.docs.first.data();
         final offeredPrice = offerData['offeredPrice'];
-
-        // Verificar si el precio ofertado es válido
         return offeredPrice != null ? double.tryParse(offeredPrice.toString()) : null;
       }
     } catch (e) {
@@ -107,97 +155,26 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     return null;
   }
 
-  void _showCancelDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Cancelar Trabajo'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Coloque su motivo de cancelación de trabajo:'),
-              SizedBox(height: 10),
-              TextField(
-                controller: _cancelReasonController,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Escriba su motivo aquí',
-                ),
-              ),
-              SizedBox(height: 10),
-              Text('Ejemplos de cancelación de servicio:'),
-              _buildCancelReasonButton('No puedo continuar con el trabajo'),
-              _buildCancelReasonButton('Emergencia inesperada'),
-              _buildCancelReasonButton('Otro motivo'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildCancelReasonButton(String reason) {
-    return ElevatedButton(
-      onPressed: () {
-        _cancelJobWithReason(reason);
-      },
-      child: Text(reason),
-    );
-  }
-
-  void _cancelJobWithReason(String reason) async {
-    try {
-      final Status cancelledStatus = Status(id: 'cancelled', name: 'Cancelado');
-      // Actualiza el estado en Firestore
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({
-        'status': cancelledStatus.id,
-        'cancelReason': reason,
-      });
-
-      widget.onComplete(cancelledStatus.id);
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('Error al cancelar el trabajo: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error al cancelar el trabajo'),
-      ));
-    }
-  }
-
+ 
   void _showProposalDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Enviar Propuesta'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Precio Ofertado:'),
-                SizedBox(height: 10),
-                TextFormField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'Ingrese el precio ofertado',
-                    border: OutlineInputBorder(),
-                  ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Ingrese su precio ofertado:'),
+              TextField(
+                controller: _priceController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Precio ofertado',
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -218,18 +195,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
   void _sendProposal() async {
     double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
-    final Status offerStatus = Status(id: 'offer', name: 'Ofertado');
     try {
-      // Cambia el estado a "offer" y actualiza el precio ofertado en Firestore
       await FirebaseFirestore.instance
           .collection('services')
           .doc(widget.serviceRequest.id)
-          .update({
-        'status': offerStatus.id,
-        'offeredPrice': offeredPrice,
-      });
+          .update({'status': 'offer', 'offeredPrice': offeredPrice});
 
-      // Envía la propuesta al backend
       await ApiService().sendProposalToFirestore(
         widget.serviceRequest,
         widget.userData.getToken!,
@@ -238,23 +209,15 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       );
 
       setState(() {
-        // Actualiza la UI con el nuevo precio
+        _fetchedOfferedPrice = offeredPrice;
         _priceController.text = offeredPrice.toString();
       });
 
+      widget.onStatusChanged('offer');
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Propuesta enviada con éxito'),
-      ));
-    } catch (error) {
-      _showErrorSnackBar('Error al enviar la propuesta: $error');
+    } catch (e) {
+      print('Error al enviar la propuesta: $e');
     }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-    ));
   }
 
   @override
@@ -270,59 +233,64 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           return Center(child: CircularProgressIndicator());
         }
 
-        // Obtener los datos del servicio desde Firestore
         final serviceData = snapshot.data?.data();
-
         if (serviceData == null) {
           return Center(child: Text('No se encontraron datos del servicio'));
         }
 
-          // Obtener el status actual desde los datos del servicio
-        final String currentStatusId = serviceData['status'] ?? '';
+        _currentStatus = serviceData['status'] ?? 'available';
 
-        // Actualiza los valores de estado y precio ofertado en tiempo real
-        final String currentStatusName = statusNames[currentStatusId] ?? 'Disponible';
-        final double? offeredPrice = _fetchedOfferedPrice;
-
-        return AlertDialog(
-          title: Text('Detalles del Servicio'),
-          content: SingleChildScrollView(
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Detalles del Servicio'),
+          ),
+          body: Padding(
+            padding: EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Fecha y Hora: ${widget.serviceRequest.serviceDateTime}',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text('Descripción: ${widget.serviceRequest.description}',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(height: 20),
-                Container(
-                  height: 280,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Seguimiento del Servicio',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        SizedBox(height: 10),
-                        Text('Estado: $currentStatusName'),
-                        SizedBox(height: 10),
-                        Text(
-                          'Precio Ofertado: ${offeredPrice != null ? '\$${offeredPrice.toString()}' : 'No se ha ofertado un precio'}',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: () => _showCancelDialog(context),
-                          child: Text('Cancelar Trabajo'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => _showProposalDialog(context),
-                          child: Text('Enviar Propuesta'),
-                        ),
-                      ],
-                    ),
+                Text('Descripción: ${serviceData['description'] ?? ''}'),
+                SizedBox(height: 16.0),
+                Text('Ubicación: ${serviceData['location'] ?? ''}'),
+                SizedBox(height: 16.0),
+                Text('Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
+                SizedBox(height: 16.0),
+                Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
+                SizedBox(height: 16.0),
+                Text('Imágenes:'),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: widget.images.length,
+                    itemBuilder: (context, index) {
+                      return Image.network(widget.images[index]);
+                    },
                   ),
                 ),
+                SizedBox(height: 16.0),
+
+                // Mostrar los botones dependiendo del estado
+                if (_currentStatus == 'available') ...[
+                  ElevatedButton(
+                    onPressed: () {
+                      _showProposalDialog(context);
+                    },
+                    child: Text('Enviar Propuesta'),
+                  ),
+                  SizedBox(height: 16.0),
+                  ElevatedButton(
+                    onPressed: () {
+                      _showNoParticipationDialog(context);
+                    },
+                    child: Text('No Participar en el Trabajo'),
+                  ),
+                ] else if (_currentStatus == 'offer') ...[
+                  ElevatedButton(
+                    onPressed: () {
+                      _showNoParticipationDialog(context);
+                    },
+                    child: Text('No Participar en el Trabajo'),
+                  ),
+                ],
               ],
             ),
           ),
