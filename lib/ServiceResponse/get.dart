@@ -10,6 +10,7 @@ import 'package:socio/Utils/authUtils.dart';
 class ApiService2 {
   String? getToken;
   final String baseUrl = ApiConfiguration.baseUrl;
+  final FirebaseStorage storage = FirebaseStorage.instance;
 
   Future<List<ServiceResponse>> fetchServicesFromBackend(String token) async {
     try {
@@ -130,6 +131,27 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
+  
+  Future<String> getImageUrls(String userId, String imageName) async {
+  try {
+    String filePath = '$userId/$imageName';
+    print('Accediendo a la ruta de la imagen: $filePath');
+
+    final Reference ref = FirebaseStorage.instance.ref().child(filePath);
+
+    // Intentar obtener la URL de descarga
+    final String downloadUrl = await ref.getDownloadURL();
+    print('URL de descarga obtenida: $downloadUrl');
+    return downloadUrl;
+  } catch (e) {
+    print('Error al obtener la URL de la imagen: $e');
+    // Manejo del caso donde la imagen no existe o no se puede acceder
+    return '';
+  }
+}
+
+
+
 
   Future<List<Category>> fetchExpertises() async {
     final response =

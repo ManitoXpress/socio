@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/statusUtils.dart';
@@ -20,6 +22,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
+
   final List<String> images; // Parámetro images
 
   const ServiceFormWithTimeline({
@@ -28,12 +31,14 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.onComplete,
     required this.onStatusChanged,
     required this.userData,
+
     required this.workerId,
     required this.images, // Asegurarse de que el parámetro esté presente
   });
 
   @override
-  _ServiceFormWithTimelineState createState() => _ServiceFormWithTimelineState();
+  _ServiceFormWithTimelineState createState() =>
+      _ServiceFormWithTimelineState();
 }
 
 class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
@@ -49,7 +54,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     "in_progress": "En curso",
     "completed": "Completado",
     "cancelled": "Cancelado",
-    "blocked": "Bloqueado", // Añadido nuevo estado
+    "blocked": "Bloqueado",
   };
 
   @override
@@ -57,14 +62,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     super.initState();
     _cancelReasonController = TextEditingController();
     _priceController = TextEditingController();
-
-    // Stream en tiempo real desde Firestore
     _serviceRequestStream = FirebaseFirestore.instance
         .collection('services')
         .doc(widget.serviceRequest.id)
         .snapshots();
-
-    // Obtener el precio ofertado inicial
     _fetchOfferedPrice();
   }
 
@@ -75,10 +76,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     super.dispose();
   }
 
-  // Nueva función para bloquear la participación del usuario
   void _blockUserParticipation() async {
     try {
-      // Añadir el workerId del usuario actual a la lista de usuarios bloqueados
       await FirebaseFirestore.instance
           .collection('services')
           .doc(widget.serviceRequest.id)
@@ -100,12 +99,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('No Participar en el Trabajo'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('¿Estás seguro de que no quieres participar en este trabajo?'),
-            ],
-          ),
+          content: Text('¿Estás seguro de que no quieres participar en este trabajo?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -128,8 +122,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       final offeredPrice = await fetchOfferedPrice(widget.serviceRequest.id);
       setState(() {
         _fetchedOfferedPrice = offeredPrice;
-        _priceController.text =
-            offeredPrice != null ? offeredPrice.toString() : '';
+        _priceController.text = offeredPrice != null ? offeredPrice.toString() : '';
       });
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');
@@ -155,7 +148,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     return null;
   }
 
- 
   void _showProposalDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -220,6 +212,45 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
+  void _showCompleteJobDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Completar Trabajo'),
+          content: Text('¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _completeJob,
+              child: Text('Completar Trabajo'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _completeJob() async {
+    try {
+      // Actualizar estado a "pending_confirmation" mientras se espera la confirmación del cliente
+      await FirebaseFirestore.instance
+          .collection('services')
+          .doc(widget.serviceRequest.id)
+          .update({'status': 'pending_confirmation'});
+
+      widget.onStatusChanged('pending_confirmation');
+      Navigator.of(context).pop();
+    } catch (e) {
+      print('Error al completar el trabajo: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -239,6 +270,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
+        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
 
         return Scaffold(
           appBar: AppBar(
@@ -259,16 +291,29 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 SizedBox(height: 16.0),
                 Text('Imágenes:'),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: widget.images.length,
-                    itemBuilder: (context, index) {
-                      return Image.network(widget.images[index]);
+                  child: FutureBuilder<List<String>>(
+                    future: _getImageUrls(imageFiles),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return Text('No se pudieron cargar las imágenes');
+                      }
+
+                      List<String> imageUrls = snapshot.data!;
+                      return ListView.builder(
+                        itemCount: imageUrls.length,
+                        itemBuilder: (context, index) {
+                          return Image.network(imageUrls[index]);
+                        },
+                      );
                     },
                   ),
                 ),
                 SizedBox(height: 16.0),
-
-                // Mostrar los botones dependiendo del estado
+                // Mostrar botones dependiendo del estado
                 if (_currentStatus == 'available') ...[
                   ElevatedButton(
                     onPressed: () {
@@ -290,6 +335,28 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     },
                     child: Text('No Participar en el Trabajo'),
                   ),
+                ] else if (_currentStatus == 'in_progress') ...[
+                  ElevatedButton(
+                    onPressed: () {
+                      _showNoParticipationDialog(context);
+                    },
+                    child: Text('No Participar en el Trabajo'),
+                  ),
+                  SizedBox(height: 16.0),
+                  ElevatedButton(
+                    onPressed: () {
+                      _showCompleteJobDialog(context);
+                    },
+                    child: Text('Completar Trabajo'),
+                  ),
+                ] else if (_currentStatus == 'pending_confirmation') ...[
+                  Text('Esperando la confirmación del cliente...'),
+                ] else if (_currentStatus == 'completed') ...[
+                  Text('Este trabajo ha sido completado.'),
+                ] else if (_currentStatus == 'cancelled') ...[
+                  Text('Este trabajo ha sido cancelado.'),
+                ] else if (_currentStatus == 'blocked') ...[
+                  Text('No participarás en este trabajo.'),
                 ],
               ],
             ),
@@ -297,5 +364,18 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         );
       },
     );
+  }
+
+  Future<List<String>> _getImageUrls(List<String> imageFiles) async {
+    List<String> imageUrls = [];
+    for (String imageFile in imageFiles) {
+      try {
+        String imageUrl = await FirebaseStorage.instance.ref(imageFile).getDownloadURL();
+        imageUrls.add(imageUrl);
+      } catch (e) {
+        print('Error al obtener la URL de la imagen: $e');
+      }
+    }
+    return imageUrls;
   }
 }
