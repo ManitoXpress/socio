@@ -43,6 +43,14 @@ class MyTextStyles {
 
     fontSize: 15.0,
   );
+  static const TextStyle AppbarTextStyle = TextStyle(
+    color: Color.fromARGB(255, 255, 255, 255),
+    fontFamily: 'Xpress Heavy',
+    fontWeight: FontWeight.bold,
+    fontStyle: FontStyle.normal,
+
+    fontSize: 18.0,
+  );
 
   static const TextStyle buttonTextStyle = TextStyle(
     color: Color(0xFFFFFFFF),
@@ -135,11 +143,11 @@ class MyTextStyles {
     fontStyle: FontStyle.italic,
   );
   static const TextStyle formServiceTextStyle = TextStyle(
-    color: Color(0xFF830A09),
+    color: Color.fromARGB(255, 0, 0, 0),
     fontFamily: 'Xpress Heavy',
     fontWeight: FontWeight.bold,
     fontStyle: FontStyle.italic,
-    fontSize: 16.0,
+    fontSize: 17.0,
   );
   static const TextStyle butServiceTextStyle = TextStyle(
     color: Color(0xFFFFFFFF),

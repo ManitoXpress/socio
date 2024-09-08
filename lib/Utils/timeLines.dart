@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/statusUtils.dart';
+import 'package:socio/Utils/styles.dart';
 
 import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:convert';
@@ -31,7 +33,6 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.onComplete,
     required this.onStatusChanged,
     required this.userData,
-
     required this.workerId,
     required this.images, // Asegurarse de que el parámetro esté presente
   });
@@ -99,7 +100,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('No Participar en el Trabajo'),
-          content: Text('¿Estás seguro de que no quieres participar en este trabajo?'),
+          content: Text(
+              '¿Estás seguro de que no quieres participar en este trabajo?'),
           actions: [
             TextButton(
               onPressed: () {
@@ -122,7 +124,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       final offeredPrice = await fetchOfferedPrice(widget.serviceRequest.id);
       setState(() {
         _fetchedOfferedPrice = offeredPrice;
-        _priceController.text = offeredPrice != null ? offeredPrice.toString() : '';
+        _priceController.text =
+            offeredPrice != null ? offeredPrice.toString() : '';
       });
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');
@@ -140,7 +143,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       if (querySnapshot.docs.isNotEmpty) {
         final offerData = querySnapshot.docs.first.data();
         final offeredPrice = offerData['offeredPrice'];
-        return offeredPrice != null ? double.tryParse(offeredPrice.toString()) : null;
+        return offeredPrice != null
+            ? double.tryParse(offeredPrice.toString())
+            : null;
       }
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');
@@ -218,7 +223,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Completar Trabajo'),
-          content: Text('¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
+          content: Text(
+              '¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -275,112 +281,180 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text('Detalles del Servicio'),
+            title: Text(
+              'Detalles del Servicio',
+              style: MyTextStyles.ButtonTextStyle,
+            ),
           ),
           body: Padding(
             padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Descripción: ${serviceData['description'] ?? ''}'),
-                SizedBox(height: 16.0),
-                Text('Ubicación: ${serviceData['location'] ?? ''}'),
-                SizedBox(height: 16.0),
-                Text(
-                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
-                SizedBox(height: 16.0),
-                Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
-                SizedBox(height: 16.0),
-                Text('Imágenes:'),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: imageFiles.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Image.network(
-                          imageFiles[index],
-                          height: 80, // Reducción del tamaño de la imagen
-                          width: 80, // Reducción del tamaño de la imagen
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                SizedBox(height: 16.0),
-                // Mostrar botones dependiendo del estado
-                if (_currentStatus == 'available') ...[
-                  ElevatedButton(
-                    onPressed: () {
-                      _showProposalDialog(context);
-                    },
-                    child: Text('Enviar Propuesta'),
+            child: Container(
+              padding: EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Color(0xFF830A09), width: 2.0),
+                borderRadius: BorderRadius.circular(
+                    12.0), // Para bordes redondeados opcionalmente
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Descripción:' '${serviceData['description'] ?? ''}',
+                    style: MyTextStyles.formServiceTextStyle, 
                   ),
                   SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: () {
-                      _showNoParticipationDialog(context);
-                    },
-                    child: Text('No Participar en el Trabajo'),
-                  ),
-                ] else if (_currentStatus == 'offer') ...[
-                  ElevatedButton(
-                    onPressed: () {
-                      _showNoParticipationDialog(context);
-                    },
-                    child: Text('No Participar en el Trabajo'),
-                  ),
-                ] else if (_currentStatus == 'in_progress') ...[
-                  ElevatedButton(
-                    onPressed: () {
-                      _showNoParticipationDialog(context);
-                    },
-                    child: Text('No Participar en el Trabajo'),
+                  Text(
+                    'Ubicación: ${serviceData['location'] ?? ''}',
+                    style: MyTextStyles.formServiceTextStyle,
                   ),
                   SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: () {
-                      _showCompleteJobDialog(context);
-                    },
-                    child: Text('Completar Trabajo'),
+                  Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
+                    style: MyTextStyles.formServiceTextStyle,
                   ),
-                ] else if (_currentStatus == 'pending_confirmation') ...[
-                  Text('Esperando la confirmación del cliente...'),
-                ] else if (_currentStatus == 'completed') ...[
-                  Text('Este trabajo ha sido completado.'),
-                ] else if (_currentStatus == 'cancelled') ...[
-                  Text('Este trabajo ha sido cancelado.'),
-                ] else if (_currentStatus == 'blocked') ...[
-                  Text('No participarás en este trabajo.'),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Imágenes:',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: imageFiles.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Image.network(
+                            imageFiles[index],
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
+                  // Mostrar botones dependiendo del estado
+                  if (_currentStatus == 'available') ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showProposalDialog(context);
+                      },
+                      icon: Icon(Icons.add_business, color: Colors.white),
+                      label: Text(
+                    "Enviar Propuesta",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB00020),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
+                    ),
+                    SizedBox(height: 16.0),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showNoParticipationDialog(context);
+                      },
+                      icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "No Participar",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB00020),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
+                    ),
+                  ] else if (_currentStatus == 'offer') ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showNoParticipationDialog(context);
+                      },
+                     icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "No Participar",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB00020),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
+                    ),
+                  ] else if (_currentStatus == 'in_progress') ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showNoParticipationDialog(context);
+                      },
+                      icon: Icon(Icons.dangerous, color: Colors.white),
+                      label: Text(
+                    "No Participar",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB00020),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
+                    ),
+                    SizedBox(height: 16.0),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showCompleteJobDialog(context);
+                      },
+                      icon: Icon(Icons.architecture_sharp, color: Colors.white),
+                      label: Text(
+                    "Completar trabajo",
+                    style: GoogleFonts.karla(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFB00020),
+                    padding:
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                  ),
+                    ),
+                  ] else if (_currentStatus == 'pending_confirmation') ...[
+                    Text('Esperando la confirmación del cliente...'),
+                  ] else if (_currentStatus == 'completed') ...[
+                    Text('Este trabajo ha sido completado.'),
+                  ] else if (_currentStatus == 'cancelled') ...[
+                    Text('Este trabajo ha sido cancelado.'),
+                  ] else if (_currentStatus == 'blocked') ...[
+                    Text('No participarás en este trabajo.'),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
       },
     );
   }
-
-  Future<List<String>> _getImageUrls(List<String> imageNames) async {
-    List<String> imageUrls = [];
-    final apiService = ApiService2();
-
-    for (String imageName in imageNames) {
-      try {
-        // Llamada a getImageUrls usando ApiService2
-        String imageUrl = await apiService.getImageUrls(
-            widget.serviceRequest.userId, imageName);
-        if (imageUrl.isNotEmpty) {
-          imageUrls.add(imageUrl);
-        }
-      } catch (e) {
-        print('Error al obtener la URL de la imagen $imageName: $e');
-      }
-    }
-
-    return imageUrls;
-  }
-
 }
