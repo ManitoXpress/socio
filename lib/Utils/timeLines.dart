@@ -270,7 +270,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles =
+            List<String>.from(serviceData['images'] ?? []);
 
         return Scaffold(
           appBar: AppBar(
@@ -285,33 +286,29 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 SizedBox(height: 16.0),
                 Text('Ubicación: ${serviceData['location'] ?? ''}'),
                 SizedBox(height: 16.0),
-                Text('Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
+                Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}'),
                 SizedBox(height: 16.0),
                 Text('Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}'),
                 SizedBox(height: 16.0),
                 Text('Imágenes:'),
                 Expanded(
-                  child: FutureBuilder<List<String>>(
-                    future: _getImageUrls(imageFiles),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      }
-
-                      if (snapshot.hasError || snapshot.data == null) {
-                        return Text('No se pudieron cargar las imágenes');
-                      }
-
-                      List<String> imageUrls = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: imageUrls.length,
-                        itemBuilder: (context, index) {
-                          return Image.network(imageUrls[index]);
-                        },
+                  child: ListView.builder(
+                    itemCount: imageFiles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Image.network(
+                          imageFiles[index],
+                          height: 80, // Reducción del tamaño de la imagen
+                          width: 80, // Reducción del tamaño de la imagen
+                          fit: BoxFit.cover,
+                        ),
                       );
                     },
                   ),
                 ),
+
                 SizedBox(height: 16.0),
                 // Mostrar botones dependiendo del estado
                 if (_currentStatus == 'available') ...[
@@ -366,16 +363,24 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
 
-  Future<List<String>> _getImageUrls(List<String> imageFiles) async {
+  Future<List<String>> _getImageUrls(List<String> imageNames) async {
     List<String> imageUrls = [];
-    for (String imageFile in imageFiles) {
+    final apiService = ApiService2();
+
+    for (String imageName in imageNames) {
       try {
-        String imageUrl = await FirebaseStorage.instance.ref(imageFile).getDownloadURL();
-        imageUrls.add(imageUrl);
+        // Llamada a getImageUrls usando ApiService2
+        String imageUrl = await apiService.getImageUrls(
+            widget.serviceRequest.userId, imageName);
+        if (imageUrl.isNotEmpty) {
+          imageUrls.add(imageUrl);
+        }
       } catch (e) {
-        print('Error al obtener la URL de la imagen: $e');
+        print('Error al obtener la URL de la imagen $imageName: $e');
       }
     }
+
     return imageUrls;
   }
+
 }
