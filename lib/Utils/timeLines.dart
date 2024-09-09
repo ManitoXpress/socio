@@ -3,10 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/Utils/fullMap.dart';
 import 'package:socio/Utils/statusUtils.dart';
 import 'package:socio/Utils/styles.dart';
 
@@ -48,6 +50,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   late Stream<DocumentSnapshot<Map<String, dynamic>>> _serviceRequestStream;
   double? _fetchedOfferedPrice;
   late String _currentStatus;
+  late LatLng _initialPosition;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -76,6 +79,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+  void _initializeMap() {
+  // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
+  double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+  double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+
+  // Inicializa la posición usando los valores de latitud y longitud obtenidos.
+  _initialPosition = LatLng(latitude, longitude);
+}
 
   void _blockUserParticipation() async {
     try {
@@ -118,6 +129,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
+  void _openFullMap(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FullMapScreen(initialPosition: _initialPosition),
+      ),
+    );
+  }
+
 
   Future<void> _fetchOfferedPrice() async {
     try {
@@ -276,8 +295,11 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles =
-            List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+
+        _initialPosition = LatLng(latitude, longitude);
 
         return Scaffold(
           appBar: AppBar(
@@ -291,33 +313,68 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             child: Container(
               padding: EdgeInsets.all(16.0),
               decoration: BoxDecoration(
-                border: Border.all(color: Color(0xFF830A09), width: 2.0),
-                borderRadius: BorderRadius.circular(
-                    12.0), // Para bordes redondeados opcionalmente
+                border: Border.all(color: Color(0xFF84090D), width: 2.0),
+                borderRadius: BorderRadius.circular(12.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Descripción:' '${serviceData['description'] ?? ''}',
-                    style: MyTextStyles.formServiceTextStyle, 
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Ubicación: ${serviceData['location'] ?? ''}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
                     'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
                   SizedBox(height: 16.0),
+                  Text.rich(
+                    TextSpan(
+                      text: 'Descripción: ', // Este texto tendrá su propio estilo
+                      style: MyTextStyles.formServiceTextStyle,
+                      children: [
+                        TextSpan(
+                          text: serviceData['description'] ?? '', // Este texto tendrá otro estilo
+                          style: MyTextStyles.inputTextStyle, // Aplica un estilo diferente aquí
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Ubicación:',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  GestureDetector(
+                    onTap: () => _openFullMap(context),  // Abre el mapa completo
+                    child: Container(
+                      height: 200,  // Tamaño pequeño del mapa
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border.all(color: Colors.blueAccent),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: _initialPosition,
+                            zoom: 14.0,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: MarkerId('serviceLocation'),
+                              position: _initialPosition,
+                            ),
+                          },
+                          zoomControlsEnabled: false,
+                          scrollGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          onTap: (_) => _openFullMap(context),  // Abre el mapa completo
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
+                  
+                  
                   Text(
                     'Imágenes:',
                     style: MyTextStyles.formServiceTextStyle,
@@ -337,6 +394,11 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                         );
                       },
                     ),
+                  ),
+                  SizedBox(height: 16.0),
+                  Text(
+                    'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
+                    style: MyTextStyles.formServiceTextStyle,
                   ),
                   SizedBox(height: 16.0),
                   // Mostrar botones dependiendo del estado
