@@ -135,7 +135,7 @@ class CompleteJobDialog {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                      '¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
+                      '¿Estás seguro de que deseas completar este trabajo? envie una imagen de su trabajo terminado para confirmar el pago del servicio.'),
                   SizedBox(height: 16.0),
                   _selectedImageUrl == null
                       ? ElevatedButton(
