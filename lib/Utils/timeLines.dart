@@ -11,9 +11,13 @@ import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/fullMap.dart';
 import 'package:socio/Utils/statusUtils.dart';
 import 'package:socio/Utils/styles.dart';
-
+import 'dart:io'; // Para manejar archivos locales
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:convert';
+import 'package:path/path.dart' as path;
 
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
@@ -51,6 +55,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   double? _fetchedOfferedPrice;
   late String _currentStatus;
   late LatLng _initialPosition;
+  File? _image; // Variable para almacenar la imagen seleccionada
+  final ImagePicker _picker = ImagePicker();
+  String? _selectedImageUrl;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -257,45 +264,160 @@ void _sendProposal() async {
   }
 }
 
-  void _showCompleteJobDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Completar Trabajo'),
-          content: Text(
-              '¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: _completeJob,
-              child: Text('Completar Trabajo'),
-            ),
-          ],
-        );
-      },
-    );
+ void _showCompleteJobDialog(BuildContext context) {
+  String? _selectedImageUrl;
+  final ImagePicker _picker = ImagePicker();
+
+  void _pickImage(ImageSource source) async {
+    print('Abriendo el selector de imágenes...');
+    final pickedFile = await _picker.pickImage(source: source);
+    
+    if (pickedFile != null) {
+      print('Imagen seleccionada: ${pickedFile.path}');
+      setState(() {
+        _selectedImageUrl = pickedFile.path;
+      });
+    } else {
+      print('No se seleccionó ninguna imagen.');
+    }
   }
 
   void _completeJob() async {
+  print('Completar trabajo');
+  if (_selectedImageUrl != null) {
+    print('Imagen para subir: $_selectedImageUrl');
+    
     try {
+      // Subir la imagen a Firebase Storage
+      File imageFile = File(_selectedImageUrl!);
+      String fileName = 'completion_${widget.serviceRequest.id}_${DateTime.now().millisecondsSinceEpoch}${path.extension(_selectedImageUrl!)}';
+      Reference storageRef = FirebaseStorage.instance.ref().child('completion_images/$fileName');
+      
+      UploadTask uploadTask = storageRef.putFile(imageFile);
+      TaskSnapshot taskSnapshot = await uploadTask;
+      
+      // Obtener la URL de la imagen subida
+      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+      print('Imagen subida exitosamente. URL: $imageUrl');
+
+      // Buscar la oferta correspondiente al serviceId
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: widget.serviceRequest.id)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        // Obtener el ID del documento de la oferta
+        String offerId = querySnapshot.docs.first.id;
+        
+        // Actualizar el documento de la oferta con la URL de la imagen
+        await FirebaseFirestore.instance
+            .collection('offers')
+            .doc(offerId)
+            .update({'completionImageUrl': imageUrl});
+        
+        print('Oferta actualizada con la URL de la imagen');
+      } else {
+        print('No se encontró una oferta para el serviceId proporcionado');
+      }
+
       // Actualizar estado a "pending_confirmation" mientras se espera la confirmación del cliente
       await FirebaseFirestore.instance
           .collection('services')
           .doc(widget.serviceRequest.id)
-          .update({'status': 'pending_confirmation'});
+          .update({
+        'status': 'pending_confirmation',
+        'completionImageUrl': imageUrl,
+      });
 
       widget.onStatusChanged('pending_confirmation');
       Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Trabajo completado y esperando confirmación del cliente')),
+      );
     } catch (e) {
       print('Error al completar el trabajo: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al completar el trabajo. Por favor, intenta de nuevo.')),
+      );
     }
+  } else {
+    print('No se seleccionó ninguna imagen.');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Por favor, selecciona una imagen antes de completar el trabajo.')),
+    );
   }
+}
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return AlertDialog(
+            title: Text('Completar Trabajo'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                    '¿Estás seguro de que deseas completar este trabajo? El cliente deberá confirmar para finalizar.'),
+                SizedBox(height: 16.0),
+                _selectedImageUrl == null
+                    ? ElevatedButton(
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text('Seleccionar Imagen'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    _pickImage(ImageSource.camera);
+                                  },
+                                  child: Text('Capturar Foto'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    _pickImage(ImageSource.gallery);
+                                  },
+                                  child: Text('Seleccionar Imagen'),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        child: Text('Seleccionar Imagen'),
+                      )
+                    : Image.file(
+                        File(_selectedImageUrl!),
+                        height: 100,
+                        width: 100,
+                        fit: BoxFit.cover,
+                      ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: _completeJob,
+                child: Text('Completar Trabajo'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
