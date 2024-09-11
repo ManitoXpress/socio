@@ -172,69 +172,90 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     return null;
   }
 
-  void _showProposalDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Enviar Propuesta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Ingrese su precio ofertado:'),
-              TextField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Precio ofertado',
-                ),
+ void _showProposalDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Enviar Propuesta'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Ingrese su precio ofertado:'),
+            TextField(
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Precio ofertado',
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: _sendProposal,
-              child: Text('Enviar'),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  void _sendProposal() async {
-    double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
-    try {
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(widget.serviceRequest.id)
-          .update({'status': 'offer', 'offeredPrice': offeredPrice});
-
-      await ApiService().sendProposalToFirestore(
-        widget.serviceRequest,
-        widget.userData.getToken!,
-        offeredPrice.toString(),
-        widget.workerId,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: _sendProposal,
+            child: Text('Enviar'),
+          ),
+        ],
       );
+    },
+  );
+}
 
-      setState(() {
-        _fetchedOfferedPrice = offeredPrice;
-        _priceController.text = offeredPrice.toString();
-      });
+void _sendProposal() async {
+  double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
 
-      widget.onStatusChanged('offer');
-      Navigator.of(context).pop();
-    } catch (e) {
-      print('Error al enviar la propuesta: $e');
-    }
+  // Mostrar el indicador de carga
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Evitar que se cierre al tocar fuera
+    builder: (BuildContext context) {
+      return Center(
+        child: CircularProgressIndicator(), // Indicador de carga
+      );
+    },
+  );
+
+  try {
+    // Actualizar los datos en Firestore
+    await FirebaseFirestore.instance
+        .collection('services')
+        .doc(widget.serviceRequest.id)
+        .update({'status': 'offer', 'offeredPrice': offeredPrice});
+
+    // Enviar la propuesta usando el ApiService
+    await ApiService().sendProposalToFirestore(
+      widget.serviceRequest,
+      widget.userData.getToken!,
+      offeredPrice.toString(),
+      widget.workerId,
+    );
+
+    // Actualizar el estado local después de enviar la propuesta
+    setState(() {
+      _fetchedOfferedPrice = offeredPrice;
+      _priceController.text = offeredPrice.toString();
+    });
+
+    // Notificar el cambio de estado
+    widget.onStatusChanged('offer');
+
+    // Cerrar el diálogo de indicador de carga
+    Navigator.of(context).pop(); // Cerrar el CircularProgressIndicator
+    Navigator.of(context).pop(); // Cerrar el diálogo de propuesta
+
+  } catch (e) {
+    print('Error al enviar la propuesta: $e');
+    Navigator.of(context).pop(); // Cerrar el CircularProgressIndicator
   }
+}
 
   void _showCompleteJobDialog(BuildContext context) {
     showDialog(
@@ -303,9 +324,11 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
         return Scaffold(
           appBar: AppBar(
+            iconTheme: IconThemeData(
+            color: Colors.white),
             title: Text(
               'Detalles del Servicio',
-              style: MyTextStyles.ButtonTextStyle,
+              style: MyTextStyles.buttonTextStyle,
             ),
           ),
           body: Padding(
@@ -403,6 +426,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   SizedBox(height: 16.0),
                   // Mostrar botones dependiendo del estado
                   if (_currentStatus == 'available') ...[
+                    Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
                     ElevatedButton.icon(
                       onPressed: () {
                         _showProposalDialog(context);
@@ -412,14 +438,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     "Enviar Propuesta",
                     style: GoogleFonts.karla(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFB00020),
                     padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                   ),
                     ),
                     SizedBox(height: 16.0),
@@ -432,17 +458,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     "No Participar",
                     style: GoogleFonts.karla(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFB00020),
                     padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                   ),
                     ),
+                          ],
+                    ),
                   ] else if (_currentStatus == 'offer') ...[
+                    Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                    
                     ElevatedButton.icon(
                       onPressed: () {
                         _showNoParticipationDialog(context);
@@ -452,17 +484,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     "No Participar",
                     style: GoogleFonts.karla(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFB00020),
                     padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                   ),
                     ),
+                          ],
+                    ),
                   ] else if (_currentStatus == 'in_progress') ...[
+
+                    Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
                     ElevatedButton.icon(
                       onPressed: () {
                         _showNoParticipationDialog(context);
@@ -472,14 +510,14 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     "No Participar",
                     style: GoogleFonts.karla(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFB00020),
                     padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                   ),
                     ),
                     SizedBox(height: 16.0),
@@ -492,15 +530,17 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     "Completar trabajo",
                     style: GoogleFonts.karla(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFFB00020),
                     padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                   ),
+                    ),
+                          ],
                     ),
                   ] else if (_currentStatus == 'pending_confirmation') ...[
                     Text('Esperando la confirmación del cliente...'),

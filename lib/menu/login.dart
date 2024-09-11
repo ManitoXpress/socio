@@ -49,12 +49,6 @@ class _LoginFormState extends State<LoginScreen> {
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void _navigateToCardScreenPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()),
-    );
-  }
 
   @override
   void initState() {

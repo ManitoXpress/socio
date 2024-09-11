@@ -131,10 +131,17 @@ class LoginScreenController {
       final user = authResult.user;
 
       if (user != null) {
-        // Manejar la autenticación exitosa y redirigir a la pantalla principal
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
+          bool alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
+
+          String? token = await getToken();
+          await storeUserData(user);
+          print('Token después de la autenticación con Google: $token');
+
+          print('Inicio de sesión con Google exitoso para ${user.displayName}');
+
+          _navigateToRegisterScreen(context,
+              alreadyRegistered: alreadyRegistered);
+        
       }
     } catch (e) {
       print('Error durante el inicio de sesión con Apple: $e');

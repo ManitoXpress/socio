@@ -50,7 +50,7 @@
     <key>NSAppleIDUsageDescription</key>
     <string>Este descriptor se utiliza para iniciar sesión con Apple.</string>
     <key>NSCameraUsageDescription</key>
-    <string>Esta aplicación necesita acceso a la cámara.</string>
+    <string>Esta aplicación necesita acceso a la cámara para capturar una imagen de perfil.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Esta aplicación necesita acceso a su ubicación para proporcionar servicios de ubicación precisos incluso cuando la aplicación está en segundo plano.</string>
     <key>NSLocationAlwaysUsageDescription</key>
