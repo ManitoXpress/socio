@@ -28,7 +28,7 @@ class CompleteJobDialog {
       print('Imagen seleccionada: ${pickedFile.path}');
       setState(() {
         _selectedImageUrl = pickedFile.path;
-        _isImageSelected = true; // Indicamos que la imagen ha sido seleccionada
+        _isImageSelected = true;
       });
     } else {
       print('No se seleccionó ninguna imagen.');
@@ -58,7 +58,6 @@ class CompleteJobDialog {
       );
 
       try {
-        // Subir la imagen a Firebase Storage
         File imageFile = File(_selectedImageUrl!);
         String fileName = 'completion_${serviceRequest.id}_${DateTime.now().millisecondsSinceEpoch}${path.extension(_selectedImageUrl!)}';
         Reference storageRef = FirebaseStorage.instance.ref().child('completion_images/$fileName');
@@ -66,11 +65,9 @@ class CompleteJobDialog {
         UploadTask uploadTask = storageRef.putFile(imageFile);
         TaskSnapshot taskSnapshot = await uploadTask;
 
-        // Obtener la URL de la imagen subida
         String imageUrl = await taskSnapshot.ref.getDownloadURL();
         print('Imagen subida exitosamente. URL: $imageUrl');
 
-        // Buscar la oferta correspondiente al serviceId
         final querySnapshot = await FirebaseFirestore.instance
             .collection('offers')
             .where('serviceId', isEqualTo: serviceRequest.id)
@@ -78,21 +75,16 @@ class CompleteJobDialog {
             .get();
 
         if (querySnapshot.docs.isNotEmpty) {
-          // Obtener el ID del documento de la oferta
           String offerId = querySnapshot.docs.first.id;
 
-          // Actualizar el documento de la oferta con la URL de la imagen
           await FirebaseFirestore.instance
               .collection('offers')
               .doc(offerId)
               .update({'completionImageUrl': imageUrl});
 
           print('Oferta actualizada con la URL de la imagen');
-        } else {
-          print('No se encontró una oferta para el serviceId proporcionado');
         }
 
-        // Actualizar estado a "pending_confirmation" mientras se espera la confirmación del cliente
         await FirebaseFirestore.instance
             .collection('services')
             .doc(serviceRequest.id)
@@ -109,7 +101,7 @@ class CompleteJobDialog {
           SnackBar(content: Text('Trabajo completado y esperando confirmación del cliente')),
         );
       } catch (e) {
-        Navigator.of(context).pop(); // Cerrar el indicador de carga
+        Navigator.of(context).pop();
         print('Error al completar el trabajo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al completar el trabajo. Por favor, intenta de nuevo.')),
@@ -123,6 +115,7 @@ class CompleteJobDialog {
     }
   }
 
+  // Llamar a este método cuando el estado sea pending_confirmation2
   void show() {
     showDialog(
       context: context,

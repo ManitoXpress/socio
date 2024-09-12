@@ -60,7 +60,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   File? _image; // Variable para almacenar la imagen seleccionada
   final ImagePicker _picker = ImagePicker();
   String? _selectedImageUrl;
-  
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -89,14 +88,15 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
-  void _initializeMap() {
-  // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
-  double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
-  double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-  // Inicializa la posición usando los valores de latitud y longitud obtenidos.
-  _initialPosition = LatLng(latitude, longitude);
-}
+  void _initializeMap() {
+    // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
+    double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+    double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+
+    // Inicializa la posición usando los valores de latitud y longitud obtenidos.
+    _initialPosition = LatLng(latitude, longitude);
+  }
 
   void _blockUserParticipation() async {
     try {
@@ -139,6 +139,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
+
   void _openFullMap(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -146,7 +147,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       ),
     );
   }
-
 
   Future<void> _fetchOfferedPrice() async {
     try {
@@ -182,44 +182,44 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     return null;
   }
 
- void _showProposalDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Enviar Propuesta'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Ingrese su precio ofertado:'),
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Precio ofertado',
+  void _showProposalDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enviar Propuesta'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Ingrese su precio ofertado:'),
+              TextField(
+                controller: _priceController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Precio ofertado',
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: _sendProposal,
+              child: Text('Enviar'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: _sendProposal,
-            child: Text('Enviar'),
-          ),
-        ],
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
-void _sendProposal() async {
+  void _sendProposal() async {
     double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
 
     ProposalService proposalService = ProposalService(
@@ -241,13 +241,108 @@ void _sendProposal() async {
     );
   }
 
- void _showCompleteJobDialog(BuildContext context) {
-  CompleteJobDialog(
-    context: context,
-    serviceRequest: widget.serviceRequest,
-    onStatusChanged: widget.onStatusChanged,
-  ).show();
+ void _showPendingConfirmation2Dialog(BuildContext context) async {
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection('offers')
+      .where('serviceId', isEqualTo: widget.serviceRequest.id)
+      .limit(1)
+      .get();
+
+  if (querySnapshot.docs.isNotEmpty) {
+    final offerData = querySnapshot.docs.first.data();
+    var offeredPrice = offerData['offeredPrice'] ?? 0.0;
+
+    // Verifica si offeredPrice es un String y conviértelo a double si es necesario
+    if (offeredPrice is String) {
+      offeredPrice = double.tryParse(offeredPrice) ?? 0.0;
+    } else if (offeredPrice is! double) {
+      offeredPrice = 0.0;
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmación de la Oferta'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Oferta del servicio:'),
+              Text('Precio ofertado: Bs ${offeredPrice.toStringAsFixed(2)}'),
+              SizedBox(height: 16.0),
+              Text('Se agregarán 3 Bs en gastos informáticos.'),
+              SizedBox(height: 16.0),
+              Text('Nuevo precio total: Bs ${(offeredPrice + 3.0).toStringAsFixed(2)}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final offerRef = FirebaseFirestore.instance
+                    .collection('offers')
+                    .doc(querySnapshot.docs.first.id);
+
+                final serviceRef = FirebaseFirestore.instance
+                    .collection('services')  // Asegúrate de que la colección sea correcta
+                    .doc(widget.serviceRequest.id);
+
+                await FirebaseFirestore.instance.runTransaction((transaction) async {
+                  final offerDoc = await transaction.get(offerRef);
+                  final serviceDoc = await transaction.get(serviceRef);
+
+                  if (offerDoc.exists && serviceDoc.exists) {
+                    // Actualiza el precio ofertado en 'offers'
+                    transaction.update(offerRef, {
+                      'offeredPrice': offeredPrice + 3.0,
+                    });
+
+                    // Actualiza el precio ofertado en 'services'
+                    transaction.update(serviceRef, {
+                      'offeredPrice': offeredPrice + 3.0,
+                      'status': 'completed',
+                    });
+                  } else {
+                    throw Exception('No se encontró el documento de la oferta o del servicio');
+                  }
+                });
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content:
+                          Text('Oferta actualizada con gastos informáticos y estado cambiado a completado')),
+                );
+              },
+              child: Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+  } else {
+    print('No se encontró una oferta para el serviceId proporcionado');
+  }
 }
+
+
+void _showCompleteJobDialog(BuildContext context) {
+  if (widget.serviceRequest.status == 'pending_confirmation2') {
+    _showPendingConfirmation2Dialog(context);
+  } else {
+    CompleteJobDialog(
+      context: context,
+      serviceRequest: widget.serviceRequest,
+      onStatusChanged: widget.onStatusChanged,
+    ).show();
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +363,8 @@ void _sendProposal() async {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        List<String> imageFiles =
+            List<String>.from(serviceData['images'] ?? []);
         double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
         double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
@@ -276,8 +372,7 @@ void _sendProposal() async {
 
         return Scaffold(
           appBar: AppBar(
-            iconTheme: IconThemeData(
-            color: Colors.white),
+            iconTheme: IconThemeData(color: Colors.white),
             title: Text(
               'Detalles del Servicio',
               style: MyTextStyles.buttonTextStyle,
@@ -301,26 +396,25 @@ void _sendProposal() async {
                   SizedBox(height: 16.0),
                   Text.rich(
                     TextSpan(
-                      text: 'Descripción: ', // Este texto tendrá su propio estilo
+                      text: 'Descripción: ',
                       style: MyTextStyles.formServiceTextStyle,
                       children: [
                         TextSpan(
-                          text: serviceData['description'] ?? '', // Este texto tendrá otro estilo
-                          style: MyTextStyles.inputTextStyle, // Aplica un estilo diferente aquí
+                          text: serviceData['description'] ?? '',
+                          style: MyTextStyles.inputTextStyle,
                         ),
                       ],
                     ),
                   ),
-
                   SizedBox(height: 16.0),
                   Text(
                     'Ubicación:',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
                   GestureDetector(
-                    onTap: () => _openFullMap(context),  // Abre el mapa completo
+                    onTap: () => _openFullMap(context),
                     child: Container(
-                      height: 200,  // Tamaño pequeño del mapa
+                      height: 200,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8.0),
                         border: Border.all(color: Colors.blueAccent),
@@ -342,24 +436,24 @@ void _sendProposal() async {
                           scrollGesturesEnabled: false,
                           tiltGesturesEnabled: false,
                           rotateGesturesEnabled: false,
-                          onTap: (_) => _openFullMap(context),  // Abre el mapa completo
+                          onTap: (_) => _openFullMap(context),
                         ),
                       ),
                     ),
                   ),
                   SizedBox(height: 16.0),
-                  
-                  
                   Text(
                     'Imágenes:',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
-                  Expanded(
+                  Container(
+                    height: 80,
                     child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
                       itemCount: imageFiles.length,
                       itemBuilder: (context, index) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
+                          padding: const EdgeInsets.only(right: 8.0),
                           child: Image.network(
                             imageFiles[index],
                             height: 80,
@@ -379,120 +473,142 @@ void _sendProposal() async {
                   // Mostrar botones dependiendo del estado
                   if (_currentStatus == 'available') ...[
                     Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showProposalDialog(context);
-                      },
-                      icon: Icon(Icons.add_business, color: Colors.white),
-                      label: Text(
-                    "Enviar Propuesta",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  ),
-                    ),
-                    SizedBox(height: 16.0),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showNoParticipationDialog(context);
-                      },
-                      icon: Icon(Icons.dangerous, color: Colors.white),
-                      label: Text(
-                    "No Participar",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  ),
-                    ),
-                          ],
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _showProposalDialog(context);
+                          },
+                          icon: Icon(Icons.add_business, color: Colors.white),
+                          label: Text(
+                            "Enviar Propuesta",
+                            style: GoogleFonts.karla(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFB00020),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 10),
+                          ),
+                        ),
+                        SizedBox(width: 16.0),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _showNoParticipationDialog(context);
+                          },
+                          icon: Icon(Icons.dangerous, color: Colors.white),
+                          label: Text(
+                            "No Participar",
+                            style: GoogleFonts.karla(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFB00020),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 10),
+                          ),
+                        ),
+                      ],
                     ),
                   ] else if (_currentStatus == 'offer') ...[
                     Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                    
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showNoParticipationDialog(context);
-                      },
-                     icon: Icon(Icons.dangerous, color: Colors.white),
-                      label: Text(
-                    "No Participar",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _showNoParticipationDialog(context);
+                          },
+                          icon: Icon(Icons.dangerous, color: Colors.white),
+                          label: Text(
+                            "No Participar",
+                            style: GoogleFonts.karla(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFB00020),
+                            padding: EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 10),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  ),
-                    ),
-                          ],
-                    ),
-                  ] else if (_currentStatus == 'in_progress') ...[
-
+                  ] else if (_currentStatus == 'in_progress' ||
+                      _currentStatus == 'pending_confirmation2') ...[
                     Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showNoParticipationDialog(context);
-                      },
-                      icon: Icon(Icons.dangerous, color: Colors.white),
-                      label: Text(
-                    "No Participar",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  ),
-                    ),
-                    SizedBox(height: 16.0),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showCompleteJobDialog(context);
-                      },
-                      icon: Icon(Icons.architecture_sharp, color: Colors.white),
-                      label: Text(
-                    "Completar trabajo",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  ),
-                    ),
-                          ],
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        if (_currentStatus == 'pending_confirmation2') ...[
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _showPendingConfirmation2Dialog(context);
+                            },
+                            icon: Icon(Icons.check_circle, color: Colors.white),
+                            label: Text(
+                              "Pago Aceptado",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFB00020),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
+                          ),
+                        ] else ...[
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _showNoParticipationDialog(context);
+                            },
+                            icon: Icon(Icons.dangerous, color: Colors.white),
+                            label: Text(
+                              "No Participar",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFB00020),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
+                          ),
+                          SizedBox(width: 16.0),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              _showCompleteJobDialog(context);
+                            },
+                            icon: Icon(Icons.architecture_sharp,
+                                color: Colors.white),
+                            label: Text(
+                              "Completar trabajo",
+                              style: GoogleFonts.karla(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFFB00020),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 10),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ] else if (_currentStatus == 'pending_confirmation') ...[
                     Text('Esperando la confirmación del cliente...'),

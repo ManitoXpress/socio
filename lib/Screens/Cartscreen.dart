@@ -131,14 +131,20 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
         .where('serviceId', isEqualTo: serviceId)
         .limit(1)
         .get();
-    
+
     if (querySnapshot.docs.isNotEmpty) {
       // Obtener el precio ofertado
       final offerData = querySnapshot.docs.first.data();
       final offeredPrice = offerData['offeredPrice'];
 
-      // Verificar si el precio ofertado es válido
-      return offeredPrice != null ? double.tryParse(offeredPrice) : null;
+      // Verificar el tipo de offeredPrice y convertirlo a double si es necesario
+      if (offeredPrice is String) {
+        return double.tryParse(offeredPrice);
+      } else if (offeredPrice is double) {
+        return offeredPrice;
+      } else {
+        return null;
+      }
     }
   } catch (e) {
     print('Error al obtener el precio ofertado: $e');
@@ -360,11 +366,15 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildServiceListByStatus(
-    String statusId, double screenWidth, double screenHeight) {
-  final filteredRequests = serviceRequests
-      .where((request) => request.status.id == statusId)
-      .toList();
+  Widget _buildServiceListByStatus(String statusId, double screenWidth, double screenHeight) {
+  final filteredRequests = serviceRequests.where((request) {
+    if (statusId == 'in_progress') {
+      return request.status.id == 'in_progress' || 
+             request.status.id == 'pending_confirmation' || 
+             request.status.id == 'pending_confirmation2';
+    }
+    return request.status.id == statusId;
+  }).toList();
 
   if (statusId == 'offer') {
     offerServiceCount = filteredRequests.length;
@@ -377,31 +387,31 @@ class _HistorialState extends State<Historial> with SingleTickerProviderStateMix
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () async {
-          final newStatus = await showDialog<String>(
-            context: context,
-            builder: (BuildContext context) {
-              return ServiceFormWithTimeline(
-                serviceRequest: filteredRequests[index],
-                initialStatus: statuses[index],
-                onComplete: (status) {
-                  setState(() {
-                    statuses[index] = status;
-                  });
-                },
-                userData: userData,
-                onStatusChanged: (newStatus) {},
-                workerId: workerId,
-                images: filteredRequests[index].images,  // Asegúrate de pasar las imágenes
-              );
-            },
-          );
+            final newStatus = await showDialog<String>(
+              context: context,
+              builder: (BuildContext context) {
+                return ServiceFormWithTimeline(
+                  serviceRequest: filteredRequests[index],
+                  initialStatus: statuses[index],
+                  onComplete: (status) {
+                    setState(() {
+                      statuses[index] = status;
+                    });
+                  },
+                  userData: userData,
+                  onStatusChanged: (newStatus) {},
+                  workerId: workerId,
+                  images: filteredRequests[index].images,  // Asegúrate de pasar las imágenes
+                );
+              },
+            );
 
-          if (newStatus != null && newStatus != statuses[index]) {
-            setState(() {
-              statuses[index] = newStatus;
-            });
-          }
-        },
+            if (newStatus != null && newStatus != statuses[index]) {
+              setState(() {
+                statuses[index] = newStatus;
+              });
+            }
+          },
           child: FutureBuilder<double?>(
             future: fetchOfferedPrice(filteredRequests[index].id),
             builder: (context, snapshot) {
