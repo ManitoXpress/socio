@@ -191,28 +191,69 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Ingrese su precio ofertado:'),
+              Text('Ingrese el precio que va ofertar:'),
+              SizedBox(height: 8.0),
               TextField(
                 controller: _priceController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Precio ofertado',
-                ),
+                  decoration: InputDecoration(
+                    hintText: "Precio Ofertado",
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                    focusColor: Color(0xFF830A09),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Color(0xFF830A09),
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () {
+            ElevatedButton(
+                onPressed:  () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
-            ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFF84090D),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  "Cancelar",
+                  style: TextStyle(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
             ElevatedButton(
-              onPressed: _sendProposal,
-              child: Text('Enviar'),
-            ),
+                onPressed: _sendProposal,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFF84090D),
+                    ),
+                  ),
+                ),
+                child: Text(
+                  "Aceptar",
+                  style: TextStyle(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
           ],
         );
       },

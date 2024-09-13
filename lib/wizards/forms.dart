@@ -75,7 +75,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                       widget.onNextStep();
                     } else {
                       print(
-                          'Complete all required fields before moving to the next step.');
+                          'Completa todos los pasos antes de completar.');
                     }
                   },
                   onChanged: (value) {
