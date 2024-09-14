@@ -88,6 +88,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+  
 
   void _initializeMap() {
     // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
@@ -304,63 +305,70 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmación de la Oferta'),
+          title: Text('Confirmación de la Oferta',
+            style: MyTextStyles.tittleButton,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Oferta del servicio:'),
+              Text('Oferta del servicio:',
+                style: MyTextStyles.ButtonTextStyle,
+              ),
               Text('Precio ofertado: Bs ${offeredPrice.toStringAsFixed(2)}'),
               SizedBox(height: 16.0),
-              Text('Se agregarán 3 Bs en gastos informáticos.'),
+              Text('Se agregarán 3 Bs en gastos informáticos.',
+                style: MyTextStyles.ButtonTextStyle,
+              ),
               SizedBox(height: 16.0),
               Text('Nuevo precio total: Bs ${(offeredPrice + 3.0).toStringAsFixed(2)}'),
             ],
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
+              icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+              label: Text(
+                'Cancelar',
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Colors.white, // Fondo blanco del botón
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF84090D), // Borde del botón
+                  ),
+                ),
+              ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                final offerRef = FirebaseFirestore.instance
-                    .collection('offers')
-                    .doc(querySnapshot.docs.first.id);
-
-                final serviceRef = FirebaseFirestore.instance
-                    .collection('services')  // Asegúrate de que la colección sea correcta
-                    .doc(widget.serviceRequest.id);
-
-                await FirebaseFirestore.instance.runTransaction((transaction) async {
-                  final offerDoc = await transaction.get(offerRef);
-                  final serviceDoc = await transaction.get(serviceRef);
-
-                  if (offerDoc.exists && serviceDoc.exists) {
-                    // Actualiza el precio ofertado en 'offers'
-                    transaction.update(offerRef, {
-                      'offeredPrice': offeredPrice + 3.0,
-                    });
-
-                    // Actualiza el precio ofertado en 'services'
-                    transaction.update(serviceRef, {
-                      'offeredPrice': offeredPrice + 3.0,
-                      'status': 'completed',
-                    });
-                  } else {
-                    throw Exception('No se encontró el documento de la oferta o del servicio');
-                  }
-                });
-
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                          Text('Oferta actualizada con gastos informáticos y estado cambiado a completado')),
-                );
-              },
-              child: Text('Aceptar'),
+            ElevatedButton.icon(
+              onPressed: () => _handleAcceptButton(querySnapshot, offeredPrice),
+              icon: Icon(Icons.check_circle, color: Color(0xFF84090D)),
+              label: Text(
+                'Aceptar',
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Colors.white, // Fondo blanco del botón
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF84090D), // Borde del botón
+                  ),
+                ),
+              ),
             ),
           ],
         );
@@ -370,6 +378,56 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     print('No se encontró una oferta para el serviceId proporcionado');
   }
 }
+
+
+void _handleAcceptButton(QuerySnapshot querySnapshot, double offeredPrice) async {
+  try {
+    final offerRef = FirebaseFirestore.instance
+        .collection('offers')
+        .doc(querySnapshot.docs.first.id);
+
+    final serviceRef = FirebaseFirestore.instance
+        .collection('services') // Asegúrate de que la colección sea correcta
+        .doc(widget.serviceRequest.id);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final offerDoc = await transaction.get(offerRef);
+      final serviceDoc = await transaction.get(serviceRef);
+
+      if (offerDoc.exists && serviceDoc.exists) {
+        // Actualiza el precio ofertado en 'offers'
+        transaction.update(offerRef, {
+          'offeredPrice': offeredPrice + 3.0,
+        });
+
+        // Actualiza el precio ofertado en 'services'
+        transaction.update(serviceRef, {
+          'offeredPrice': offeredPrice + 3.0,
+          'status': 'completed',
+        });
+      } else {
+        throw Exception('No se encontró el documento de la oferta o del servicio');
+      }
+    });
+
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Oferta actualizada con gastos informáticos y estado cambiado a completado',
+        ),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: ${e.toString()}'),
+      ),
+    );
+  }
+}
+
+
 
 
 void _showCompleteJobDialog(BuildContext context) {
@@ -383,6 +441,7 @@ void _showCompleteJobDialog(BuildContext context) {
     ).show();
   }
 }
+
 
 
   @override

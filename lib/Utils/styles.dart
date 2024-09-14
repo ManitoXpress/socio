@@ -66,6 +66,13 @@ class MyTextStyles {
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
   );
+  static const TextStyle tittleButton = TextStyle(
+    color: Color(0xFF841813),
+    fontFamily: 'Xpress Heavy',
+    fontWeight: FontWeight.normal,
+    fontStyle: FontStyle.italic,
+    fontSize: 18,
+  );
   static const TextStyle appBarTitleTextStyle = TextStyle(
     color: Colors.white,
     fontFamily: 'Xpress Heavy',

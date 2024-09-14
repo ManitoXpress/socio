@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as path;
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/Utils/styles.dart';
+
 class CompleteJobDialog {
   final BuildContext context;
   final ServiceRequest serviceRequest;
@@ -59,8 +62,10 @@ class CompleteJobDialog {
 
       try {
         File imageFile = File(_selectedImageUrl!);
-        String fileName = 'completion_${serviceRequest.id}_${DateTime.now().millisecondsSinceEpoch}${path.extension(_selectedImageUrl!)}';
-        Reference storageRef = FirebaseStorage.instance.ref().child('completion_images/$fileName');
+        String fileName =
+            'completion_${serviceRequest.id}_${DateTime.now().millisecondsSinceEpoch}${path.extension(_selectedImageUrl!)}';
+        Reference storageRef =
+            FirebaseStorage.instance.ref().child('completion_images/$fileName');
 
         UploadTask uploadTask = storageRef.putFile(imageFile);
         TaskSnapshot taskSnapshot = await uploadTask;
@@ -98,19 +103,25 @@ class CompleteJobDialog {
         Navigator.of(context).pop(); // Cerrar el diálogo
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Trabajo completado y esperando confirmación del cliente')),
+          SnackBar(
+              content: Text(
+                  'Trabajo completado y esperando confirmación del cliente')),
         );
       } catch (e) {
         Navigator.of(context).pop();
         print('Error al completar el trabajo: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al completar el trabajo. Por favor, intenta de nuevo.')),
+          SnackBar(
+              content: Text(
+                  'Error al completar el trabajo. Por favor, intenta de nuevo.')),
         );
       }
     } else {
       print('No se seleccionó ninguna imagen.');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Por favor, selecciona una imagen antes de completar el trabajo.')),
+        SnackBar(
+            content: Text(
+                'Por favor, selecciona una imagen antes de completar el trabajo.')),
       );
     }
   }
@@ -123,12 +134,17 @@ class CompleteJobDialog {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text('Completar Trabajo'),
+              title: Text(
+                'Completar Trabajo',
+                style: MyTextStyles.tittleButton,
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                      '¿Estás seguro de que deseas completar este trabajo? envie una imagen de su trabajo terminado para confirmar el pago del servicio.'),
+                    '¿Estás seguro de que deseas completar este trabajo? Envíe una imagen de su trabajo terminado para confirmar el pago del servicio.',
+                    style: MyTextStyles.inputTextStyle2,
+                  ),
                   SizedBox(height: 16.0),
                   _selectedImageUrl == null
                       ? ElevatedButton(
@@ -136,7 +152,8 @@ class CompleteJobDialog {
                             context: context,
                             builder: (BuildContext context) {
                               return AlertDialog(
-                                title: Text('Seleccionar Imagen'),
+                                title: Text('Seleccionar Imagen',
+                                style: MyTextStyles.tittleButton,),
                                 actions: [
                                   TextButton(
                                     onPressed: () {
@@ -150,13 +167,16 @@ class CompleteJobDialog {
                                       Navigator.of(context).pop();
                                       _pickImage(ImageSource.gallery, setState);
                                     },
-                                    child: Text('Seleccionar Imagen'),
+                                    child: Text('Seleccionar Imagen',
+                                    ),
                                   ),
                                 ],
                               );
                             },
                           ),
-                          child: Text('Seleccionar Imagen'),
+                          child: Text('Seleccionar Imagen',
+                          style: MyTextStyles.tittleButton,
+                          ),
                         )
                       : Column(
                           children: [
@@ -167,21 +187,60 @@ class CompleteJobDialog {
                               fit: BoxFit.cover,
                             ),
                             SizedBox(height: 8),
-                            Text('Imagen seleccionada', style: TextStyle(color: Colors.green)),
+                            Text(
+                              'Imagen seleccionada',
+                              style: TextStyle(color: Colors.green),
+                            ),
                           ],
                         ),
                 ],
               ),
               actions: [
-                TextButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: Text('Cancelar'),
+                  icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+                  label: Text(
+                    "Cancelar",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF84090D),
+                      ),
+                    ),
+                  ),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: _completeJob,
-                  child: Text('Completar Trabajo'),
+                  icon: Icon(Icons.check_circle, color: Color(0xFF84090D)),
+                  label: Text(
+                    "Completar Trabajo",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF84090D),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             );
