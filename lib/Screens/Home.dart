@@ -48,17 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
           fontStyle: FontStyle.italic,
         ),
       ),
-      PersistentBottomNavBarItem(
-        icon: Icon(Icons.explore),
-        title: 'Seguimiento',
-        activeColorPrimary: Colors.white,
-        inactiveColorPrimary: Colors.black38,
-        textStyle: TextStyle(
-          fontFamily: 'Xpress Heavy',
-          fontWeight: FontWeight.normal,
-          fontStyle: FontStyle.italic,
-        ),
-      ),
+      
       PersistentBottomNavBarItem(
         icon: Icon(Icons.account_circle_outlined),
         title: 'Billetera',
@@ -76,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildScreens() {
     return [
       Historial(),
-      FavoriteScreen(),
+
       WalletScreen(),
     ];
   }
@@ -373,18 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.account_circle),
-            label: 'Servicios',
+            icon: const Icon(Icons.assignment),
+            label: 'SERVICIOS',
             backgroundColor: Color(0xFF1A819A),
           ),
+          
           BottomNavigationBarItem(
-            icon: const Icon(Icons.favorite),
-            label: 'Favoritos',
-            backgroundColor: Color(0xFF1A819A),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.library_books_outlined),
-            label: 'SOLICITUDES',
+            icon: const Icon(Icons.balance),
+            label: 'MOVIMIENTOS',
             backgroundColor: Color.fromARGB(166, 50, 196, 233),
           ),
         ],
