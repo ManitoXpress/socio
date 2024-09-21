@@ -6,12 +6,10 @@ import 'package:socio/Utils/styles.dart';
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
-  final void Function(
-          List<Expertises> expertises, String? selectedExperienceLevel)
-      onServiceTypesSelected;
+  final void Function(List<Expertises> expertises, String? selectedExperienceLevel) onServiceTypesSelected;
 
-  final Future<List<Category>> Function()
-      fetchExpertises; // Solo fetchExpertises
+
+  final Future<List<Category>> Function() fetchExpertises; // Solo fetchExpertises
 
   ServiceTypeSelection({
     required this.registrationController,
@@ -33,7 +31,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
   List<String> expLevel = ['0-3 años', '3-5 años', '5-7 años'];
   String? selectedExperienceLevel;
   List<String> allSubcategories = [];
-  List<Category>? fetchCategories;
+  List<Category>? fetchCategories = [];
 
   @override
   void initState() {
@@ -59,6 +57,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
     });
   }
 
+
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -70,47 +69,54 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
           ),
         ),
         // Primer grupo de botones (arriba)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            if (fetchCategories != null)
-              ...fetchCategories!
-                  .take((fetchCategories!.length / 2).ceil())
-                  .map((category) {
-                return Expanded(
-                  child: buildCategoryButton(
-                    category.name,
-                    const Color(0xFF830A09),
-                  ),
-                );
-              }).toList(),
-            if (fetchCategories == null)
-              Center(
-                child: CircularProgressIndicator(),
-              ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Espacio en los lados
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (fetchCategories != null)
+                ...fetchCategories!
+                    .take((fetchCategories!.length / 2).ceil())
+                    .map((category) {
+                  return Expanded(
+                    child: buildCategoryButton(
+                      category.name,
+                      const Color(0xFF830A09),
+                    ),
+                  );
+                }).toList(),
+              if (fetchCategories == null)
+                Center(
+                  child: CircularProgressIndicator(),
+                ),
+            ],
+          ),
         ),
         SizedBox(height: 10),
+
         // Segundo grupo de botones (abajo)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            if (fetchCategories != null)
-              ...fetchCategories!
-                  .skip((fetchCategories!.length / 2).ceil())
-                  .map((category) {
-                return Expanded(
-                  child: buildCategoryButton(
-                    category.name,
-                    const Color(0xFF830A09),
-                  ),
-                );
-              }).toList(),
-            if (fetchCategories == null)
-              Center(
-                child: CircularProgressIndicator(),
-              ),
-          ],
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0), // Espacio en los lados
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (fetchCategories != null)
+                    ...fetchCategories!
+                        .skip((fetchCategories!.length / 2).ceil())
+                        .map((category) {
+                      return Expanded(
+                        child: buildCategoryButton(
+                          category.name,
+                          const Color(0xFF830A09),
+                        ),
+                      );
+                    }).toList(),
+                  if (fetchCategories == null)
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
+            ),
         ),
         SizedBox(height: 10),
         if (selectedCategories.isNotEmpty)
@@ -137,8 +143,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
             });
           },
           style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            backgroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
               side: BorderSide(
@@ -146,8 +151,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
               ),
             ),
           ),
-          child: Text(
-            "No encuentro mi profesión",
+          child: Text("No encuentro mi profesión",
             style: TextStyle(
               color: Color(0xFF84090D),
             ),
@@ -166,14 +170,14 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
                   ),
                 ),
               ),
+
               SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
                   // Aquí va la lógica de lo que deseas hacer al presionar el botón
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                     side: BorderSide(
@@ -181,8 +185,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
                     ),
                   ),
                 ),
-                child: Text(
-                  "Aceptar",
+                child: Text("Aceptar",
                   style: TextStyle(
                     color: Color(0xFF84090D),
                   ),
@@ -194,12 +197,14 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
           Column(
             children: [
               Text(
-                'Profesiones seleccionadas: ${selectedSubcategories.join(", ")}',
+                // Mapea la lista de Expertises a una lista de nombres (String) antes de unirlos
+                'Profesiones seleccionadas: ${selectedSubcategories.map((e) => e.name).join(", ")}',
                 style: TextStyle(color: Color(0xFF830A09)),
               ),
               SizedBox(height: 10),
             ],
           ),
+
 
         SizedBox(height: 20),
         Text(
@@ -230,20 +235,27 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         setState(() {
           if (selectedCategories.contains(category)) {
             selectedCategories.remove(category);
-            selectedSubcategories.removeWhere((subcategory) => fetchCategories!
-                .firstWhere((cat) => cat.name == category)
-                .expertises
-                .map((expertise) => expertise.name)
-                .contains(subcategory));
+            selectedSubcategories.removeWhere((subcategory) =>
+                fetchCategories!
+                    .firstWhere((cat) => cat.name == category)
+                    .expertises
+                    .map((expertise) => expertise.name)
+                    .contains(subcategory));
           } else {
             selectedCategories.add(category);
           }
         });
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-            selectedCategories.contains(category) ? Colors.grey : Colors.white,
-      ),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          backgroundColor: Color.fromARGB(255, 255, 255, 255),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            side: BorderSide(
+              color: Color(0xFF84090D),
+            ),
+          ),
+          ),
       child: Text(
         category,
         style: TextStyle(
@@ -253,13 +265,12 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
     );
   }
 
+
   Widget buildSubcategoryDropdown() {
     Set<Expertises> uniqueSubcategories = {};
 
     selectedCategories.forEach((categoryName) {
-      final category = fetchCategories!.firstWhere(
-          (cat) => cat.name == categoryName,
-          orElse: () => Category(id: '', name: '', expertises: []));
+      final category = fetchCategories!.firstWhere((cat) => cat.name == categoryName, orElse: () => Category(id: '', name: '', expertises: []));
       uniqueSubcategories.addAll(category.expertises);
     });
 
@@ -280,22 +291,19 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
             selectedSubcategories.add(expertise);
           });
           // Obtener los nombres de las subcategorías seleccionadas
-          List<String> selectedSubcategoryNames =
-              selectedSubcategories.map((expertise) => expertise.name).toList();
+          List<String> selectedSubcategoryNames = selectedSubcategories.map((expertise) => expertise.name).toList();
           // Obtener los ids de las subcategorías seleccionadas
-          List<String> selectedSubcategoryIds =
-              selectedSubcategories.map((expertise) => expertise.id).toList();
+          List<String> selectedSubcategoryIds = selectedSubcategories.map((expertise) => expertise.id).toList();
           // Llama a la función onServiceTypesSelected con los nombres y los ids de las subcategorías
-          widget.onServiceTypesSelected(
-              selectedSubcategories, selectedExperienceLevel);
+          widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
           selectedSubcategories.sort((a, b) => a.name.compareTo(b.name));
         }
       },
       items: allSubcategories
           .map((expertise) => DropdownMenuItem<Expertises>(
-                value: expertise,
-                child: Text(expertise.name),
-              ))
+        value: expertise,
+        child: Text(expertise.name),
+      ))
           .toList(),
     );
   }
@@ -309,20 +317,18 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         });
 
         // Obtener los ids de los expertises seleccionados
-        List<String> expertiseIds =
-            selectedSubcategories.map((expertise) => expertise.id).toList();
+        List<String> expertiseIds = selectedSubcategories.map((expertise) => expertise.id).toList();
 
         // Llamar a onServiceTypesSelected con los ids de expertises
-        widget.onServiceTypesSelected(
-            selectedSubcategories, selectedExperienceLevel);
+        widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
 
         selectedSubcategories.sort((a, b) => a.name.compareTo(b.name));
       },
       items: expLevel
           .map((level) => DropdownMenuItem<String>(
-                value: level,
-                child: Text(level),
-              ))
+        value: level,
+        child: Text(level),
+      ))
           .toList(),
     );
   }

@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
-
+import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
@@ -15,6 +15,7 @@ import 'package:socio/ServiceResponse/request.dart';
 
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
+  final FirebaseStorage storage = FirebaseStorage.instance;
 
   Future<http.Response> sendTokenAndUserDataToServer({
     required String? token,
@@ -54,24 +55,28 @@ class ApiService {
   }
 
   Future<void> sendProposalToFirestore(
-    ServiceRequest serviceRequest, 
-    String token, 
-    String offeredPrice,
-    String workerId // Añade el workerId como parámetro
-  ) async {
+      ServiceRequest serviceRequest,
+      String token,
+      String offeredPrice,
+      String workerId // Añade el workerId como parámetro
+      ) async {
     try {
       // Obtén una referencia a la colección "offers"
       final offersCollection = FirebaseFirestore.instance.collection('offers');
 
       // Crea un documento con una propuesta en la colección "offers"
-      final newProposalRef = offersCollection.doc(); // Crea un nuevo documento con un ID generado automáticamente
+      final newProposalRef = offersCollection
+          .doc(); // Crea un nuevo documento con un ID generado automáticamente
 
       // Define los datos de la propuesta
       final proposalData = {
-        'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
+        'serviceId':
+            serviceRequest.id, // ID del servicio al que se hace la oferta
         'offeredPrice': offeredPrice,
-        'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
-        'userToken': token, // Token del usuario, si necesitas almacenar esta información
+        'createdAt':
+            FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
+        'userToken':
+            token, // Token del usuario, si necesitas almacenar esta información
         'workerId': workerId, // Añade el workerId a los datos de la propuesta
       };
 
@@ -112,43 +117,45 @@ class ApiService {
     }
   }
 
-  Future<http.Response> updateUser(
-      String userId, RegistrationData registrationData, String token) async {
+  Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
     try {
+      // Asegúrate de que el campo imagePath tenga la URL de Firebase sin modificaciones
+      String imagePath = registrationData.imagePath; // Verificamos que esta URL no esté anidada
+
       // Mapea cada expertise a un mapa con nombre e ID
-      List<Map<String, String>> expertises =
-          registrationData.expertises.map((expertise) {
+      List<Map<String, String>> expertises = registrationData.expertises.map((expertise) {
         return {
           'name': expertise.name,
           'id': expertise.id,
         };
       }).toList();
 
+      // Cuerpo de la solicitud
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
         'idCardNumber': registrationData.idCardNumber,
         'phoneNumber': FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
-        'imagePath': registrationData.imagePath,
+        'imagePath': imagePath, // Asigna directamente la URL generada correctamente
         'idDocumentImagePath': registrationData.idDocumentImagePath,
         'idDocumentImagePath2': registrationData.idDocumentImagePath2,
         'criminalRecordImagePath': registrationData.criminalRecordImagePath,
         'certificateImagePaths': registrationData.certificateImagePaths,
-        'expertises':
-            expertises, // Aquí se pasa la lista de expertises con nombre e ID
+        'expertises': expertises,
         'expLevel': registrationData.expLevel,
       };
 
       print('Request Body: $requestBody');
 
+      // Enviar solicitud PATCH
       final response = await http.patch(
         Uri.parse('$baseUrl/workers/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode(requestBody),
+        body: jsonEncode(requestBody), // No modificar la URL aquí
       );
 
       print('Response Status Code: ${response.statusCode}');
@@ -160,56 +167,14 @@ class ApiService {
       throw Exception('Error al actualizar el usuario: $e');
     }
   }
-
-  Future<void> uploadImageToFirebaseStorage(File image, String userId) async {
+  Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
+      final String extension = image.path.split('.').last;
+      final String imageName = 'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String userFolderPath = '$userId/';
+      final String imagePath = '$userFolderPath$imageName';
 
-      final FirebaseAuth auth = FirebaseAuth.instance;
-      final User? user = auth.currentUser;
-
-      if (user == null) {
-        // Manejar el caso en el que el usuario no está autenticado
-        print('Error: Usuario no autenticado.');
-        return;
-      }
-
-      final FirebaseStorage storage = FirebaseStorage.instance;
-
-      // Crear una carpeta específica para cada usuario
-      String extension = image.path.split('.').last;
-      String imageName =
-          'profileImage_${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      // Ruta de la carpeta del usuario
-      String userFolderPath = '${user.uid}/';
-
-      // Ruta completa de la imagen
-      String imagePath = '$userFolderPath$imageName';
-
-      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        // Obtener la referencia de la carpeta del usuario
-        Reference userFolderRef = storage.ref().child(userFolderPath);
-
-        // Verificar si la carpeta del usuario ya existe
-        bool folderExists = false;
-        try {
-          await userFolderRef.getDownloadURL();
-          folderExists = true;
-        } catch (error) {
-          // La carpeta no existe, y esto es normal
-        }
-
-        // Crear la carpeta del usuario si no existe
-        if (!folderExists) {
-          await userFolderRef.putData(Uint8List(0));
-          print('Creada la carpeta del usuario en Firebase Storage');
-        } else {
-          print('La carpeta del usuario ya existe en Firebase Storage');
-        }
-
-        // Obtener la referencia de la imagen y subir el archivo
         Reference ref = storage.ref().child(imagePath);
         UploadTask uploadTask = ref.putFile(image);
 
@@ -217,10 +182,13 @@ class ApiService {
           print('Imagen cargada con éxito en Firebase Storage');
         });
 
-        final imageUrl = await ref.getDownloadURL();
+        // Aquí obtenemos la URL final de Firebase Storage
+        final String imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
+
+        return imageUrl;  // Aquí retornamos la URL sin modificar
       } else {
-        print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
@@ -228,7 +196,11 @@ class ApiService {
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage2(File image, String userId) async {
+
+
+
+  Future<String> uploadImageToFirebaseStorage2(
+      File image, String userId) async {
     try {
       print('Comenzando la carga de la imagen a Firebase Storage');
 
@@ -236,47 +208,19 @@ class ApiService {
       final User? user = auth.currentUser;
 
       if (user == null) {
-        // Manejar el caso en el que el usuario no está autenticado
         print('Error: Usuario no autenticado.');
-        return;
+        throw Exception('Usuario no autenticado');
       }
 
       final FirebaseStorage storage = FirebaseStorage.instance;
 
-      // Crear una carpeta específica para cada usuario
       String extension = image.path.split('.').last;
       String imageName =
           'IdentificactionNumber_A_${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      // Ruta de la carpeta del usuario
-      String userFolderPath = '${user.uid}/';
-
-      // Ruta completa de la imagen
+      String userFolderPath = '$userId/';
       String imagePath = '$userFolderPath$imageName';
 
-      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        // Obtener la referencia de la carpeta del usuario
-        Reference userFolderRef = storage.ref().child(userFolderPath);
-
-        // Verificar si la carpeta del usuario ya existe
-        bool folderExists = false;
-        try {
-          await userFolderRef.getDownloadURL();
-          folderExists = true;
-        } catch (error) {
-          // La carpeta no existe, y esto es normal
-        }
-
-        // Crear la carpeta del usuario si no existe
-        if (!folderExists) {
-          await userFolderRef.putData(Uint8List(0));
-          print('Creada la carpeta del usuario en Firebase Storage');
-        } else {
-          print('La carpeta del usuario ya existe en Firebase Storage');
-        }
-
-        // Obtener la referencia de la imagen y subir el archivo
         Reference ref = storage.ref().child(imagePath);
         UploadTask uploadTask = ref.putFile(image);
 
@@ -286,8 +230,10 @@ class ApiService {
 
         final imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
       } else {
         print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
@@ -295,7 +241,8 @@ class ApiService {
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage3(File image, String userId) async {
+  Future<String> uploadImageToFirebaseStorage3(
+      File image, String userId) async {
     try {
       print('Comenzando la carga de la imagen a Firebase Storage');
 
@@ -303,47 +250,19 @@ class ApiService {
       final User? user = auth.currentUser;
 
       if (user == null) {
-        // Manejar el caso en el que el usuario no está autenticado
         print('Error: Usuario no autenticado.');
-        return;
+        throw Exception('Usuario no autenticado');
       }
 
       final FirebaseStorage storage = FirebaseStorage.instance;
 
-      // Crear una carpeta específica para cada usuario
       String extension = image.path.split('.').last;
       String imageName =
           'IdentificactionNumber_B_${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      // Ruta de la carpeta del usuario
-      String userFolderPath = '${user.uid}/';
-
-      // Ruta completa de la imagen
+      String userFolderPath = '$userId/';
       String imagePath = '$userFolderPath$imageName';
 
-      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        // Obtener la referencia de la carpeta del usuario
-        Reference userFolderRef = storage.ref().child(userFolderPath);
-
-        // Verificar si la carpeta del usuario ya existe
-        bool folderExists = false;
-        try {
-          await userFolderRef.getDownloadURL();
-          folderExists = true;
-        } catch (error) {
-          // La carpeta no existe, y esto es normal
-        }
-
-        // Crear la carpeta del usuario si no existe
-        if (!folderExists) {
-          await userFolderRef.putData(Uint8List(0));
-          print('Creada la carpeta del usuario en Firebase Storage');
-        } else {
-          print('La carpeta del usuario ya existe en Firebase Storage');
-        }
-
-        // Obtener la referencia de la imagen y subir el archivo
         Reference ref = storage.ref().child(imagePath);
         UploadTask uploadTask = ref.putFile(image);
 
@@ -353,8 +272,10 @@ class ApiService {
 
         final imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
       } else {
         print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
@@ -362,7 +283,8 @@ class ApiService {
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage4(File image, String userId) async {
+  Future<String> uploadImageToFirebaseStorage4(
+      File image, String userId) async {
     try {
       print('Comenzando la carga de la imagen a Firebase Storage');
 
@@ -370,47 +292,19 @@ class ApiService {
       final User? user = auth.currentUser;
 
       if (user == null) {
-        // Manejar el caso en el que el usuario no está autenticado
         print('Error: Usuario no autenticado.');
-        return;
+        throw Exception('Usuario no autenticado');
       }
 
       final FirebaseStorage storage = FirebaseStorage.instance;
 
-      // Crear una carpeta específica para cada usuario
       String extension = image.path.split('.').last;
       String imageName =
           'criminalRecord_${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-      // Ruta de la carpeta del usuario
-      String userFolderPath = '${user.uid}/';
-
-      // Ruta completa de la imagen
+      String userFolderPath = '$userId/';
       String imagePath = '$userFolderPath$imageName';
 
-      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        // Obtener la referencia de la carpeta del usuario
-        Reference userFolderRef = storage.ref().child(userFolderPath);
-
-        // Verificar si la carpeta del usuario ya existe
-        bool folderExists = false;
-        try {
-          await userFolderRef.getDownloadURL();
-          folderExists = true;
-        } catch (error) {
-          // La carpeta no existe, y esto es normal
-        }
-
-        // Crear la carpeta del usuario si no existe
-        if (!folderExists) {
-          await userFolderRef.putData(Uint8List(0));
-          print('Creada la carpeta del usuario en Firebase Storage');
-        } else {
-          print('La carpeta del usuario ya existe en Firebase Storage');
-        }
-
-        // Obtener la referencia de la imagen y subir el archivo
         Reference ref = storage.ref().child(imagePath);
         UploadTask uploadTask = ref.putFile(image);
 
@@ -420,8 +314,10 @@ class ApiService {
 
         final imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
       } else {
         print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
@@ -429,7 +325,7 @@ class ApiService {
     }
   }
 
-  Future<void> uploadImageToFirebaseStorage5(
+  Future<List<String>> uploadImageToFirebaseStorage5(
       List<File> images, String userId) async {
     try {
       print('Comenzando la carga de las imágenes a Firebase Storage');
@@ -438,40 +334,40 @@ class ApiService {
       final User? user = auth.currentUser;
 
       if (user == null) {
-        // Manejar el caso en el que el usuario no está autenticado
         print('Error: Usuario no autenticado.');
-        return;
+        throw Exception('Usuario no autenticado');
       }
 
       final FirebaseStorage storage = FirebaseStorage.instance;
-
-      // Ruta de la carpeta del usuario
-      String userFolderPath = '${user.uid}/';
+      String userFolderPath = '$userId/';
+      List<String> imageUrls = [];
 
       for (int i = 0; i < images.length; i++) {
         File image = images[i];
-
-        // Crear un nombre único para cada imagen
         String extension = image.path.split('.').last;
         String imageName =
             'Certificate_${i + 1}_${DateTime.now().millisecondsSinceEpoch}.$extension';
-
-        // Ruta completa de la imagen
         String imagePath = '$userFolderPath$imageName';
 
-        // Obtener la referencia de la imagen y subir el archivo
-        Reference ref = storage.ref().child(imagePath);
-        UploadTask uploadTask = ref.putFile(image);
+        if (await image.exists()) {
+          Reference ref = storage.ref().child(imagePath);
+          UploadTask uploadTask = ref.putFile(image);
 
-        await uploadTask.whenComplete(() {
-          print('Imagen ${i + 1} cargada con éxito en Firebase Storage');
-        });
+          await uploadTask.whenComplete(() {
+            print('Imagen ${i + 1} cargada con éxito en Firebase Storage');
+          });
 
-        final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen ${i + 1} en Firebase Storage: $imageUrl');
+          final imageUrl = await ref.getDownloadURL();
+          print('URL de la imagen ${i + 1} en Firebase Storage: $imageUrl');
+          imageUrls.add(imageUrl);
+        } else {
+          print('Error: El archivo de imagen no existe.');
+          throw Exception('El archivo de imagen no existe');
+        }
       }
 
       print('Todas las imágenes cargadas con éxito en Firebase Storage');
+      return imageUrls;
     } catch (e) {
       print('Error al cargar las imágenes en Firebase Storage: $e');
       throw Exception('Error al cargar las imágenes en Firebase Storage: $e');

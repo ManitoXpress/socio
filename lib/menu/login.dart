@@ -93,6 +93,57 @@ class _LoginFormState extends State<LoginScreen> {
       },
     );
   }
+  void _showTermsAndConditionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            "Términos y Condiciones",
+            style: GoogleFonts.lato(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          content: Text(
+            "Al iniciar sesión, aceptas nuestros Términos y Condiciones.",
+            style: GoogleFonts.lato(
+              fontSize: 14.sp,
+              color: Colors.black87,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
+              },
+              child: Text(
+                "Leer Términos",
+                style: TextStyle(
+                  color: Color(0xFF84090D),
+                  decoration: TextDecoration.underline,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Cerrar",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> login() async {
     isChecking?.change(false);
@@ -149,6 +200,7 @@ class _LoginFormState extends State<LoginScreen> {
       );
     }
   }
+  
 
   Future<void> signInWithGoogle() async {
     setState(() => isLoadingGoogle = true);
@@ -238,7 +290,7 @@ class _LoginFormState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF84090D),
                         shape: CircleBorder(),
-                        padding: EdgeInsets.all(8.w),
+                        padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingGoogle ? null : signInWithGoogle,
                       child: isLoadingGoogle
@@ -279,7 +331,7 @@ class _LoginFormState extends State<LoginScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF84090D),
                         shape: CircleBorder(),
-                        padding: EdgeInsets.all(8.w),
+                        padding: EdgeInsets.all(3.w),
                       ),
                       onPressed: isLoadingApple ? null : signInWithApple,
                       child: isLoadingApple
@@ -331,16 +383,19 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFB00020),
-                    padding:
-                        EdgeInsets.symmetric(vertical: 12.h, horizontal: 25.w),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Color(0xFF84090D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF84090D),
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: 40.h),
                 TextButton(
-                  onPressed: () {
-                    launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
-                  },
+                  onPressed: () => _showTermsAndConditionsDialog(context),
                   child: Text(
                     'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
                     style: TextStyle(

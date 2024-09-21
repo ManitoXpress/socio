@@ -153,8 +153,4 @@ class RegistrationData {
     required this.location,
   });
 
-  void setImages(List<String> newImagePaths) {
-    imagePath =
-        newImagePaths.join(","); // Un ejemplo de cómo podrías unir las rutas
-  }
 }

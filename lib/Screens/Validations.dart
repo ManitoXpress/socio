@@ -290,183 +290,159 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<void> _completeRegistration() async {
-    print('Entrando a _completeRegistration');
+  print('Entrando a _completeRegistration');
 
-    try {
-      final apiService = ApiService();
-      User? user = FirebaseAuth.instance.currentUser;
+  try {
+    final apiService = ApiService();
+    User? user = FirebaseAuth.instance.currentUser;
 
-      if (user != null) {
-        registrationData.userId = user.uid;
-        registrationData.location = {
-          'lat': location?.latitude ?? 0.0,
-          'lng': location?.longitude ?? 0.0,
-        };
-        registrationData.expertises = userData.expertises;
-        registrationData.expLevel = userData.expLevel;
-        registrationData.paymentType = userData.paymentType;
+    if (user != null) {
+      registrationData.userId = user.uid;
+      registrationData.location = {
+        'lat': location?.latitude ?? 0.0,
+        'lng': location?.longitude ?? 0.0,
+      };
+      registrationData.expertises = userData.expertises;
+      registrationData.expLevel = userData.expLevel;
+      registrationData.paymentType = userData.paymentType;
 
-        final Step3FormData step3FormData =
-            widget.registrationController.step3FormData;
-        final Step5FormData step5FormData =
-            widget.registrationController.step5FormData;
-        final Step6FormData step6FormData =
-            widget.registrationController.step6FormData;
-        final Step7FormData step7FormData =
-            widget.registrationController.step7FormData;
-        final Step8FormData step8FormData =
-            widget.registrationController.step8FormData;
+      final Step3FormData step3FormData =
+          widget.registrationController.step3FormData;
+      final Step5FormData step5FormData =
+          widget.registrationController.step5FormData;
+      final Step6FormData step6FormData =
+          widget.registrationController.step6FormData;
+      final Step7FormData step7FormData =
+          widget.registrationController.step7FormData;
+      final Step8FormData step8FormData =
+          widget.registrationController.step8FormData;
 
-        if (step3FormData.imagePath.isNotEmpty) {
-          File imageFile = File(userData.imagePath);
+      // Subir la imagen de perfil
+      if (step3FormData.imagePath.isNotEmpty) {
+        File imageFile = File(userData.imagePath);
 
-          if (imageFile.existsSync()) {
-            registrationData.imagePath = userData.imagePath;
-          } else {
-            print('Advertencia: La imagen no existe en la ruta proporcionada.');
-          }
-        }
-
-        if (File(userData.imagePath).existsSync()) {
-          await apiService.uploadImageToFirebaseStorage(
+        if (imageFile.existsSync()) {
+          registrationData.imagePath = userData.imagePath;
+          final String imageUrl = await apiService.uploadImageToFirebaseStorage(
               File(userData.imagePath), user.uid);
-          print(
-              'Ruta de la imagen en _uploadProfileImage: ${userData.imagePath}');
+          registrationData.imagePath = imageUrl;
+          print('URL de la imagen en _uploadProfileImage: $imageUrl');
         } else {
           print('Advertencia: La imagen no existe en la ruta proporcionada.');
         }
-
-        // Subir las imágenes del documento de identificación
-        if (step5FormData.idDocumentImagePath.isNotEmpty) {
-          File imageFile = File(userData.idDocumentImagePath);
-
-          if (imageFile.existsSync()) {
-            registrationData.idDocumentImagePath = userData.idDocumentImagePath;
-          } else {
-            print('Advertencia: La imagen no existe en la ruta proporcionada.');
-          }
-        }
-
-        if (File(userData.idDocumentImagePath).existsSync()) {
-          await apiService.uploadImageToFirebaseStorage2(
-              File(userData.idDocumentImagePath), user.uid);
-          print(
-              'Ruta de la imagen en idDocumentImagePath: ${userData.idDocumentImagePath}');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-        // Subir las imágenes del documento de identificación
-        if (step6FormData.idDocumentImagePath2.isNotEmpty) {
-          File imageFile = File(userData.idDocumentImagePath2);
-
-          if (imageFile.existsSync()) {
-            registrationData.idDocumentImagePath2 =
-                userData.idDocumentImagePath2;
-          } else {
-            print(
-                'Advertencia: La idDocumentImagePath no existe en la ruta proporcionada.');
-          }
-        }
-
-        if (File(userData.idDocumentImagePath2).existsSync()) {
-          await apiService.uploadImageToFirebaseStorage3(
-              File(userData.idDocumentImagePath2), user.uid);
-          print(
-              'Ruta de la imagen en _uploadProfileImage: ${userData.idDocumentImagePath2}');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-
-        // subir archivos criminales
-        if (step7FormData.criminalRecordImagePath.isNotEmpty) {
-          File imageFile = File(userData.criminalRecordImagePath);
-
-          if (imageFile.existsSync()) {
-            registrationData.criminalRecordImagePath =
-                userData.criminalRecordImagePath;
-          } else {
-            print(
-                'Advertencia: La idDocumentImagePath no existe en la ruta proporcionada.');
-          }
-        }
-        if (File(userData.criminalRecordImagePath as String).existsSync()) {
-          await apiService.uploadImageToFirebaseStorage4(
-              File(userData.criminalRecordImagePath as String), user.uid);
-          print(
-              'Ruta de la imagen en criminalRecordImagePath: ${userData.criminalRecordImagePath}');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-
-        // Certificados
-        if (userData.certificateImagePaths.isNotEmpty) {
-          registrationData.certificateImagePaths =
-              userData.certificateImagePaths;
-        }
-
-        if (registrationData.certificateImagePaths.isNotEmpty) {
-          // Subir imágenes al Firebase Storage
-          await apiService.uploadImageToFirebaseStorage5(
-            registrationData.certificateImagePaths
-                .map((path) => File(path))
-                .toList(),
-            user.uid,
-          );
-
-          print(
-              'Rutas de las imágenes en certificateImagePaths: ${registrationData.certificateImagePaths}');
-        } else {
-          print(
-              'Advertencia: La lista de rutas de certificateImagePaths está vacía.');
-        }
-
-        registrationData = RegistrationData.fromForm(
-          userId: user.uid,
-          displayName: userData.displayName,
-          idCardNumber: userData.idCardNumber,
-          phoneNumber: userData.phoneNumber,
-          imagePath: userData.imagePath,
-          location: userData.location,
-          idDocumentImagePath: userData.idDocumentImagePath,
-          idDocumentImagePath2: userData.idDocumentImagePath2,
-          paymentType: userData.paymentType,
-          expertises: userData.expertises,
-          selectedCountryCode: userData.selectedCountryCode,
-          expLevel: userData.expLevel,
-          email: userData.email,
-          imagePathList: [],
-          criminalRecordImagePath: userData.criminalRecordImagePath,
-          certificateImagePaths: userData.certificateImagePaths,
-        );
-
-        print('Después de RegistrationData.fromForm:');
-        String? token = await user.getIdToken();
-
-        final response = await apiService.updateUser(
-          user.uid,
-          registrationData,
-          token!,
-        );
-
-        widget.completeRegistrationCallback();
-
-        if (response.statusCode == 200) {
-          print('Usuario actualizado con éxito');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
-        } else {
-          print('Error en la respuesta del servidor: ${response.statusCode}');
-        }
-      } else {
-        print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
-    } catch (error) {
-      print('Error durante el proceso de registro: $error');
+
+      // Subir las imágenes del documento de identificación
+      if (step5FormData.idDocumentImagePath.isNotEmpty) {
+        File imageFile = File(userData.idDocumentImagePath);
+
+        if (imageFile.existsSync()) {
+          final String idDocImageUrl = await apiService.uploadImageToFirebaseStorage2(
+              File(userData.idDocumentImagePath), user.uid);
+          registrationData.idDocumentImagePath = idDocImageUrl;
+          print('URL de la imagen en idDocumentImagePath: $idDocImageUrl');
+        } else {
+          print('Advertencia: La imagen no existe en la ruta proporcionada.');
+        }
+      }
+
+      // Subir la segunda imagen del documento de identificación
+      if (step6FormData.idDocumentImagePath2.isNotEmpty) {
+        File imageFile = File(userData.idDocumentImagePath2);
+
+        if (imageFile.existsSync()) {
+          final String idDocImageUrl2 = await apiService.uploadImageToFirebaseStorage3(
+              File(userData.idDocumentImagePath2), user.uid);
+          registrationData.idDocumentImagePath2 = idDocImageUrl2;
+          print('URL de la imagen en idDocumentImagePath2: $idDocImageUrl2');
+        } else {
+          print('Advertencia: La imagen no existe en la ruta proporcionada.');
+        }
+      }
+
+      // Subir el archivo de antecedentes penales
+      if (step7FormData.criminalRecordImagePath.isNotEmpty) {
+        File imageFile = File(userData.criminalRecordImagePath);
+
+        if (imageFile.existsSync()) {
+          final String criminalRecordImageUrl = await apiService.uploadImageToFirebaseStorage4(
+              File(userData.criminalRecordImagePath), user.uid);
+          registrationData.criminalRecordImagePath = criminalRecordImageUrl;
+          print('URL de la imagen en criminalRecordImagePath: $criminalRecordImageUrl');
+        } else {
+          print('Advertencia: La imagen no existe en la ruta proporcionada.');
+        }
+      }
+
+      // Subir certificados
+      if (userData.certificateImagePaths.isNotEmpty) {
+        List<String> uploadedCertUrls = [];
+
+        for (String certificatePath in userData.certificateImagePaths) {
+          File certFile = File(certificatePath);
+
+          if (certFile.existsSync()) {
+            final List<String> certImageUrl = await apiService.uploadImageToFirebaseStorage5(
+                certFile as List<File>, user.uid);
+            uploadedCertUrls.add(certImageUrl as String);
+          } else {
+            print('Advertencia: El certificado no existe en la ruta proporcionada.');
+          }
+        }
+
+        registrationData.certificateImagePaths = uploadedCertUrls;
+        print('URLs de las imágenes en certificateImagePaths: $uploadedCertUrls');
+      } else {
+        print('Advertencia: La lista de rutas de certificateImagePaths está vacía.');
+      }
+
+      registrationData = RegistrationData.fromForm(
+        userId: user.uid,
+        displayName: userData.displayName,
+        idCardNumber: userData.idCardNumber,
+        phoneNumber: userData.phoneNumber,
+        imagePath: registrationData.imagePath,
+        location: userData.location,
+        idDocumentImagePath: registrationData.idDocumentImagePath,
+        idDocumentImagePath2: registrationData.idDocumentImagePath2,
+        paymentType: userData.paymentType,
+        expertises: userData.expertises,
+        selectedCountryCode: userData.selectedCountryCode,
+        expLevel: userData.expLevel,
+        email: userData.email,
+        imagePathList: [],
+        criminalRecordImagePath: registrationData.criminalRecordImagePath,
+        certificateImagePaths: registrationData.certificateImagePaths,
+      );
+
+      print('Después de RegistrationData.fromForm:');
+      String? token = await user.getIdToken();
+
+      final response = await apiService.updateUser(
+        user.uid,
+        registrationData,
+        token!,
+      );
+
+      widget.completeRegistrationCallback();
+
+      if (response.statusCode == 200) {
+        print('Usuario actualizado con éxito');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      } else {
+        print('Error en la respuesta del servidor: ${response.statusCode}');
+      }
+    } else {
+      print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
     }
+  } catch (error) {
+    print('Error durante el proceso de registro: $error');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -514,12 +490,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
-                backgroundColor: Color(0xFF84090D),
-                minimumSize: Size(double.infinity, 50),
-              ),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Color(0xFF84090D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF84090D),
+                      ),
+                    ),
+                  ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Stack(
