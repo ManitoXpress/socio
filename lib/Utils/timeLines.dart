@@ -547,23 +547,42 @@ void _showCompleteJobDialog(BuildContext context) {
                     style: MyTextStyles.formServiceTextStyle,
                   ),
                   Container(
-                    height: 80,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: imageFiles.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                  height: 80,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: imageFiles.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return Dialog(
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Image.network(
+                                      imageFiles[index],
+                                      fit: BoxFit.contain,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                           child: Image.network(
                             imageFiles[index],
                             height: 80,
                             width: 80,
                             fit: BoxFit.cover,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
+                ),
+
                   SizedBox(height: 16.0),
                   Text(
                     'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
@@ -579,40 +598,52 @@ void _showCompleteJobDialog(BuildContext context) {
                           onPressed: () {
                             _showProposalDialog(context);
                           },
-                          icon: Icon(Icons.add_business, color: Colors.white),
+                          icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
                           label: Text(
                             "Enviar Propuesta",
                             style: GoogleFonts.karla(
-                              color: Colors.white,
+                              color: Color(0xFFB00020),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFB00020),
-                            padding: EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 10),
-                          ),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFFB00020),
+                                ),
+                              ),
+                            ),
                         ),
                         SizedBox(width: 16.0),
                         ElevatedButton.icon(
                           onPressed: () {
                             _showNoParticipationDialog(context);
                           },
-                          icon: Icon(Icons.dangerous, color: Colors.white),
+                          icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
                           label: Text(
                             "No Participar",
                             style: GoogleFonts.karla(
-                              color: Colors.white,
+                              color: Color(0xFFB00020),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFB00020),
-                            padding: EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 10),
-                          ),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFFB00020),
+                                ),
+                              ),
+                            ),
                         ),
                       ],
                     ),
@@ -628,7 +659,7 @@ void _showCompleteJobDialog(BuildContext context) {
                           label: Text(
                             "No Participar",
                             style: GoogleFonts.karla(
-                              color: Colors.white,
+                              color: Color(0xFFB00020),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -655,15 +686,21 @@ void _showCompleteJobDialog(BuildContext context) {
                             label: Text(
                               "Pago Aceptado",
                               style: GoogleFonts.karla(
-                                color: Colors.white,
+                                color: Color(0xFFB00020),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFB00020),
+                           style: ElevatedButton.styleFrom(
                               padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
+                                  horizontal: 10, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFFB00020),
+                                ),
+                              ),
                             ),
                           ),
                         ] else ...[
@@ -671,19 +708,25 @@ void _showCompleteJobDialog(BuildContext context) {
                             onPressed: () {
                               _showNoParticipationDialog(context);
                             },
-                            icon: Icon(Icons.dangerous, color: Colors.white),
+                            icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
                             label: Text(
                               "No Participar",
                               style: GoogleFonts.karla(
-                                color: Colors.white,
+                                color: Color(0xFFB00020),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFB00020),
                               padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
+                                  horizontal: 10, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFFB00020),
+                                ),
+                              ),
                             ),
                           ),
                           SizedBox(width: 16.0),
@@ -692,19 +735,25 @@ void _showCompleteJobDialog(BuildContext context) {
                               _showCompleteJobDialog(context);
                             },
                             icon: Icon(Icons.architecture_sharp,
-                                color: Colors.white),
+                                color: Color(0xFFB00020)),
                             label: Text(
                               "Completar trabajo",
                               style: GoogleFonts.karla(
-                                color: Colors.white,
+                                color: Color(0xFFB00020),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFB00020),
                               padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
+                                  horizontal: 10, vertical: 8),
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                side: BorderSide(
+                                  color: Color(0xFFB00020),
+                                ),
+                              ),
                             ),
                           ),
                         ],

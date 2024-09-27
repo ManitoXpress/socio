@@ -77,6 +77,18 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
+            
+            // Cambiado a screenutil
+            Text(
+              'ManitoXpress Socio',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Xpress Heavy',
+                fontWeight: FontWeight.normal,
+                fontStyle: FontStyle.italic,
+                fontSize: 18.sp, // Cambiado a screenutil
+              ),
+            ),
             Flexible(
               child: Container(
                 padding: EdgeInsets.all(10.w), // Cambiado a screenutil
@@ -87,17 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 80.h, // Cambiado a screenutil
                   fit: BoxFit.contain,
                 ),
-              ),
-            ),
-            SizedBox(width: 20.w), // Cambiado a screenutil
-            Text(
-              'ManitoXpress Socio',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Xpress Heavy',
-                fontWeight: FontWeight.normal,
-                fontStyle: FontStyle.italic,
-                fontSize: 18.sp, // Cambiado a screenutil
               ),
             ),
           ],

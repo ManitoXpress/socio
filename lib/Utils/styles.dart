@@ -24,7 +24,7 @@ class MyTextStyles {
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 12,
     fontFamily: 'Xpress Heavy',
-    color: Color(0xFFFFFFFF),
+    color: Color(0xFF84090D),
     fontWeight: FontWeight.normal,
     fontStyle: FontStyle.italic,
   );
@@ -98,7 +98,7 @@ class MyTextStyles {
   static const TextStyle drawerButtonTextStyle = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress Heavy',
-    fontWeight: FontWeight.normal,
+    fontWeight: FontWeight.bold,
     fontStyle: FontStyle.italic,
     fontSize: 16.0,
   );

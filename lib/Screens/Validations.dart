@@ -490,15 +490,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Color(0xFF84090D),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(
-                        color: Color(0xFF84090D),
-                      ),
-                    ),
-                  ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+                backgroundColor: Color(0xFF84090D),
+                minimumSize: Size(double.infinity, 50),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Stack(

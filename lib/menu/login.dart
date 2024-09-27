@@ -92,58 +92,53 @@ class _LoginFormState extends State<LoginScreen> {
         setState(() => _teddyArtboard = artboard);
       },
     );
-  }
-  void _showTermsAndConditionsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            "Términos y Condiciones",
-            style: GoogleFonts.lato(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          content: Text(
-            "Al iniciar sesión, aceptas nuestros Términos y Condiciones.",
-            style: GoogleFonts.lato(
-              fontSize: 14.sp,
-              color: Colors.black87,
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
+   // Mostrar el AlertDialog después de cargar la pantalla de inicio de sesión
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text("Términos y Condiciones"),
+            content: TextButton(
               onPressed: () {
                 launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
               },
               child: Text(
-                "Leer Términos",
+                'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
                 style: TextStyle(
-                  color: Color(0xFF84090D),
+                  color: Color.fromARGB(255, 2, 8, 168),
+                  fontSize: 16, // Cambia el tamaño según tu preferencia
                   decoration: TextDecoration.underline,
-                  fontSize: 14.sp,
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                "Cerrar",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14.sp,
+            actions: [
+              TextButton(
+                child: Text("Aceptar"),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  foregroundColor: Color(0xFFB00020), // Color del texto, el mismo que el borde
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(
+                      color: Color(0xFFB00020), // Color del borde
+                    ),
+                  ),
                 ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
               ),
-            ),
-          ],
-        );
-      },
-    );
+
+            ],
+          );
+        },
+      );
+    });
   }
+  
+  
 
   Future<void> login() async {
     isChecking?.change(false);
@@ -224,6 +219,72 @@ class _LoginFormState extends State<LoginScreen> {
       print('Error al iniciar sesión con Google: $e');
     } finally {
       setState(() => isLoadingGoogle = false);
+    }
+  }
+
+  void _showTermsAndConditionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Evita cerrar el diálogo al tocar fuera de él
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Términos y Condiciones'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
+                style: TextStyle(
+                  color: Color.fromARGB(255, 168, 2, 2),
+                  fontSize: 16.sp,
+                  decoration: TextDecoration.underline, // Subrayado
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextButton(
+                onPressed: () {
+                  // Acciones para abrir el link de términos y condiciones
+                  // Por ejemplo, puedes usar url_launcher
+                  _launchTermsAndConditionsUrl();
+                },
+                child: Text(
+                  'Ver Términos y Condiciones',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline, // Subrayado
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cerrar el diálogo
+              },
+              child: Text(
+                'Aceptar',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  color: Color(0xFF84090D),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _launchTermsAndConditionsUrl() async {
+    const url = 'https://manitoxpress-cf855.web.app/#/PrivacyPage'; // URL de tus términos y condiciones
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'No se pudo abrir el enlace: $url';
     }
   }
 
@@ -394,18 +455,6 @@ class _LoginFormState extends State<LoginScreen> {
                   ),
                 ),
                 SizedBox(height: 40.h),
-                TextButton(
-                  onPressed: () => _showTermsAndConditionsDialog(context),
-                  child: Text(
-                    'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 168, 2, 2),
-                      fontSize: 6.sp,
-                      decoration: TextDecoration.underline, // Agrega subrayado al texto
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30.h),
               ],
             ),
           ),

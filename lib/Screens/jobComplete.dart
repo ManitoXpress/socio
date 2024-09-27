@@ -199,7 +199,7 @@ class _PhotoStepState extends State<PhotoStep> {
             children: [
               Text(
                 "¿Deseas finalizar el trabajo y estar de acuerdo con el pago?",
-                style: MyTextStyles.drawerButtonTextStyle,
+                style: MyTextStyles.drawerButtonTextStyle5,
               ),
               SizedBox(height: 20),
               TextField(
