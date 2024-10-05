@@ -269,19 +269,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     // Validar el quinto paso (Step5 - idDocumentA)
 
-    if (currentStep == 4 && !(step5IdCardImage.isStep5Valid())) {
-      print(
-          'Completa la ubicación y la información adicional antes de pasar al siguiente paso.');
-      return;
-    }
-    // Validar el sexto paso (Step6 - idDocumentB)
-
-    if (currentStep == 5 && !(step5IdCardImageB.isStep6Valid())) {
-      print(
-          'Completa la ubicación y la información adicional antes de pasar al siguiente paso.');
-      return;
-    }
-
     setState(() {
       if (currentStep < 7) {
         currentStep += 1;

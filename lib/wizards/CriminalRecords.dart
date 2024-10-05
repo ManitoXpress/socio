@@ -41,6 +41,8 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
   XFile? capturedImage;
   bool _isCameraReady = false;
   bool _isCapturing = false;
+  File? _image;  // Cambiado para una sola imagen
+  final ImagePicker _imagePicker = ImagePicker(); // Definición de _imagePicker
 
   @override
   void initState() {
@@ -48,31 +50,87 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
     _initializeControllerFuture = _initializeCamera();
   }
 
+  Future<void> _showImagePreview() async {
+    if (_image != null) {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.file(_image!), // Mostrar la única imagen
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _image = null; // Elimina la imagen
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Text("Eliminar imagen"),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Tomese una foto de perfil', style: MyTextStyles.drawerButtonTextStyle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Cierra el cuadro de diálogo
+                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  _processImage(image);
+                },
+                child: Text('Tomar Foto'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
       final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
+        (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
       _cameraController = CameraController(
         frontCamera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
       );
 
-      _initializeControllerFuture = _cameraController.initialize();
+      await _cameraController.initialize();
 
-      await _initializeControllerFuture;
-
-      setState(() {
-        _isCameraReady = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isCameraReady = true;
+        });
+      }
 
       print("Cámara inicializada correctamente");
     } catch (e) {
       print("Error al inicializar la cámara: $e");
     }
+  }
+
+  bool isStep3Valid() {
+    return capturedImage != null;
   }
 
   @override
@@ -82,8 +140,8 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 7: Saque una foto a sus antecedentes penales(Opcional)",
-            style: MyTextStyles.formServiceTextStyle,
+           "Paso 7: Saque una foto a sus antecedentes penales(Opcional)",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         Container(
@@ -93,98 +151,42 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap: _isCameraReady ? _captureAndShowImage : null,
+                onTap: () => _pickImage(),
                 child: Container(
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(20.0),
+                    border: Border.all(color: Color(0xA3C9D2D2)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: _isCameraReady
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CameraPreview(_cameraController),
-                            if (capturedImage != null)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20.0),
-                                child: Image.file(
-                                  File(capturedImage!.path),
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                          ],
+                  child: _image == null
+                      ? Center(
+                          child: Icon(
+                            Icons.cloud_upload,
+                            size: 48,
+                            color: Color(0xA3C9D2D2),
+                          ),
                         )
-                      : Center(
-                          child: CircularProgressIndicator(),
+                      : Image.file(
+                          _image!,
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.cover,
                         ),
                 ),
               ),
             ],
           ),
         ),
-        ElevatedButton(
-          onPressed:
-              _isCameraReady && !_isCapturing ? _captureAndShowImage : null,
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.transparent,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
-          child: Text(
-            "Capturar Imagen",
-            style: TextStyle(
-              color: Color(0xFF84090D),
-            ),
-          ),
-        ),
-        if (capturedImage != null)
-          ElevatedButton(
-            onPressed:
-                _isCameraReady && !_isCapturing ? _captureAndShowImage : null,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.transparent,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF84090D),
-                ),
-              ),
-            ),
-            child: Text(
-              "Eliminar Imagen Capturada",
-              style: TextStyle(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
+          
       ],
     );
   }
 
-  Future<void> _captureAndShowImage() async {
-    try {
-      // Bloquear la captura si ya está en progreso
-      if (_isCapturing) return;
-
-      // Marcar como captura en progreso
+  void _processImage(XFile? image) {
+    if (image != null) {
       setState(() {
-        _isCapturing = true;
-      });
-
-      final XFile image = await _cameraController.takePicture();
-      print("Foto capturada en: ${image.path}");
-
-      // Guardar la imagen
-      setState(() {
-        capturedImage = image;
+        _image = File(image.path); // Solo guarda una imagen
       });
       widget.onImageSelected(
           Step7FormData(criminalRecordImagePath: capturedImage?.path ?? ''));
@@ -194,9 +196,8 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
           workerType: '',
           idDocumentImagePath2: '',
           certificateImagePaths: []);
-    } catch (e) {
-      print("Error al tomar la foto: $e");
-    } finally {
+    } 
+     {
       // Marcar como captura finalizada
       setState(() {
         _isCapturing = false;

@@ -7,6 +7,7 @@ import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
 
+
 class Step3FormData {
   final String imagePath;
 
@@ -22,6 +23,7 @@ class ProfileImage extends StatefulWidget {
   final UserData userData;
   final ValueNotifier<bool> isImageCaptured;
   final void Function() onNextStep;
+
   late _ProfileImageState _profileImageState;
 
   bool isStep3Valid() {
@@ -52,10 +54,15 @@ class _ProfileImageState extends State<ProfileImage> {
   XFile? capturedImage;
   bool _isCameraReady = false;
   bool _isCapturing = false;
+  File? _image;  // Cambiado para una sola imagen
+  final ImagePicker _imagePicker = ImagePicker(); // Definición de _imagePicker
 
-  // Función para validar
-  bool isStep3Valid() {
-    return capturedImage != null;
+  @override
+  void initState() {
+    super.initState();
+    _initializeControllerFuture = _requestCameraPermission().then((_) {
+      return _initializeCamera();
+    });
   }
 
   Future<void> _requestCameraPermission() async {
@@ -65,12 +72,56 @@ class _ProfileImageState extends State<ProfileImage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeControllerFuture = _requestCameraPermission().then((_) {
-      return _initializeCamera();
-    });
+  Future<void> _showImagePreview() async {
+    if (_image != null) {
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.file(_image!), // Mostrar la única imagen
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _image = null; // Elimina la imagen
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Text("Eliminar imagen"),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _pickImage() async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Tomese una foto de perfil', style: MyTextStyles.drawerButtonTextStyle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Cierra el cuadro de diálogo
+                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  _processImage(image);
+                },
+                child: Text('Tomar Foto'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _initializeCamera() async {
@@ -100,6 +151,10 @@ class _ProfileImageState extends State<ProfileImage> {
     }
   }
 
+  bool isStep3Valid() {
+    return capturedImage != null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -107,8 +162,8 @@ class _ProfileImageState extends State<ProfileImage> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 3: Saquese una foto de perfil sin gafas y sin gorra",
-            style: MyTextStyles.formServiceTextStyle,
+            "Paso 3: Saque una foto de perfil sin gafas ni gorra",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         Container(
@@ -118,86 +173,54 @@ class _ProfileImageState extends State<ProfileImage> {
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap: _isCameraReady ? _captureAndShowImage : null,
+                onTap: () => _pickImage(),
                 child: Container(
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(20.0),
+                    border: Border.all(color: Color(0xA3C9D2D2)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: _isCameraReady
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CameraPreview(_cameraController),
-                            if (capturedImage != null)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20.0),
-                                child: Image.file(
-                                  File(capturedImage!.path),
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                          ],
+                  child: _image == null
+                      ? Center(
+                          child: Icon(
+                            Icons.cloud_upload,
+                            size: 48,
+                            color: Color(0xA3C9D2D2),
+                          ),
                         )
-                      : Center(
-                          child: CircularProgressIndicator(),
+                      : Image.file(
+                          _image!,
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.cover,
                         ),
                 ),
               ),
             ],
           ),
         ),
-        ElevatedButton(
-          onPressed: _isCameraReady && !_isCapturing ? _captureAndShowImage : null,
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.transparent,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
-          child: Text(
-            "Capturar Imagen",
-            style: TextStyle(
-              color: Color(0xFF84090D),
-            ),
-          ),
-        ),
-        if (capturedImage != null)
-          ElevatedButton(
-            onPressed: _isCameraReady && !_isCapturing ? _showDeleteImageConfirmation : null,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.transparent,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF84090D),
-                ),
-              ),
-            ),
-            child: Text(
-              "Eliminar Imagen Capturada",
-              style: TextStyle(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
         if (!isStep3Valid())
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              'Saca una foto antes de dar siguiente paso.',
+              'Saca una foto antes de continuar.',
               style: TextStyle(color: Color(0xFF830A09)),
             ),
           ),
       ],
     );
+  }
+
+  void _processImage(XFile? image) {
+    if (image != null) {
+      setState(() {
+        _image = File(image.path); // Solo guarda una imagen
+      });
+
+      widget.onImageSelected(Step3FormData(imagePath: image.path));
+      widget.isImageCaptured.value = true;
+    }
   }
 
   Future<void> _captureAndShowImage() async {
@@ -230,35 +253,6 @@ class _ProfileImageState extends State<ProfileImage> {
         });
       }
     }
-  }
-
-  void _showDeleteImageConfirmation() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Eliminar Imagen Capturada"),
-          content: Text("¿Desea eliminar la imagen capturada?"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("Cancelar"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  capturedImage = null;
-                });
-                Navigator.of(context).pop();
-              },
-              child: Text("Eliminar"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override

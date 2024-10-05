@@ -41,6 +41,10 @@ class _HistorialState extends State<Historial>
   @override
   void initState() {
     super.initState();
+    // Mostrar el diálogo al iniciar la clase
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWelcomeDialog();
+    });
 
     registrationData = RegistrationData(
       userId: '',
@@ -92,6 +96,82 @@ class _HistorialState extends State<Historial>
     _tabController.dispose();
     super.dispose();
   }
+
+  // Método para mostrar el diálogo de bienvenida
+  void _showWelcomeDialog() {
+    showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
+        ),
+        title: Text(
+          '¡Bienvenido a ManitosXpress!',
+          style: TextStyle(
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF84090D),
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Gracias por unirte a ManitosXpress. Aquí podrás ofrecer tus habilidades y conectarte con clientes que necesitan tu ayuda.',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.black54,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            Icon(
+              Icons.build_rounded,
+              size: 60,
+              color: Color(0xFF84090D),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF84090D),
+              backgroundColor: const Color(0xFFE8E8E8), 
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18), 
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              side: BorderSide(
+                color: const Color(0xFFE8E8E8),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              "Comenzar",
+              style: TextStyle(
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Future<List<String>> fetchWorkerExpertises() async {
     try {
