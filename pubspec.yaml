@@ -17,7 +17,8 @@ dependencies:
   cloud_firestore: ^5.0.1
   firebase_analytics: ^11.0.1
   flutter_local_notifications: ^17.2.2
-
+  url_launcher_ios: ^6.3.1
+  
   firebase_core: ^3.1.0
   google_sign_in: ^6.1.5
   google_fonts: ^6.2.1
@@ -26,7 +27,7 @@ dependencies:
   firebase_auth: ^5.1.0
   flutter_launcher_icons: ^0.13.1
   google_maps_flutter: ^2.5.0
-  url_launcher: ^6.0.9
+  url_launcher: ^6.1.10
   font_awesome_flutter: ^10.7.0
   flare_flutter: ^3.0.2
   circular_bottom_navigation: ^2.3.0
