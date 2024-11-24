@@ -23,7 +23,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({Key? key}) : super(key: key);
+  LoginScreen({Key? key, required String deviceId}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginFormState();
