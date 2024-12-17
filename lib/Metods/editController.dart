@@ -82,7 +82,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           email: userData.email,
           imagePathList: [],
           criminalRecordImagePath: userData.criminalRecordImagePath,
-          certificateImagePaths: userData.certificateImagePaths,
+          certificateImagePaths: userData.certificateImagePaths, devicesId: '', fcmToken: '',
         );
 
         final response = await apiService.updateUser(

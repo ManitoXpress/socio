@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:socio/Metods/RegisController.dart';
@@ -7,6 +8,7 @@ import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/Utils/authUtils.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/wizards/Certificates.dart';
 import 'package:socio/wizards/CriminalRecords.dart';
@@ -16,16 +18,13 @@ import 'package:socio/wizards/Location.dart';
 import 'package:socio/wizards/ProfileImage.dart';
 import 'package:socio/wizards/ServiceTypeSelection.dart';
 import 'package:socio/wizards/forms.dart';
-
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
 class RegistrationScreen extends StatefulWidget {
   final RegistrationController registrationController;
   final VoidCallback completeRegistrationCallback;
   final ApiService2 apiService2;
-  RegistrationScreen({
-    required this.registrationController,
-    required this.completeRegistrationCallback,
-    required this.apiService2,
-  });
+  RegistrationScreen({required this.registrationController, required this.completeRegistrationCallback,required this.apiService2,});
 
   @override
   _RegistrationScreenState createState() => _RegistrationScreenState();
@@ -48,14 +47,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   late RegistrationController registrationController;
   late UserData userData;
+  String? fcmToken;
 
   // Bandera para controlar si el formulario ya se completó
   bool formCompleted = false;
   bool loadingCompleteRegistration = false;
 
+
   @override
   void initState() {
     super.initState();
+    FirebaseMessaging.instance.getToken().then((value) {
+      setState(() {
+        fcmToken = value;
+      });
+    });
+
 
     // Restaura el estado del formulario
     restoreFormState();
@@ -82,6 +89,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         certificateImagePaths: [],
         expLevel: [],
         selectedCountryCode: '',
+        devicesId: '',
+        fcmToken: '',
       );
 
       userData = UserData(
@@ -154,17 +163,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           print('Selecciona una imagen antes de pasar al siguiente paso.');
         }
       },
-      onImageSelected: (Step3FormData image) {
-        setState(() {
-          userData.imagePath = image.imagePath;
-          step3ProfileImage.isImageCaptured.value = true;
-        });
+      onImageSelected: (String imagePath) {
+        // Actualiza la ruta de la imagen en userData
+        userData.imagePath = imagePath;
+
+        // También actualiza registrationData
+        registrationData.imagePath = imagePath;
+        print('Imagen seleccionada y asignada: $imagePath');
+
+        // Actualiza la UI
+        setState(() {});
       },
-      formData: Step3FormData(imagePath: ''),
       registrationData: registrationData,
       userData: userData,
       imagePath: userData.imagePath,
     );
+
 
     step4ServiceType = ServiceTypeSelection(
       onNextStep: () {
@@ -175,13 +189,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         // Implementa lo que sea necesario
       },
       fetchExpertises: widget.apiService2.fetchExpertises,
-      onServiceTypesSelected:
-          (List<Expertises> expertises, String? selectedExperienceLevel) {
+      onServiceTypesSelected: (List<Expertises> expertises,
+          String? selectedExperienceLevel) {
         setState(() {
           // Crear una lista de Expertises a partir de los nombres seleccionados
           userData.expertises = expertises;
           userData.expLevel =
-              selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
+          selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
         });
         print('Selected Expertises: $expertises');
         print('Selected Experience Level: $selectedExperienceLevel');
@@ -189,33 +203,57 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
 
     step5IdCardImage = IdCardImageStep(
-      onImageSelected: (Step5FormData image) {
-        setState(() {
-          userData.idDocumentImagePath = image.idDocumentImagePath;
-        });
-      },
       registrationController: registrationController,
-      onNextStep: _nextStep,
-      formData2: Step5FormData(idDocumentImagePath: ''),
+      isImageCaptured: ValueNotifier<bool>(false),
+      onNextStep: () {
+        if (userData.idDocumentImagePath.isNotEmpty) {
+          _nextStep();
+        } else {
+          print('Selecciona una imagen antes de pasar al siguiente paso.');
+        }
+      },
+      onImageSelected: (String idDocumentImagePath) {
+        // Actualiza la ruta de la imagen en userData
+        userData.idDocumentImagePath = idDocumentImagePath;
+
+        // También actualiza registrationData
+        registrationData.idDocumentImagePath = idDocumentImagePath;
+        print('Imagen seleccionada y asignada: $idDocumentImagePath');
+
+        // Actualiza la UI
+        setState(() {});
+      },
       registrationData: registrationData,
       userData: userData,
-      idDocumentImagePath: '',
-      onImageSelected2: (Step5FormData image2) {},
+      idDocumentImagePath: userData.idDocumentImagePath,
     );
+
     step5IdCardImageB = IdCardImageStepB(
-      onImageSelected: (Step6FormData image) {
-        setState(() {
-          userData.idDocumentImagePath2 = image.idDocumentImagePath2 as String;
-        });
-      },
       registrationController: registrationController,
-      onNextStep: _nextStep,
-      formData2: Step6FormData(idDocumentImagePath2: ''),
+      isImageCaptured: ValueNotifier<bool>(false),
+      onNextStep: () {
+        if (userData.idDocumentImagePath2.isNotEmpty) {
+          _nextStep();
+        } else {
+          print('Selecciona una imagen antes de pasar al siguiente paso.');
+        }
+      },
+      onImageSelected: (String idDocumentImagePath2) {
+        // Actualiza la ruta de la imagen en userData
+        userData.idDocumentImagePath2 = idDocumentImagePath2;
+
+        // También actualiza registrationData
+        registrationData.idDocumentImagePath = idDocumentImagePath2;
+        print('Imagen seleccionada y asignada: $idDocumentImagePath2');
+
+        // Actualiza la UI
+        setState(() {});
+      },
       registrationData: registrationData,
       userData: userData,
-      idDocumentImagePath: '',
-      onImageSelected2: (Step6FormData image2) {},
+      idDocumentImagePath2: userData.idDocumentImagePath2,
     );
+
 
     step7CriminalRecordImage = CriminalRecordImageStep(
       onImageSelected: (Step7FormData image) {
@@ -233,13 +271,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       registrationData: registrationData,
       registrationController: registrationController,
       userData: userData,
-      onImagesSelected: (List<String> certificateImagePaths) {
+      onImageSelected: (Step8FormData image) {
         setState(() {
-          userData.certificateImagePaths = certificateImagePaths;
+          userData.criminalRecordImagePath = image.certificateImagePaths;
         });
       },
     );
   }
+
 
   void restoreFormState() {
     // Lógica para cargar datos previos del formulario si es necesario
@@ -248,27 +287,62 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void restoreFormCompletedState() {
     // Lógica para cargar el estado de la bandera si es necesario
   }
+
   void _nextStep() {
-    // Validar el primer paso
-    if (currentStep == 0) {
-      if (!step1Data.isStep1Valid()) {
-        print(
-            'Completa todos los campos obligatorios antes de pasar al siguiente paso.');
+    // Validar el paso 3 (ProfileImage)
+    if (currentStep == 2) {
+      if (userData.imagePath.isEmpty) {
+        print('Selecciona una imagen antes de pasar al siguiente paso.');
         return;
       }
     }
 
-    // Validar el segundo paso
-    if (currentStep == 1 &&
-        !(step2Location.isLocationAndFavoritesValid() ?? false)) {
-      print(
-          'Completa la ubicación y la información adicional antes de pasar al siguiente paso.');
-      return;
+    // Validar el paso 4 (ServiceType)
+    if (currentStep == 3) {
+      if (userData.expertises.isEmpty || userData.expLevel.isEmpty) {
+        print(
+            'Selecciona un tipo de servicio y un nivel de experiencia antes de pasar al siguiente paso.');
+        return;
+      }
     }
-    // Validar el tercer paso (Step3 - ProfileImage)
 
-    // Validar el quinto paso (Step5 - idDocumentA)
+    // Validar el paso 5 (IdCardImageStep)
+    if (currentStep == 4) {
+      if (userData.idDocumentImagePath.isEmpty) {
+        print(
+            'Selecciona una imagen del documento de identidad antes de pasar al siguiente paso.');
+        return;
+      }
+    }
 
+    // Validar el paso 6 (IdCardImageStepB)
+    if (currentStep == 5) {
+      if (userData.idDocumentImagePath2.isEmpty) {
+        print(
+            'Selecciona una segunda imagen del documento de identidad antes de pasar al siguiente paso.');
+        return;
+      }
+    }
+
+    // Validar el paso 7 (CriminalRecordImageStep)
+    if (currentStep == 6) {
+      if (userData.criminalRecordImagePath.isEmpty) {
+        print(
+            'Selecciona una imagen del registro criminal antes de pasar al siguiente paso.');
+        return;
+      }
+    }
+
+    // Validar el paso 8 (CertificateImageStep)
+    if (currentStep == 7) {
+      if (userData.certificateImagePaths.isEmpty) {
+        print(
+            'Selecciona al menos un certificado antes de completar el registro.');
+        return;
+      }
+    }
+
+    // Si todos los pasos anteriores son válidos, avanza al siguiente paso
     setState(() {
       if (currentStep < 7) {
         currentStep += 1;
@@ -276,159 +350,248 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
   }
 
+  Future<String?> _uploadImage(File imageFile, String userId,
+      String imageType) async {
+    try {
+      final apiService = ApiService();
+      User? user = FirebaseAuth.instance.currentUser;
+      if (imageFile.existsSync()) {
+        // Comprimir y redimensionar la imagen antes de subirla
+        final compressedFile = await compressAndResizeImage(imageFile);
+
+        // Subir la imagen y obtener la URL de descarga
+        String imageUrl;
+        switch (imageType) {
+          case 'profile':
+            imageUrl = await apiService.uploadImageToFirebaseStorage(
+                compressedFile, userId);
+            break;
+          case 'idDocument1':
+            imageUrl = await apiService.uploadImageToFirebaseStorage2(
+                compressedFile, userId);
+            break;
+          case 'idDocument2':
+            imageUrl = await apiService.uploadImageToFirebaseStorage3(
+                compressedFile, userId);
+            break;
+          case 'criminalRecord':
+            imageUrl = await apiService.uploadImageToFirebaseStorage4(
+                compressedFile, userId);
+            break;
+          case 'certificate':
+            imageUrl = (await apiService.uploadImageToFirebaseStorage5(
+                [compressedFile], userId)) as String;
+            break;
+          default:
+            return null;
+        }
+
+        print('URL de la imagen cargada ($imageType): $imageUrl');
+        return imageUrl;
+      } else {
+        print(
+            'Advertencia: La imagen no existe en la ruta proporcionada para $imageType.');
+        return null;
+      }
+    } catch (e) {
+      print('Error al cargar la imagen ($imageType): $e');
+      return null;
+    }
+  }
+
+
+  Future<File> compressAndResizeImage(File image) async {
+    // Leer el archivo de imagen
+    final originalImage = img.decodeImage(image.readAsBytesSync());
+
+    // Redimensionar la imagen para reducir aún más su tamaño
+    final resizedImage = img.copyResize(
+        originalImage!, width: 600); // Cambia el tamaño según sea necesario
+
+    // Comprimir la imagen redimensionada
+    final compressedImage = img.encodeJpg(
+        resizedImage, quality: 50); // Baja la calidad si es necesario
+
+    // Obtener el directorio temporal
+    final tempDir = await getTemporaryDirectory();
+
+    // Guardar la imagen comprimida y redimensionada en un archivo temporal
+    final compressedFile = File('${tempDir.path}/compressed_${DateTime
+        .now()
+        .millisecondsSinceEpoch}.jpg');
+    compressedFile.writeAsBytesSync(compressedImage);
+
+    return compressedFile;
+  }
+
   Future<void> _completeRegistration() async {
-  print('Entrando a _completeRegistration');
+    print('Entrando a _completeRegistration');
 
-  try {
-    final apiService = ApiService();
-    User? user = FirebaseAuth.instance.currentUser;
+    try {
+      final apiService = ApiService();
+      User? user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
-      registrationData.userId = user.uid;
-      registrationData.location = {
-        'lat': location?.latitude ?? 0.0,
-        'lng': location?.longitude ?? 0.0,
-      };
-      registrationData.expertises = userData.expertises;
-      registrationData.expLevel = userData.expLevel;
-      registrationData.paymentType = userData.paymentType;
+      if (user != null) {
+        registrationData.userId = user.uid;
+        registrationData.location = {
+          'lat': location?.latitude ?? 0.0,
+          'lng': location?.longitude ?? 0.0,
+        };
+        registrationData.expertises = userData.expertises;
+        registrationData.expLevel = userData.expLevel;
+        registrationData.paymentType = userData.paymentType;
+        registrationData.phoneNumber =
+            userData.phoneNumber; // Se añade el número de teléfono
+// Subir la imagen de perfil directamente desde `registrationData.imagePath`
+        if (registrationData.imagePath.isNotEmpty) {
+          File image = File(registrationData.imagePath);
 
-      final Step3FormData step3FormData =
-          widget.registrationController.step3FormData;
-      final Step5FormData step5FormData =
-          widget.registrationController.step5FormData;
-      final Step6FormData step6FormData =
-          widget.registrationController.step6FormData;
-      final Step7FormData step7FormData =
-          widget.registrationController.step7FormData;
-      final Step8FormData step8FormData =
-          widget.registrationController.step8FormData;
-
-      // Subir la imagen de perfil
-      if (step3FormData.imagePath.isNotEmpty) {
-        File imageFile = File(userData.imagePath);
-
-        if (imageFile.existsSync()) {
-          registrationData.imagePath = userData.imagePath;
-          final String imageUrl = await apiService.uploadImageToFirebaseStorage(
-              File(userData.imagePath), user.uid);
-          registrationData.imagePath = imageUrl;
-          print('URL de la imagen en _uploadProfileImage: $imageUrl');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-      }
-
-      // Subir las imágenes del documento de identificación
-      if (step5FormData.idDocumentImagePath.isNotEmpty) {
-        File imageFile = File(userData.idDocumentImagePath);
-
-        if (imageFile.existsSync()) {
-          final String idDocImageUrl = await apiService.uploadImageToFirebaseStorage2(
-              File(userData.idDocumentImagePath), user.uid);
-          registrationData.idDocumentImagePath = idDocImageUrl;
-          print('URL de la imagen en idDocumentImagePath: $idDocImageUrl');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-      }
-
-      // Subir la segunda imagen del documento de identificación
-      if (step6FormData.idDocumentImagePath2.isNotEmpty) {
-        File imageFile = File(userData.idDocumentImagePath2);
-
-        if (imageFile.existsSync()) {
-          final String idDocImageUrl2 = await apiService.uploadImageToFirebaseStorage3(
-              File(userData.idDocumentImagePath2), user.uid);
-          registrationData.idDocumentImagePath2 = idDocImageUrl2;
-          print('URL de la imagen en idDocumentImagePath2: $idDocImageUrl2');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-      }
-
-      // Subir el archivo de antecedentes penales
-      if (step7FormData.criminalRecordImagePath.isNotEmpty) {
-        File imageFile = File(userData.criminalRecordImagePath);
-
-        if (imageFile.existsSync()) {
-          final String criminalRecordImageUrl = await apiService.uploadImageToFirebaseStorage4(
-              File(userData.criminalRecordImagePath), user.uid);
-          registrationData.criminalRecordImagePath = criminalRecordImageUrl;
-          print('URL de la imagen en criminalRecordImagePath: $criminalRecordImageUrl');
-        } else {
-          print('Advertencia: La imagen no existe en la ruta proporcionada.');
-        }
-      }
-
-      // Subir certificados
-      if (userData.certificateImagePaths.isNotEmpty) {
-        List<String> uploadedCertUrls = [];
-
-        for (String certificatePath in userData.certificateImagePaths) {
-          File certFile = File(certificatePath);
-
-          if (certFile.existsSync()) {
-            final List<String> certImageUrl = await apiService.uploadImageToFirebaseStorage5(
-                certFile as List<File>, user.uid);
-            uploadedCertUrls.add(certImageUrl as String);
+          if (image.existsSync()) {
+            try {
+              final compressedFile = await compressAndResizeImage(image);
+              final String imageUrl = await apiService
+                  .uploadImageToFirebaseStorage(
+                  compressedFile, user.uid);
+              registrationData.imagePath = imageUrl.endsWith('/')
+                  ? imageUrl.substring(0, imageUrl.length - 1)
+                  : imageUrl;
+              print(
+                  'URL de la imagen de perfil: ${registrationData.imagePath}');
+            } catch (e) {
+              print('Error al cargar la imagen de perfil: $e');
+            }
           } else {
-            print('Advertencia: El certificado no existe en la ruta proporcionada.');
+            print(
+                'Advertencia: La imagen de perfil no existe en la ruta proporcionada.');
+          }
+        } else {
+          print('Advertencia: No se proporcionó ninguna imagen de perfil.');
+        }
+
+        // Manejo de las imágenes de documento de identificación
+        if (registrationData.idDocumentImagePath.isNotEmpty) {
+          File idDocImage = File(registrationData.idDocumentImagePath);
+
+          if (idDocImage.existsSync()) {
+            try {
+              final compressedFile = await compressAndResizeImage(idDocImage);
+              final String idDocImageUrl = await apiService
+                  .uploadImageToFirebaseStorage(
+                  compressedFile, user.uid);
+              registrationData.idDocumentImagePath = idDocImageUrl;
+              print(
+                  'URL de la primera imagen de documento de identificación: $idDocImageUrl');
+            } catch (e) {
+              print(
+                  'Error al cargar la primera imagen de documento de identificación: $e');
+            }
+          } else {
+            print(
+                'Advertencia: La primera imagen de documento no existe en la ruta proporcionada.');
+          }
+        } else {
+          print(
+              'Advertencia: No se proporcionó ninguna imagen de documento de identificación.');
+        }
+
+        if (registrationData.idDocumentImagePath2.isNotEmpty) {
+          File idDocImage2 = File(registrationData.idDocumentImagePath2);
+
+          if (idDocImage2.existsSync()) {
+            try {
+              final compressedFile = await compressAndResizeImage(idDocImage2);
+              final String idDocImageUrl2 = await apiService
+                  .uploadImageToFirebaseStorage(
+                  compressedFile, user.uid);
+              registrationData.idDocumentImagePath2 = idDocImageUrl2;
+              print(
+                  'URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
+            } catch (e) {
+              print(
+                  'Error al cargar la segunda imagen de documento de identificación: $e');
+            }
+          } else {
+            print(
+                'Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
+          }
+        } else {
+          print(
+              'Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
+        }
+
+
+        // Subir certificados
+        if (userData.certificateImagePaths.isNotEmpty) {
+          List<File> certFiles = userData.certificateImagePaths
+              .map((path) => File(path))
+              .where((file) => file.existsSync())
+              .toList();
+
+          if (certFiles.isNotEmpty) {
+            final List<String> uploadedCertUrls = await apiService
+                .uploadImageToFirebaseStorage5(certFiles, user.uid);
+            registrationData.certificateImagePaths = uploadedCertUrls;
+            print(
+                'URLs de las imágenes en certificateImagePaths: $uploadedCertUrls');
+          } else {
+            print(
+                'Advertencia: No se encontró ningún archivo de certificado existente.');
           }
         }
 
-        registrationData.certificateImagePaths = uploadedCertUrls;
-        print('URLs de las imágenes en certificateImagePaths: $uploadedCertUrls');
-      } else {
-        print('Advertencia: La lista de rutas de certificateImagePaths está vacía.');
-      }
+        String? devicesId = await AuthUtils.getDeviceId();
+        String? fcmToken = await FirebaseMessaging.instance.getToken();
 
-      registrationData = RegistrationData.fromForm(
-        userId: user.uid,
-        displayName: userData.displayName,
-        idCardNumber: userData.idCardNumber,
-        phoneNumber: userData.phoneNumber,
-        imagePath: registrationData.imagePath,
-        location: userData.location,
-        idDocumentImagePath: registrationData.idDocumentImagePath,
-        idDocumentImagePath2: registrationData.idDocumentImagePath2,
-        paymentType: userData.paymentType,
-        expertises: userData.expertises,
-        selectedCountryCode: userData.selectedCountryCode,
-        expLevel: userData.expLevel,
-        email: userData.email,
-        imagePathList: [],
-        criminalRecordImagePath: registrationData.criminalRecordImagePath,
-        certificateImagePaths: registrationData.certificateImagePaths,
-      );
-
-      print('Después de RegistrationData.fromForm:');
-      String? token = await user.getIdToken();
-
-      final response = await apiService.updateUser(
-        user.uid,
-        registrationData,
-        token!,
-      );
-
-      widget.completeRegistrationCallback();
-
-      if (response.statusCode == 200) {
-        print('Usuario actualizado con éxito');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+        // Actualizar el registro del usuario con las nuevas URLs de Firebase
+        registrationData = RegistrationData.fromForm(
+          userId: user.uid,
+          displayName: userData.displayName,
+          idCardNumber: userData.idCardNumber,
+          phoneNumber: userData.phoneNumber,
+          imagePath: registrationData.imagePath,
+          location: userData.location,
+          idDocumentImagePath: registrationData.idDocumentImagePath,
+          idDocumentImagePath2: registrationData.idDocumentImagePath2,
+          paymentType: userData.paymentType,
+          expertises: userData.expertises,
+          selectedCountryCode: userData.selectedCountryCode,
+          expLevel: userData.expLevel,
+          email: userData.email,
+          imagePathList: [],
+          criminalRecordImagePath: registrationData.criminalRecordImagePath,
+          certificateImagePaths: registrationData.certificateImagePaths,
+          devicesId: devicesId ?? '',
+          fcmToken: fcmToken ?? '',
         );
+
+        print('Después de RegistrationData.fromForm:');
+        String? token = await user.getIdToken();
+
+        final response = await apiService.updateUser(
+          user.uid,
+          registrationData,
+          token!,
+        );
+
+        widget.completeRegistrationCallback();
+
+        if (response.statusCode == 200) {
+          print('Usuario actualizado con éxito');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          print('Error en la respuesta del servidor: ${response.statusCode}');
+        }
       } else {
-        print('Error en la respuesta del servidor: ${response.statusCode}');
+        print(
+            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
-    } else {
-      print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+    } catch (error) {
+      print('Error durante el proceso de registro: $error');
     }
-  } catch (error) {
-    print('Error durante el proceso de registro: $error');
   }
-}
 
 
   @override
@@ -445,43 +608,115 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           children: [
             if (currentStep == 0) ...[
               step1Data,
-            ] else if (currentStep == 1) ...[
-              step2Location,
-            ] else if (currentStep == 2) ...[
-              step3ProfileImage,
-            ] else if (currentStep == 3) ...[
-              step4ServiceType,
-            ] else if (currentStep == 4) ...[
-              step5IdCardImage,
-            ] else if (currentStep == 5) ...[
-              step5IdCardImageB,
-            ] else if (currentStep == 6) ...[
-              step7CriminalRecordImage,
-            ] else if (currentStep == 7) ...[
-              step8CertificateImage,
-            ],
+            ] else
+              if (currentStep == 1) ...[
+                step2Location,
+              ] else
+                if (currentStep == 2) ...[
+                  step3ProfileImage,
+                ] else
+                  if (currentStep == 3) ...[
+                    step4ServiceType,
+                  ] else
+                    if (currentStep == 4) ...[
+                      step5IdCardImage,
+                    ] else
+                      if (currentStep == 5) ...[
+                        step5IdCardImageB,
+                      ] else
+                        if (currentStep == 6) ...[
+                          step7CriminalRecordImage,
+                        ] else
+                          if (currentStep == 7) ...[
+                            step8CertificateImage,
+                          ],
+
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: loadingCompleteRegistration
+                  ? null // Deshabilita el botón si está cargando
+                  : () {
                 if (currentStep == 7) {
                   setState(() {
                     loadingCompleteRegistration = true;
                   });
+
+                  // Mostrar diálogo de carga
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    // Evita que se cierre el diálogo al tocar fuera
+                    builder: (context) {
+                      return AlertDialog(
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text(
+                              'Por favor, espere mientras completamos el registro...',
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+
+                  // Completar el registro
                   _completeRegistration().then((_) {
                     setState(() {
                       loadingCompleteRegistration = false;
                     });
+                    Navigator.of(context).pop(); // Cierra el diálogo
+
+                    // Navegar a la siguiente pantalla
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            HomeScreen(), // Cambiar por la pantalla correspondiente
+                      ),
+                    );
+                  }).catchError((error) {
+                    setState(() {
+                      loadingCompleteRegistration = false;
+                    });
+                    Navigator.of(context).pop(); // Cierra el diálogo
+
+                    // Mostrar mensaje de error
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Error'),
+                          content: Text(
+                              'Ocurrió un error al completar el registro. Por favor, inténtelo de nuevo.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Text('Aceptar'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
                   });
                 } else {
                   _nextStep();
                 }
               },
               style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0),
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 backgroundColor: Color(0xFF84090D),
-                minimumSize: Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),

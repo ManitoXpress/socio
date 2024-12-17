@@ -195,7 +195,7 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
           idDocumentImagePath: capturedImage?.path ?? '',
           workerType: '',
           idDocumentImagePath2: '',
-          certificateImagePaths: []);
+          certificateImagePaths: '');
     } 
      {
       // Marcar como captura finalizada

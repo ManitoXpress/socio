@@ -62,7 +62,7 @@ class _HistorialState extends State<Historial>
       criminalRecordImagePath: '',
       certificateImagePaths: [],
       expertises: [],
-      expLevel: [],
+      expLevel: [], devicesId: '', fcmToken: '',
     );
 
     userData = UserData(

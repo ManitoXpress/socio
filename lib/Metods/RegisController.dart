@@ -27,20 +27,22 @@ class RegistrationController {
     certificateImagePaths: [],
     expLevel: [],
     selectedCountryCode: '',
-  );
+    devicesId: '',
+    fcmToken: '',);
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
 
-  Step3FormData step3FormData = Step3FormData(imagePath: '');
-  Step6FormData step6FormData = Step6FormData(idDocumentImagePath2: '');
-  Step7FormData step7FormData = Step7FormData(criminalRecordImagePath: '');
-  Step8FormData step8FormData = Step8FormData(certificateImagePaths: []);
 
-  Step5FormData step5FormData = Step5FormData(idDocumentImagePath: '');
+  Step7FormData step7FormData = Step7FormData(criminalRecordImagePath: '');
+  Step8FormData step8FormData = Step8FormData(certificateImagePaths: '');
+
+
+
   // Asegúrate de inicializarla con un valor predeterminado si es necesario
 
-  String imagePath = '';
+  late String imagePath;
+
   LatLng? location;
 
   void nextStep() {
@@ -58,6 +60,7 @@ class RegistrationController {
     // Después de enviar los datos, puedes realizar otras acciones como navegar a la página de inicio.
   }
 
+
   void updateRegistrationData({
     String? displayName,
     String? idCardNumber,
@@ -67,12 +70,19 @@ class RegistrationController {
     required String workerType,
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
-    required List<String> certificateImagePaths,
+    required String certificateImagePaths,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
     if (idCardNumber != null) registrationData.idCardNumber = idCardNumber;
     if (phoneNumber != null) registrationData.phoneNumber = phoneNumber;
-    if (imagePath != null) registrationData.imagePath = imagePath as String;
+
+    // Validar y actualizar imagePath
+    if (imagePath != null && imagePath.isNotEmpty) {
+      registrationData.imagePath = imagePath;
+    } else {
+      registrationData.imagePath = ''; // O asignar una ruta predeterminada
+    }
+
     if (location != null) {
       registrationData.location = {
         'lat': location.latitude,
@@ -81,8 +91,9 @@ class RegistrationController {
     }
   }
 }
-
-class RegistrationData {
+  class RegistrationData {
+  String devicesId;
+  String fcmToken;
   String userId;
   String displayName;
   String idCardNumber;
@@ -101,6 +112,8 @@ class RegistrationData {
   String email;
 
   RegistrationData.fromForm({
+    required String devicesId,
+    required String fcmToken,
     required String userId,
     required String displayName,
     required String idCardNumber,
@@ -118,6 +131,8 @@ class RegistrationData {
     required Map<String, double?>? location,
     required String email,
   })  : userId = userId,
+        fcmToken = fcmToken,
+        devicesId = devicesId,
         displayName = displayName,
         idCardNumber = idCardNumber,
         phoneNumber = phoneNumber,
@@ -135,6 +150,8 @@ class RegistrationData {
         location = location;
 
   RegistrationData({
+    required this.devicesId,
+    required this.fcmToken,
     required this.userId,
     required this.displayName,
     required this.idCardNumber,
@@ -153,4 +170,7 @@ class RegistrationData {
     required this.location,
   });
 
+  void setImages(List<String> newImagePaths) {
+    imagePath = newImagePaths.join(","); // Un ejemplo de cómo podrías unir las rutas
+  }
 }

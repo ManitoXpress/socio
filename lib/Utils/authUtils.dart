@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthUtils {
@@ -13,5 +16,25 @@ class AuthUtils {
       }
     }
     return null;
+  }
+  static Future<String?> getDeviceId() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    String? deviceId;
+
+    try {
+      if (Platform.isAndroid) {
+        AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id; // Usa id en lugar de androidId
+      } else if (Platform.isIOS) {
+        IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor; // Para iOS
+      }
+
+      print('Device ID: $deviceId'); // Imprimir el ID del dispositivo
+    } catch (e) {
+      print('Error al obtener el ID del dispositivo: $e');
+    }
+
+    return deviceId;
   }
 }

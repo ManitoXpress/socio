@@ -55,40 +55,43 @@ class ApiService {
   }
 
   Future<void> sendProposalToFirestore(
-      ServiceRequest serviceRequest,
-      String token,
-      String offeredPrice,
-      String workerId // Añade el workerId como parámetro
-      ) async {
-    try {
-      // Obtén una referencia a la colección "offers"
-      final offersCollection = FirebaseFirestore.instance.collection('offers');
+  ServiceRequest serviceRequest,
+  String token,
+  String offeredPrice,
+  double extraCosts, // Añadido parámetro para los costos extra
+  String workerId,
+) async {
+  try {
+    // Obtén una referencia a la colección "offers"
+    final offersCollection = FirebaseFirestore.instance.collection('offers');
 
-      // Crea un documento con una propuesta en la colección "offers"
-      final newProposalRef = offersCollection
-          .doc(); // Crea un nuevo documento con un ID generado automáticamente
+    // Crea un documento con una propuesta en la colección "offers"
+    final newProposalRef = offersCollection.doc(); // ID generado automáticamente
 
-      // Define los datos de la propuesta
-      final proposalData = {
-        'serviceId':
-            serviceRequest.id, // ID del servicio al que se hace la oferta
-        'offeredPrice': offeredPrice,
-        'createdAt':
-            FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
-        'userToken':
-            token, // Token del usuario, si necesitas almacenar esta información
-        'workerId': workerId, // Añade el workerId a los datos de la propuesta
-      };
+    // Calcula el precio total
+    double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
+    double totalPrice = offeredPriceValue + extraCosts;
 
-      // Guarda la propuesta en Firestore
-      await newProposalRef.set(proposalData);
+    // Define los datos de la propuesta
+    final proposalData = {
+      'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
+      'offeredPrice': offeredPriceValue,
+      'extraCosts': extraCosts, // Añade los costos extra
+      'totalPrice': totalPrice, // Añade el precio total calculado
+      'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
+      'userToken': token, // Token del usuario
+      'workerId': workerId, // Añade el workerId
+    };
 
-      print('Oferta enviada con éxito a Firestore');
-    } catch (e) {
-      print('Error al enviar oferta a Firestore: $e');
-      throw Exception('Error al enviar oferta a Firestore: $e');
-    }
+    // Guarda la propuesta en Firestore
+    await newProposalRef.set(proposalData);
+
+    print('Oferta enviada con éxito a Firestore');
+  } catch (e) {
+    print('Error al enviar oferta a Firestore: $e');
+    throw Exception('Error al enviar oferta a Firestore: $e');
   }
+}
 
   Future<void> updateServiceStatus(
       String serviceRequestId, String newStatus, String token) async {
@@ -144,6 +147,7 @@ class ApiService {
         'certificateImagePaths': registrationData.certificateImagePaths,
         'expertises': expertises,
         'expLevel': registrationData.expLevel,
+        'verificatioStatus' : 'No verificado'
       };
 
       print('Request Body: $requestBody');

@@ -12,7 +12,6 @@ import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/Colors.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/login.dart';
-
 class ProfileData {
   late final String displayName;
   final String email;
@@ -77,19 +76,18 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<ProfileData> _loadUserData(RegistrationData registrationData) async {
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      final userPhoneNumber = currentUser?.phoneNumber ?? '';
-
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      final userId = currentUser?.uid;
+      final token = await currentUser?.getIdToken();
 
       if (userId != null && token != null) {
+        // Fetch user data from API
         final userData = await ApiService2().fetchUserData(userId, token);
         String? profileImageUrl = await ApiService2().fetchProfileImage(userId);
 
         return ProfileData(
           displayName: userData.displayName,
           email: userData.email,
-          phoneNumber: FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
+          phoneNumber: userData.phoneNumber,
           paymentType: userData.paymentType,
           expertises: userData.expertises.map((expertise) => expertise.name).toList(),
           expLevel: userData.expLevel,
@@ -124,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return ProfileData(
         displayName: 'Error',
         email: '',
-        phoneNumber: FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
+        phoneNumber: '',
         paymentType: '',
         expertises: [],
         imagePath: '',
@@ -154,6 +152,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+
   Future<void> _loadAndRefreshUserData() async {
     try {
       final updatedUserData = await _loadUserData(widget.registrationData);
@@ -169,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',))
+          MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',))
       );
     } catch (e) {
       print('Error al cerrar sesión: $e');
@@ -347,37 +346,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileInfoRow(String label, String value) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: MyTextStyles.inputTextStyle2,
-              ),
-              Flexible(
-                child: Container(
-                  margin: const EdgeInsets.only(left: 8.0),
-                  child: label == 'Especialidades:'
-                      ? _buildExpandableText(value)
-                      : Text(
-                          value,
-                          style: MyTextStyles.inputTextStyle2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
+                  style: MyTextStyles.inputTextStyle2,
                 ),
-              ),
-            ],
+                Flexible(
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 8.0),
+                    child: label == 'Especialidades:'
+                        ? _buildExpandableText(value)
+                        : Text(
+                      value,
+                      style: MyTextStyles.inputTextStyle2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(left: 8.0),
-          child: Divider(
-            color: Color(0xFF841813),
-            height: 2,
+              Container(
+              margin: const EdgeInsets.only(left: 8.0),
+              child: Divider(
+              color: Color(0xFF841813),
+              height: 2,
           ),
         ),
       ],

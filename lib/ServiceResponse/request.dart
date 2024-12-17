@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:socio/Metods/RegisController.dart';
-
 class ServiceRequest {
   String serviceDateTime;
   String id;
@@ -132,7 +131,6 @@ class ServiceType {
     );
   }
 }
-
 class UserData {
   String userId;
   String displayName;
@@ -145,204 +143,97 @@ class UserData {
   String idDocumentImagePath;
   String idDocumentImagePath2;
   String selectedCountryCode;
-  List<Expertises> expertises; // Cambiado a lista de Expertises
+  List<Expertises> expertises;
   List<String> expLevel;
   List<String> certificateImagePaths;
   Map<String, double?>? location;
   String paymentType;
   String email;
-  RegistrationData registrationData; // Nueva propiedad
+  RegistrationData registrationData;
 
   UserData({
     required this.userId,
     required this.displayName,
     required this.idCardNumber,
     required this.phoneNumber,
-    required this.expertises, // Cambiado a lista de Expertises
-    required this.expLevel,
+    this.getToken,
     required this.imagePath,
     required this.pdfPathController,
-    required this.getToken,
     required this.criminalRecordImagePath,
-    required this.selectedCountryCode,
-    required this.certificateImagePaths,
     required this.idDocumentImagePath,
     required this.idDocumentImagePath2,
-    required this.location,
+    required this.selectedCountryCode,
+    required this.expertises,
+    required this.expLevel,
+    required this.certificateImagePaths,
+    this.location,
     required this.paymentType,
     required this.email,
-    required this.registrationData, // Nueva propiedad
+    required this.registrationData,
   });
 
-  UserData.fromForm({
-    required String userId,
-    required String displayName,
-    required String idCardNumber,
-    required String phoneNumber,
-    required String pdfPath,
-    required String getToken,
-    required List<Expertises> expertises, // Cambiado a lista de Expertises
-    required List<String> expLevel,
-    required String imagePath,
-    required String selectedCountryCode,
-    required String pdfPathController,
-    required String criminalRecordImagePath,
-    required List<String> certificateImagePaths,
-    required String idDocumentImagePath,
-    required String idDocumentImagePath2,
-    required Map<String, double?>? location,
-    required String paymentType,
-    required String email,
-  }) : this(
-          userId: userId,
-          displayName: displayName,
-          idCardNumber: idCardNumber,
-          phoneNumber: phoneNumber,
-          expertises: expertises, // Cambiado a lista de Expertises
-          expLevel: expLevel,
-          imagePath: imagePath,
-          getToken: getToken,
-          pdfPathController: pdfPathController,
-          criminalRecordImagePath: criminalRecordImagePath,
-          selectedCountryCode: selectedCountryCode,
-          certificateImagePaths: certificateImagePaths,
-          idDocumentImagePath: idDocumentImagePath,
-          idDocumentImagePath2: idDocumentImagePath2,
-          location: location,
-          paymentType: paymentType,
-          email: email,
-          registrationData: RegistrationData(
-            userId: userId,
-            displayName: displayName,
-            idCardNumber: idCardNumber,
-            phoneNumber: phoneNumber,
-            paymentType: paymentType,
-            expertises: expertises, // Cambiado a lista de Expertises
-            selectedCountryCode: selectedCountryCode,
-            expLevel: expLevel,
-            imagePath: imagePath,
-            location: location,
-            idDocumentImagePath: idDocumentImagePath,
-            idDocumentImagePath2: idDocumentImagePath2,
-            email: email,
-            imagePathList: [], criminalRecordImagePath: '',
-            certificateImagePaths: [],
-          ),
-        );
-
-  void setImages(String imagePath) {
-    this.imagePath = imagePath;
-  }
-
   factory UserData.fromJson(Map<String, dynamic> json) {
-    if (json.containsKey('email')) {
-      String paymentType =
-          json['paymentType'] is String ? json['paymentType'] : '';
-
-      return UserData(
+    return UserData(
+      userId: json['id'] ?? '',
+      displayName: json['displayName'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      imagePath: json['imagePath'] ?? '',
+      getToken: json['getToken'],
+      pdfPathController: json['pdfPathController'] ?? '',
+      criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
+      paymentType: json['paymentType'] ?? '',
+      selectedCountryCode: json['selectedCountryCode'] ?? '',
+      expertises: _convertToExpertisesList(json['expertises']),
+      expLevel: _convertToList(json['expLevel']),
+      certificateImagePaths: (json['certificateImagePaths'] as List<dynamic>?)
+          ?.map((item) => item.toString())
+          .toList() ??
+          [],
+      idCardNumber: json['idCardNumber'] ?? '',
+      location: json['location'] != null
+          ? Map<String, double?>.from(json['location'])
+          : null,
+      idDocumentImagePath: json['idDocumentImagePath'] ?? '',
+      idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
+      registrationData: RegistrationData(
         userId: json['id'] ?? '',
+        devicesId: json['devicesId'] ?? '',
+        fcmToken: json['fcmToken'] ?? '',
         displayName: json['displayName'] ?? '',
-        email: json['email'] ?? '',
-        phoneNumber: json['phoneNumber'] ?? '',
-        imagePath: json['imagePath'] ?? '',
-        getToken: json['getToken'] ?? '',
-        pdfPathController: json['pdfPathController'] ?? '',
-        criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
-        paymentType: paymentType,
-        selectedCountryCode: json['selectedCountryCode'] ?? '',
-        expertises: _convertToExpertisesList(
-            json['expertises']), // Convertir a lista de Expertises
-        expLevel: _convertToList(json['expLevel']),
-        certificateImagePaths: _convertToList(json['certificateImagePaths']),
-
         idCardNumber: json['idCardNumber'] ?? '',
+        phoneNumber: json['phoneNumber'] ?? '',
+        paymentType: json['paymentType'] ?? '',
+        expertises: _convertToExpertisesList(json['expertises']),
+        expLevel: _convertToList(json['expLevel']),
+        selectedCountryCode: json['selectedCountryCode'] ?? '',
+        imagePath: json['imagePath'] ?? '',
         location: json['location'] != null
             ? Map<String, double?>.from(json['location'])
             : null,
         idDocumentImagePath: json['idDocumentImagePath'] ?? '',
         idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
-        registrationData: RegistrationData.fromForm(
-          userId: json['id'] ?? '',
-          displayName: json['displayName'] ?? '',
-          idCardNumber: json['idCardNumber'] ?? '',
-          phoneNumber: json['phoneNumber'] ?? '',
-          paymentType: paymentType,
-          selectedCountryCode: json['selectedCountryCode'] ?? '',
-          expertises: _convertToExpertisesList(
-              json['expertises']), // Convertir a lista de Expertises
-          expLevel: _convertToList(json['expLevel']),
-          imagePath: json['imagePath'] ?? '', // Corregido para manejar null
-          location: json['location'] != null
-              ? Map<String, double?>.from(json['location'])
-              : null,
-          idDocumentImagePath: json['idDocumentImagePath'] ?? '',
-          idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
-          criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
-          certificateImagePaths: _convertToList(json['certificateImagePaths']),
-
-          email: json['email'] ?? '',
-          imagePathList: [],
-        ),
-      );
-    } else {
-      return UserData(
-        userId: '',
-        displayName: '',
-        email: '',
-        idCardNumber: '',
-        phoneNumber: '',
-        expertises: [],
-        expLevel: [],
-        imagePath: '',
-        idDocumentImagePath: '',
-        selectedCountryCode: '',
-        pdfPathController: '',
-        criminalRecordImagePath: '',
-        location: {},
-        paymentType: '',
-        registrationData: RegistrationData(
-          userId: '',
-          displayName: '',
-          idCardNumber: '',
-          selectedCountryCode: '',
-          phoneNumber: '',
-          paymentType: '',
-          expertises: [],
-          imagePath: '',
-          location: {},
-          idDocumentImagePath: '',
-          email: '',
-          imagePathList: [],
-          idDocumentImagePath2: '',
-          criminalRecordImagePath: '',
-          certificateImagePaths: [],
-          expLevel: [],
-        ),
-        idDocumentImagePath2: '',
-        certificateImagePaths: [],
-        getToken: '', // O inicializa con valores predeterminados
-      );
-    }
+        email: json['email'] ?? '', imagePathList: [], criminalRecordImagePath: '', certificateImagePaths: [],
+      ),
+    );
   }
 
   static List<String> _convertToList(dynamic value) {
     if (value is List<dynamic>) {
-      return value.map((dynamic item) => item.toString()).toList();
-    } else if (value is String) {
-      return [value];
-    } else {
-      return [];
+      return value.map((item) => item.toString()).toList();
     }
+    return [];
   }
 
   static List<Expertises> _convertToExpertisesList(dynamic value) {
     if (value is List<dynamic>) {
-      return value.map((dynamic item) => Expertises.fromJson(item)).toList();
-    } else {
-      return [];
+      return value.map((item) => Expertises.fromJson(item)).toList();
     }
+    return [];
   }
 }
+
+
 
 class Category {
   final String id;
@@ -354,7 +245,7 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) {
     List<dynamic> expertisesData = json['expertises'];
     List<Expertises> expertises =
-        expertisesData.map((e) => Expertises.fromJson(e)).toList();
+    expertisesData.map((e) => Expertises.fromJson(e)).toList();
     return Category(
       id: json['id'],
       name: json['name'],
@@ -416,8 +307,8 @@ class Status {
   // Método de fábrica para crear una instancia de Status desde un mapa
   factory Status.fromMap(Map<String, dynamic> map) {
     return Status(
-      id: map['id'] ?? '',
-      name: getNameById(map['id'] ?? ''),
-    );
-  }
+        id: map['id'] ?? '',
+        name: getNameById(map['id'] ?? ''),
+        );
+    }
 }

@@ -12,23 +12,25 @@ import '../Metods/RegisController.dart';
 import 'package:flutter/cupertino.dart';
 
 class Step8FormData {
-  final List<String> certificateImagePaths;
+  final String certificateImagePaths;
+
 
   Step8FormData({required this.certificateImagePaths});
 }
 
 class CertificateImageStep extends StatefulWidget {
+  final Function(Step8FormData) onImageSelected;
   final RegistrationController registrationController;
   final VoidCallback onNextStep;
   final RegistrationData registrationData;
-  final void Function(List<String>) onImagesSelected;
+
   final UserData userData;
 
   CertificateImageStep({
+    required this.onImageSelected,
     required this.registrationController,
     required this.onNextStep,
     required this.registrationData,
-    required this.onImagesSelected,
     required this.userData,
   });
 
@@ -41,34 +43,61 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
   late Future<void> _initializeControllerFuture;
   List<XFile> capturedImages = [];
   bool _isCameraReady = false;
+  XFile? capturedImage;
   bool _isCapturing = false;
-
+  final ImagePicker _imagePicker = ImagePicker();
+  File? _image;
   @override
   void initState() {
     super.initState();
     _initializeControllerFuture = _initializeCamera();
   }
 
+
+  Future<void> _pickImage() async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Tomese una foto a sus Certificados o título profesional', style: MyTextStyles.drawerButtonTextStyle),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Cierra el cuadro de diálogo
+                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  _processImage(image);
+                },
+                child: Text('Tomar Foto'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
       final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
+            (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
       _cameraController = CameraController(
         frontCamera,
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
       );
 
-      _initializeControllerFuture = _cameraController.initialize();
+      await _cameraController.initialize();
 
-      await _initializeControllerFuture;
-
-      setState(() {
-        _isCameraReady = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isCameraReady = true;
+        });
+      }
 
       print("Cámara inicializada correctamente");
     } catch (e) {
@@ -76,16 +105,19 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
     }
   }
 
+  bool isStep3Valid() {
+    return capturedImage != null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 8: Cargue una foto de su título o certificado de acreditación laboral(Opcional)",
-            style: MyTextStyles.formServiceTextStyle,
+            "Paso 8: Tomese una foto a sus Certificados o título profesional(Opcional)",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
         Container(
@@ -95,159 +127,65 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
             alignment: Alignment.center,
             children: [
               GestureDetector(
-                onTap: _isCameraReady ? _captureAndShowImage : null,
+                onTap: () => _pickImage(),
                 child: Container(
+                  width: 200,
+                  height: 200,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(20.0),
+                    border: Border.all(color: Color(0xA3C9D2D2)),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: _isCameraReady
-                      ? Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CameraPreview(_cameraController),
-                          ],
-                        )
-                      : Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                  child: _image == null
+                      ? Center(
+                    child: Icon(
+                      Icons.cloud_upload,
+                      size: 48,
+                      color: Color(0xA3C9D2D2),
+                    ),
+                  )
+                      : Image.file(
+                    _image!,
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        TextButton(
-          onPressed:
-              _isCameraReady && !_isCapturing ? _captureAndShowImage : null,
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.transparent,
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
-          child: Text(
-            "Capturar Imagen",
-            style: TextStyle(
-              color: Color(0xFF84090D),
-            ),
-          ),
-        ),
-        if (capturedImages.isNotEmpty)
-          TextButton(
-            onPressed: _isCameraReady && !_isCapturing
-                ? _showDeleteImageConfirmation
-                : null,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.transparent,
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(
-                  color: Color(0xFF84090D),
-                ),
-              ),
-            ),
-            child: Text(
-              "Eliminar Imagen Seleccionada",
-              style: TextStyle(
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
-        if (capturedImages.isNotEmpty)
-          Container(
-            height: 100.0,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: capturedImages.map((image) {
-                  return Container(
-                    width: (screenWidth - 32) / 3,
-                    margin: EdgeInsets.only(right: 8.0),
-                    child: Image.file(
-                      File(image.path),
-                      fit: BoxFit.cover,
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
+
       ],
     );
   }
 
-  Future<void> _captureAndShowImage() async {
-    try {
-      if (_isCapturing) return;
-
+  void _processImage(XFile? image) {
+    if (image != null) {
       setState(() {
-        _isCapturing = true;
+        _image = File(image.path); // Actualiza la imagen mostrada
+        capturedImage = image; // Actualiza la referencia de la imagen capturada
       });
 
-      final XFile image = await _cameraController.takePicture();
-      print("Foto capturada de certificates en: ${image.path}");
-
-      setState(() {
-        capturedImages.add(image);
-      });
-
-      // Actualiza el método onImagesSelected con la lista de rutas de imágenes
-      widget
-          .onImagesSelected(capturedImages.map((image) => image.path).toList());
+      // Llama a los métodos con la ruta correcta
+      widget.onImageSelected(
+        Step8FormData(certificateImagePaths: image.path), // Usa la ruta capturada
+      );
 
       widget.registrationController.updateRegistrationData(
-        certificateImagePaths:
-            capturedImages.map((image) => image.path).toList(),
-        workerType: widget.registrationController.registrationData.paymentType,
-        idDocumentImagePath2:
-            widget.registrationController.registrationData.idDocumentImagePath2,
-        idDocumentImagePath:
-            widget.registrationController.registrationData.idDocumentImagePath,
+        idDocumentImagePath: '', // Este campo queda vacío según el contexto
+        workerType: '',
+        idDocumentImagePath2: '',
+        certificateImagePaths: image.path, // Usa la ruta capturada
       );
-    } catch (e) {
-      print("Error al tomar la foto: $e");
-    } finally {
-      setState(() {
-        _isCapturing = false;
-      });
     }
+
+    // Marcar como captura finalizada
+    setState(() {
+      _isCapturing = false;
+    });
   }
 
-  void _showDeleteImageConfirmation() {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text("Eliminar Última Imagen Capturada"),
-          content: Text("¿Desea eliminar la última imagen capturada?"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text("Cancelar"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  capturedImages.removeLast();
-                });
-                widget.onImagesSelected(
-                    capturedImages.map((image) => image.path).toList());
-                Navigator.of(dialogContext).pop();
-              },
-              child: Text("Eliminar"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 
   @override
   void dispose() {

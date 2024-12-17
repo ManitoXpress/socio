@@ -4,115 +4,55 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
 
-
-class Step3FormData {
-  final String imagePath;
-
-  Step3FormData({required this.imagePath});
-}
-
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
-  final void Function(Step3FormData image) onImageSelected;
+  final void Function(String imagePath) onImageSelected;
   final String imagePath;
-  final Step3FormData formData;
   final RegistrationData registrationData;
   final UserData userData;
   final ValueNotifier<bool> isImageCaptured;
   final void Function() onNextStep;
 
-  late _ProfileImageState _profileImageState;
-
-  bool isStep3Valid() {
-    return _profileImageState.isStep3Valid();
-  }
-
-  ProfileImage({
+  const ProfileImage({
+    Key? key,
     required this.registrationController,
     required this.onImageSelected,
     required this.imagePath,
-    required this.formData,
     required this.registrationData,
     required this.userData,
     required this.isImageCaptured,
     required this.onNextStep,
-  });
+  }) : super(key: key);
 
   @override
-  _ProfileImageState createState() {
-    _profileImageState = _ProfileImageState();
-    return _profileImageState;
-  }
+  _ProfileImageState createState() => _ProfileImageState();
 }
 
 class _ProfileImageState extends State<ProfileImage> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
-  XFile? capturedImage;
-  bool _isCameraReady = false;
-  bool _isCapturing = false;
-  File? _image;  // Cambiado para una sola imagen
-  final ImagePicker _imagePicker = ImagePicker(); // Definición de _imagePicker
+  File? _image;  // Solo una imagen en lugar de una lista
+  ApiService apiService = ApiService(); // Instancia de ApiService
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeControllerFuture = _requestCameraPermission().then((_) {
-      return _initializeCamera();
-    });
-  }
-
-  Future<void> _requestCameraPermission() async {
-    var status = await Permission.camera.status;
-    if (!status.isGranted) {
-      await Permission.camera.request();
-    }
-  }
-
-  Future<void> _showImagePreview() async {
-    if (_image != null) {
-      await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.file(_image!), // Mostrar la única imagen
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _image = null; // Elimina la imagen
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: Text("Eliminar imagen"),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }
-  }
-
+  // Función para seleccionar imagen desde la galería o la cámara
   Future<void> _pickImage() async {
+    final ImagePicker _picker = ImagePicker();
+
+    // Muestra un cuadro de diálogo con las opciones para tomar una foto o seleccionar desde la galería
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Tomese una foto de perfil', style: MyTextStyles.drawerButtonTextStyle),
+          title: Text('Saque una foto de perfil'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
                 child: Text('Tomar Foto'),
@@ -124,36 +64,20 @@ class _ProfileImageState extends State<ProfileImage> {
     );
   }
 
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
-      );
+  // Procesar y asignar la imagen seleccionada
+  void _processImage(XFile? image) {
+    if (image != null) {
+      setState(() {
+        _image = File(image.path); // Asigna la imagen seleccionada
+      });
 
-      _cameraController = CameraController(
-        frontCamera,
-        ResolutionPreset.high,
-      );
-
-      await _cameraController.initialize();
-
-      if (mounted) {
-        setState(() {
-          _isCameraReady = true;
-        });
-      }
-
-      print("Cámara inicializada correctamente");
-    } catch (e) {
-      print("Error al inicializar la cámara: $e");
+      // Asegúrate de que la ruta de la imagen se pasa correctamente
+      widget.onImageSelected(image.path);  // Actualiza la ruta de la imagen en userData
+      widget.isImageCaptured.value = true; // Cambia el estado de la imagen capturada
+      print('Imagen seleccionada: ${image.path}'); // Verifica la ruta de la imagen
     }
   }
 
-  bool isStep3Valid() {
-    return capturedImage != null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,41 +90,32 @@ class _ProfileImageState extends State<ProfileImage> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
-        Container(
-          height: 400,
-          width: double.maxFinite,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _pickImage(),
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(0xA3C9D2D2)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: _image == null
-                      ? Center(
-                          child: Icon(
-                            Icons.cloud_upload,
-                            size: 48,
-                            color: Color(0xA3C9D2D2),
-                          ),
-                        )
-                      : Image.file(
-                          _image!,
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                        ),
-                ),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              border: Border.all(color: Color(0xA3C9D2D2)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _image == null // Si no se ha seleccionado imagen, mostrar ícono
+                ? Center(
+              child: Icon(
+                Icons.cloud_upload,
+                size: 48,
+                color: Color(0xA3C9D2D2),
               ),
-            ],
+            )
+                : Image.file(
+              _image!, // Mostrar la imagen seleccionada
+              width: 200,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-        if (!isStep3Valid())
+        if (_image == null) // Mostrar mensaje si no se ha capturado la imagen
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
@@ -210,54 +125,5 @@ class _ProfileImageState extends State<ProfileImage> {
           ),
       ],
     );
-  }
-
-  void _processImage(XFile? image) {
-    if (image != null) {
-      setState(() {
-        _image = File(image.path); // Solo guarda una imagen
-      });
-
-      widget.onImageSelected(Step3FormData(imagePath: image.path));
-      widget.isImageCaptured.value = true;
-    }
-  }
-
-  Future<void> _captureAndShowImage() async {
-    try {
-      if (_isCapturing) return;
-
-      setState(() {
-        _isCapturing = true;
-      });
-
-      final XFile image = await _cameraController.takePicture();
-      print("Foto capturada en: ${image.path}");
-
-      if (mounted) {
-        setState(() {
-          capturedImage = image;
-        });
-
-        widget.onImageSelected(Step3FormData(imagePath: capturedImage?.path ?? ''));
-        widget.isImageCaptured.value = true;
-      }
-
-      await Future.delayed(Duration(milliseconds: 500));
-    } catch (e) {
-      print("Error al tomar la foto: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isCapturing = false;
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _cameraController.dispose();
-    super.dispose();
   }
 }

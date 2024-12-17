@@ -7,68 +7,41 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
-
-class Step5FormData {
+class IdCardImageStep extends StatefulWidget {
+  final RegistrationController registrationController;
+  final void Function(String) onImageSelected; // Cambié el tipo a String (ruta de la imagen)
+  final void Function() onNextStep;
+  final ValueNotifier<bool> isImageCaptured;
+  final RegistrationData registrationData;
+  final UserData userData;
   final String idDocumentImagePath;
 
-  Step5FormData({required this.idDocumentImagePath});
-}
-
-class IdCardImageStep extends StatefulWidget {
-  final Function(Step5FormData) onImageSelected;
-  final RegistrationController registrationController;
-  late _IdCardImageStepState _idCardImageStepState;
-  final void Function() onNextStep;
-  bool isStep5Valid() {
-    return _idCardImageStepState.isStep5Valid();
-  }
-
-  IdCardImageStep({
+  const IdCardImageStep({
+    Key? key,
     required this.registrationController,
     required this.onImageSelected,
     required this.onNextStep,
-    required idDocumentImagePath,
-    required Null Function(Step5FormData image2) onImageSelected2,
-    required UserData userData,
-    required RegistrationData registrationData,
-    required Step5FormData formData2,
-  });
+    required this.isImageCaptured,
+    required this.registrationData,
+    required this.userData,
+    required this.idDocumentImagePath,
+  }) : super(key: key);
 
   @override
-  _IdCardImageStepState createState() {
-    _idCardImageStepState = _IdCardImageStepState();
-    return _idCardImageStepState;
-  }
+  _IdCardImageStepState createState() => _IdCardImageStepState();
 }
 
 class _IdCardImageStepState extends State<IdCardImageStep> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
-  XFile? capturedImage;
-  int currentStep = 0;
-  bool _isCameraReady = false;
-  bool _isCapturing = false;
-  File? _image;  // Cambiado para una sola imagen
-  final ImagePicker _imagePicker = ImagePicker(); // Definición de _imagePicker
+  File? _image; // Imagen seleccionada o capturada
+  final ImagePicker _imagePicker = ImagePicker();
 
-  bool isStep5Valid() {
-    return capturedImage != null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeControllerFuture = _initializeCamera();
-  }
-
-  
-
+  // Función para seleccionar o capturar imagen
   Future<void> _pickImage() async {
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Tomese una foto de perfil', style: MyTextStyles.drawerButtonTextStyle),
+          title: const Text('Tome una foto a su carnet'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -78,7 +51,7 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
                   final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
-                child: Text('Tomar Foto'),
+                child: const Text('Tomar Foto'),
               ),
             ],
           ),
@@ -87,85 +60,67 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
     );
   }
 
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      final frontCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first,
+  // Procesa la imagen seleccionada o capturada
+  void _processImage(XFile? image) {
+    if (image != null) {
+      setState(() {
+        _image = File(image.path); // Guarda la imagen seleccionada
+      });
+
+      // Llama al callback para notificar la selección de la ruta de la imagen
+      widget.onImageSelected(image.path);
+
+      // Actualiza el estado en RegistrationController (si es necesario)
+      widget.registrationController.updateRegistrationData(
+        idDocumentImagePath: image.path,
+        workerType: '',
+        idDocumentImagePath2: '',
+        certificateImagePaths: '',
       );
 
-      _cameraController = CameraController(
-        frontCamera,
-        ResolutionPreset.high,
-      );
-
-      await _cameraController.initialize();
-
-      if (mounted) {
-        setState(() {
-          _isCameraReady = true;
-        });
-      }
-
-      print("Cámara inicializada correctamente");
-    } catch (e) {
-      print("Error al inicializar la cámara: $e");
+      print('Imagen de documento seleccionada: ${image.path}');
     }
-  }
-
-  bool isStep3Valid() {
-    return capturedImage != null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 5:  Necesitamos una foto de su carnet de la parte frontal",
+            "Paso 5: Necesitamos una foto de su carnet de la parte frontal",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
-        Container(
-          height: 400,
-          width: double.maxFinite,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _pickImage(),
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(0xA3C9D2D2)),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: _image == null
-                      ? Center(
-                          child: Icon(
-                            Icons.cloud_upload,
-                            size: 48,
-                            color: Color(0xA3C9D2D2),
-                          ),
-                        )
-                      : Image.file(
-                          _image!,
-                          width: 200,
-                          height: 200,
-                          fit: BoxFit.cover,
-                        ),
-                ),
+        GestureDetector(
+          onTap: _pickImage,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xA3C9D2D2)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: _image == null
+                ? const Center(
+              child: Icon(
+                Icons.cloud_upload,
+                size: 48,
+                color: Color(0xA3C9D2D2),
               ),
-            ],
+            )
+                : Image.file(
+              _image!,
+              width: 200,
+              height: 200,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
-        if (!isStep3Valid())
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+        if (_image == null)
+          const Padding(
+            padding: EdgeInsets.all(8.0),
             child: Text(
               'Saca una foto antes de continuar.',
               style: TextStyle(color: Color(0xFF830A09)),
@@ -173,57 +128,5 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
           ),
       ],
     );
-  }
-
-  void _processImage(XFile? image) {
-    if (image != null) {
-      setState(() {
-        _image = File(image.path); // Solo guarda una imagen
-      });
-      widget.onImageSelected(
-          Step5FormData(idDocumentImagePath: capturedImage?.path ?? ''));
-
-      widget.registrationController.updateRegistrationData(
-        idDocumentImagePath: capturedImage?.path ?? '',
-        workerType: '',
-        idDocumentImagePath2: '',
-        certificateImagePaths: [],
-      );
-    }
-  }
-
-  void _showDeleteImageConfirmation() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Eliminar Imagen Capturada"),
-          content: Text("¿Desea eliminar la imagen capturada?"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Cerrar el diálogo
-              },
-              child: Text("Cancelar"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  capturedImage = null; // Eliminar la imagen capturada
-                });
-                Navigator.of(context).pop(); // Cerrar el diálogo
-              },
-              child: Text("Eliminar"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _cameraController.dispose();
-    super.dispose();
   }
 }
