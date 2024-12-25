@@ -55,64 +55,78 @@ class ApiService {
   }
 
   Future<void> sendProposalToFirestore(
-  ServiceRequest serviceRequest,
-  String token,
-  String offeredPrice,
-  double extraCosts, // Añadido parámetro para los costos extra
-  String workerId,
-) async {
-  try {
-    // Obtén una referencia a la colección "offers"
-    final offersCollection = FirebaseFirestore.instance.collection('offers');
-
-    // Crea un documento con una propuesta en la colección "offers"
-    final newProposalRef = offersCollection.doc(); // ID generado automáticamente
-
-    // Calcula el precio total
-    double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
-    double totalPrice = offeredPriceValue + extraCosts;
-
-    // Define los datos de la propuesta
-    final proposalData = {
-      'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
-      'offeredPrice': offeredPriceValue,
-      'extraCosts': extraCosts, // Añade los costos extra
-      'totalPrice': totalPrice, // Añade el precio total calculado
-      'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
-      'userToken': token, // Token del usuario
-      'workerId': workerId, // Añade el workerId
-    };
-
-    // Guarda la propuesta en Firestore
-    await newProposalRef.set(proposalData);
-
-    print('Oferta enviada con éxito a Firestore');
-  } catch (e) {
-    print('Error al enviar oferta a Firestore: $e');
-    throw Exception('Error al enviar oferta a Firestore: $e');
-  }
-}
-
-  Future<void> updateServiceStatus(
-      String serviceRequestId, String newStatus, String token) async {
+      ServiceRequest serviceRequest,
+      String token,
+      String offeredPrice,
+      double extraCosts, // Añadido parámetro para los costos extra
+      String workerId,
+      ) async {
     try {
-      final String? refreshedToken =
-          await FirebaseAuth.instance.currentUser?.getIdToken(true);
+      // Obtén una referencia a la colección "offers"
+      final offersCollection = FirebaseFirestore.instance.collection('offers');
+
+      // Verificar si el trabajador ya realizó una oferta para este servicio
+      final existingOffer = await offersCollection
+          .where('serviceId', isEqualTo: serviceRequest.id)
+          .where('workerId', isEqualTo: workerId)
+          .get();
+
+      if (existingOffer.docs.isNotEmpty) {
+        print('El trabajador ya realizó una oferta para este servicio.');
+        return;
+      }
+
+      // Crea un documento con una propuesta en la colección "offers"
+      final newProposalRef = offersCollection.doc(); // ID generado automáticamente
+
+      // Calcula el precio total
+      double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
+      double totalPrice = offeredPriceValue + extraCosts;
+
+      // Define los datos de la propuesta
+      final proposalData = {
+        'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
+        'offeredPrice': offeredPriceValue,
+        'extraCosts': extraCosts, // Añade los costos extra
+        'totalPrice': totalPrice, // Añade el precio total calculado
+        'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
+        'userToken': token, // Token del usuario
+        'workerId': workerId, // Añade el workerId
+        'hasOffer': true, // Indica que este trabajador hizo una oferta
+        'status': 'offer',
+      };
+
+      // Guarda la propuesta en Firestore
+      await newProposalRef.set(proposalData);
+
+      print('Oferta enviada con éxito a Firestore');
+    } catch (e) {
+      print('Error al enviar oferta a Firestore: $e');
+      throw Exception('Error al enviar oferta a Firestore: $e');
+    }
+  }
+
+
+
+
+  Future<void> updateServiceStatus(String serviceRequestId, String newStatus, String token) async {
+    try {
+
+      final String? refreshedToken = await FirebaseAuth.instance.currentUser?.getIdToken(true);
       final response = await http.patch(
-        Uri.parse(
-            '$baseUrl/services/$serviceRequestId'), // URL del servicio específico
+        Uri.parse('$baseUrl/services/$serviceRequestId'), // URL del servicio específico
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${refreshedToken ?? token}',
         },
         body: jsonEncode({'status': newStatus}), // Campo que deseas actualizar
+
       );
 
       if (response.statusCode == 200) {
         print('Estado actualizado con éxito en el backend');
       } else {
-        print(
-            'Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
+        print('Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
       }
     } catch (e) {
       print('Error al realizar la solicitud HTTP de actualización: $e');
@@ -122,8 +136,8 @@ class ApiService {
 
   Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
     try {
-      // Asegúrate de que el campo imagePath tenga la URL de Firebase sin modificaciones
-      String imagePath = registrationData.imagePath; // Verificamos que esta URL no esté anidada
+      // Verificamos que el campo imagePath contenga la URL de Firebase sin modificaciones
+      String imagePath = registrationData.imagePath; // Confirmamos que la URL no esté anidada
 
       // Mapea cada expertise a un mapa con nombre e ID
       List<Map<String, String>> expertises = registrationData.expertises.map((expertise) {
@@ -137,17 +151,19 @@ class ApiService {
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,
         'idCardNumber': registrationData.idCardNumber,
-        'phoneNumber': FirebaseAuth.instance.currentUser?.phoneNumber ?? '',
+        'phoneNumber': registrationData.phoneNumber, // Ahora usamos el número de teléfono de registrationData
         'location': registrationData.location ?? {},
         'paymentType': registrationData.paymentType,
-        'imagePath': imagePath, // Asigna directamente la URL generada correctamente
+        'imagePath': registrationData.imagePath, // Asignamos directamente la URL generada correctamente
         'idDocumentImagePath': registrationData.idDocumentImagePath,
         'idDocumentImagePath2': registrationData.idDocumentImagePath2,
         'criminalRecordImagePath': registrationData.criminalRecordImagePath,
         'certificateImagePaths': registrationData.certificateImagePaths,
+        'deviceId': registrationData.devicesId,
+        'fcmToken': registrationData.fcmToken,
         'expertises': expertises,
         'expLevel': registrationData.expLevel,
-        'verificatioStatus' : 'No verificado'
+        'verificationStatus': 'No verificado',
       };
 
       print('Request Body: $requestBody');
@@ -174,9 +190,11 @@ class ApiService {
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
-      final String imageName = 'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
-      final String userFolderPath = '$userId/';
+      final String imageName =
+          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String userFolderPath = '$userId/';  // Agregar barra al final
       final String imagePath = '$userFolderPath$imageName';
+      // Concatenar correctamente
 
       if (await image.exists()) {
         Reference ref = storage.ref().child(imagePath);
@@ -186,11 +204,9 @@ class ApiService {
           print('Imagen cargada con éxito en Firebase Storage');
         });
 
-        // Aquí obtenemos la URL final de Firebase Storage
-        final String imageUrl = await ref.getDownloadURL();
+        final imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
-
-        return imageUrl;  // Aquí retornamos la URL sin modificar
+        return imageUrl;
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
@@ -203,41 +219,37 @@ class ApiService {
 
 
 
-  Future<String> uploadImageToFirebaseStorage2(
-      File image, String userId) async {
+  Future<String> uploadImageToFirebaseStorage2(File image, String userId) async {
     try {
       print('Comenzando la carga de la imagen a Firebase Storage');
 
-      final FirebaseAuth auth = FirebaseAuth.instance;
-      final User? user = auth.currentUser;
+      // Crear una extensión basada en el nombre del archivo de imagen
+      final String extension = image.path.split('.').last;
 
-      if (user == null) {
-        print('Error: Usuario no autenticado.');
-        throw Exception('Usuario no autenticado');
-      }
+      // Crear un nombre único para la imagen usando la fecha actual
+      final String imageName = 'IdentificactionNumber_A_${DateTime.now().millisecondsSinceEpoch}.$extension';
 
-      final FirebaseStorage storage = FirebaseStorage.instance;
+      // Crear la ruta de la carpeta del usuario
+      final String userFolderPath = '$userId/';
+      final String imagePath = '$userFolderPath$imageName';
 
-      String extension = image.path.split('.').last;
-      String imageName =
-          'IdentificactionNumber_A_${DateTime.now().millisecondsSinceEpoch}.$extension';
-      String userFolderPath = '$userId/';
-      String imagePath = '$userFolderPath$imageName';
-
+      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        Reference ref = storage.ref().child(imagePath);
-        UploadTask uploadTask = ref.putFile(image);
+        // Obtener la referencia de la imagen y subir el archivo
+        final Reference ref = FirebaseStorage.instance.ref().child(imagePath);
+        final UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
           print('Imagen cargada con éxito en Firebase Storage');
         });
 
-        final imageUrl = await ref.getDownloadURL();
+        // Obtener la URL de descarga de la imagen cargada
+        final String imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
-        return imageUrl;
+
+        return imageUrl; // Devolver la URL de la imagen
       } else {
-        print('Error: El archivo de imagen no existe.');
-        throw Exception('El archivo de imagen no existe');
+        throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
@@ -245,48 +257,43 @@ class ApiService {
     }
   }
 
-  Future<String> uploadImageToFirebaseStorage3(
-      File image, String userId) async {
+  Future<String> uploadImageToFirebaseStorage3(File image, String userId) async {
     try {
       print('Comenzando la carga de la imagen a Firebase Storage');
 
-      final FirebaseAuth auth = FirebaseAuth.instance;
-      final User? user = auth.currentUser;
+      // Crear una extensión basada en el nombre del archivo de imagen
+      final String extension = image.path.split('.').last;
 
-      if (user == null) {
-        print('Error: Usuario no autenticado.');
-        throw Exception('Usuario no autenticado');
-      }
+      // Crear un nombre único para la imagen usando la fecha actual
+      final String imageName = 'IdentificactionNumber_A_${DateTime.now().millisecondsSinceEpoch}.$extension';
 
-      final FirebaseStorage storage = FirebaseStorage.instance;
+      // Crear la ruta de la carpeta del usuario
+      final String userFolderPath = '$userId/';
+      final String imagePath = '$userFolderPath$imageName';
 
-      String extension = image.path.split('.').last;
-      String imageName =
-          'IdentificactionNumber_B_${DateTime.now().millisecondsSinceEpoch}.$extension';
-      String userFolderPath = '$userId/';
-      String imagePath = '$userFolderPath$imageName';
-
+      // Verificar si el archivo de imagen existe antes de cargarlo
       if (await image.exists()) {
-        Reference ref = storage.ref().child(imagePath);
-        UploadTask uploadTask = ref.putFile(image);
+        // Obtener la referencia de la imagen y subir el archivo
+        final Reference ref = FirebaseStorage.instance.ref().child(imagePath);
+        final UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
           print('Imagen cargada con éxito en Firebase Storage');
         });
 
-        final imageUrl = await ref.getDownloadURL();
+        // Obtener la URL de descarga de la imagen cargada
+        final String imageUrl = await ref.getDownloadURL();
         print('URL de la imagen en Firebase Storage: $imageUrl');
-        return imageUrl;
+
+        return imageUrl; // Devolver la URL de la imagen
       } else {
-        print('Error: El archivo de imagen no existe.');
-        throw Exception('El archivo de imagen no existe');
+        throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
-
   Future<String> uploadImageToFirebaseStorage4(
       File image, String userId) async {
     try {
@@ -325,10 +332,9 @@ class ApiService {
       }
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
-      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+      }
     }
-  }
-
   Future<List<String>> uploadImageToFirebaseStorage5(
       List<File> images, String userId) async {
     try {
@@ -375,8 +381,8 @@ class ApiService {
     } catch (e) {
       print('Error al cargar las imágenes en Firebase Storage: $e');
       throw Exception('Error al cargar las imágenes en Firebase Storage: $e');
+      }
     }
-  }
 }
 
 class FormData {
@@ -408,8 +414,7 @@ class FormData {
         'lng': location['lng'],
       },
       'offeredPrice': offeredPrice,
-      'serviceType':
-          serviceType, // Usar la cadena en lugar de un objeto ServiceType
+      'serviceType': serviceType, // Usar la cadena en lugar de un objeto ServiceType
       'userId': userId,
     };
   }

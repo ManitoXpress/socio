@@ -13,15 +13,18 @@ class EditProfileDialog extends StatefulWidget {
   final String displayName;
   final String idCardNumber;
   final String phoneNumber;
-  late List<String> expertises; // Cambiado a "late List<String>"
-  late List<String> expLevel; // Cambiado a "late List<String>"
+  late List<Expertises> expertises;  // Cambiado de List<String> a List<Expertises>
+  late List<String> expLevel; 
   final Function()? onUpdateProfile;
+  final ApiService2 apiService2; 
+
   EditProfileDialog({
     required this.displayName,
     required this.idCardNumber,
     required this.expLevel,
     required this.expertises,
     required this.phoneNumber,
+    required this.apiService2, 
     this.onUpdateProfile,
   });
 
@@ -34,7 +37,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   late TextEditingController idCardNumberController;
   late TextEditingController phoneNumberController;
   final customColor = CustomColor.materialColor;
-
+  
   @override
   void initState() {
     super.initState();
@@ -56,10 +59,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
         // Recuperar los datos actuales del usuario
         final userData = await ApiService2().fetchUserData(user.uid, token!);
+
+        // Convertir expertises a List<String> para la actualización
+        List<String> expertisesNames = widget.expertises.map((e) => e.name).toList();
+
         // Actualizar expertises y expLevel con los nuevos valores del widget
-        userData.expertises = widget.expertises.cast<Expertises>();
+        userData.expertises = widget.expertises;
         userData.expLevel = widget.expLevel;
-        // Construir un nuevo RegistrationData con los cambios y mantener los valores antiguos si los campos están vacíos
+
         RegistrationData registrationData = RegistrationData(
           userId: user.uid,
           displayName: updatedDisplayName.isNotEmpty
@@ -82,7 +89,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           email: userData.email,
           imagePathList: [],
           criminalRecordImagePath: userData.criminalRecordImagePath,
-          certificateImagePaths: userData.certificateImagePaths, devicesId: '', fcmToken: '',
+          certificateImagePaths: userData.certificateImagePaths, 
+          devicesId: '', fcmToken: '',
         );
 
         final response = await apiService.updateUser(
@@ -131,9 +139,8 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
             ),
             style: MyTextStyles.formServiceTextStyle,
           ),
-          Text('Especialidades seleccionadas: ${widget.expertises.join(", ")}'),
-          Text(
-              'Experiencia laboral seleccionada: ${widget.expLevel.join(", ")}'),
+          Text('Especialidades seleccionadas: ${widget.expertises.map((e) => e.name).join(", ")}'),
+          Text('Experiencia laboral seleccionada: ${widget.expLevel.join(", ")}'),
           TextButton(
             onPressed: () {
               // Abrir la nueva pantalla para seleccionar expertises y expLevel
@@ -144,22 +151,21 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     registrationController: RegistrationController(),
                     onNextStep: () {},
                     onServiceTypesSelected: (expertises, expLevel) {
-                      // Actualiza los valores en la ventana de diálogo
                       setState(() {
-                        // expertises se obtiene de la nueva pantalla
-                        widget.expertises = expertises;
+                        // Convierte la lista de Expertises a una lista de Strings (nombres)
+                        widget.expertises = expertises.map((e) => e).toList(); // No es necesario convertir a String
 
                         // Verifica si expLevel es una cadena no nula antes de asignarla a widget.expLevel
                         if (expLevel != null) {
                           widget.expLevel = [expLevel];
                         } else {
-                          // Si expLevel es nulo, puedes asignar una lista vacía o manejarlo según tu lógica
                           widget.expLevel = [];
                         }
                       });
                     },
                     categories: ServiceCategories.categories,
                     onServiceTypeSelected: (serviceType) {},
+                    fetchExpertises: widget.apiService2.fetchExpertises,
                   ),
                 ),
               );
@@ -179,13 +185,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           child: Text('Cancelar'),
         ),
         ElevatedButton(
-          onPressed: () {
-            _updateUserProfile(); // Llamar a la función de actualización de perfil
-            widget.onUpdateProfile?.call();
-            Navigator.pop(context); // Cerrar la ventana de diálogo
-          },
-          child: Text("Guardar Cambios"),
-        ),
+        onPressed: () {
+              _updateUserProfile(); // Llamar a la función de actualización de perfil
+              widget.onUpdateProfile?.call(); // Ejecutar la función de callback si se proporcionó
+              Navigator.pop(context); // Cerrar el diálogo de edición
+            },
+            child: Text("Guardar Cambios"),
+          )
+
       ],
     );
   }

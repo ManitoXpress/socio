@@ -24,7 +24,6 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;
@@ -60,6 +59,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   File? _image; // Variable para almacenar la imagen seleccionada
   final ImagePicker _picker = ImagePicker();
   String? _selectedImageUrl;
+  double? _workerOfferedPrice;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -79,7 +79,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .collection('services')
         .doc(widget.serviceRequest.id)
         .snapshots();
-    _fetchOfferedPrice();
+    _fetchWorkerOffer();
   }
 
   @override
@@ -88,6 +88,33 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+
+  Future<void> _fetchWorkerOffer() async {
+    try {
+      final offerSnapshot = await FirebaseFirestore.instance
+          .collection('offers')
+          .where('serviceId', isEqualTo: widget.serviceRequest.id)
+          .where('workerId', isEqualTo: widget.workerId)
+          .get();
+
+      if (offerSnapshot.docs.isNotEmpty) {
+        setState(() {
+          _workerOfferedPrice =
+              offerSnapshot.docs.first.data()['offeredPrice']?.toDouble();
+        });
+      } else {
+        setState(() {
+          _workerOfferedPrice = null;
+        });
+      }
+    } catch (e) {
+      print('Error al obtener la oferta del trabajador: $e');
+      setState(() {
+        _workerOfferedPrice = null;
+      });
+    }
+  }
+
 
 
   void _initializeMap() {
@@ -434,23 +461,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-  Future<String?> fetchWorkerId(String serviceId) async {
-  try {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('offers')
-        .where('serviceId', isEqualTo: serviceId)
-        .limit(1)
-        .get();
-
-    if (querySnapshot.docs.isNotEmpty) {
-      return querySnapshot.docs.first.data()['workerId'] as String?;
-    }
-  } catch (e) {
-    debugPrint('Error al obtener el workerId: $e');
-  }
-  return null;
-}
-
 
 
   @override
@@ -594,7 +604,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
                     SizedBox(height: 16.0),
                     Text(
-                      'Precio Ofertado: ${_fetchedOfferedPrice ?? 'No ofertado'}',
+                      'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
                       style: MyTextStyles.formServiceTextStyle,
                     ),
                     SizedBox(height: 16.0),

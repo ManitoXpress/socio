@@ -90,7 +90,7 @@ class _IdCardImageStepState extends State<IdCardImageStepB> {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 6: Necesitamos una foto de su carnet de la parte anversa",
+            "Paso 6: Necesitamos una foto de la parte reversa de su carnet",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),

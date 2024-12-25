@@ -323,25 +323,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         return;
       }
     }
-
-    // Validar el paso 7 (CriminalRecordImageStep)
-    if (currentStep == 6) {
-      if (userData.criminalRecordImagePath.isEmpty) {
-        print(
-            'Selecciona una imagen del registro criminal antes de pasar al siguiente paso.');
-        return;
-      }
-    }
-
-    // Validar el paso 8 (CertificateImageStep)
-    if (currentStep == 7) {
-      if (userData.certificateImagePaths.isEmpty) {
-        print(
-            'Selecciona al menos un certificado antes de completar el registro.');
-        return;
-      }
-    }
-
     // Si todos los pasos anteriores son válidos, avanza al siguiente paso
     setState(() {
       if (currentStep < 7) {

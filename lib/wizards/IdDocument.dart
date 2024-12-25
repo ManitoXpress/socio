@@ -89,7 +89,7 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 5: Necesitamos una foto de su carnet de la parte frontal",
+            "Paso 5: Necesitamos una foto de la parte frontal de su carnet",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),

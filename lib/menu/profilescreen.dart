@@ -176,37 +176,39 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _editProfile() async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+  try {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
 
-      if (userId != null && token != null) {
-        final userData = await ApiService2().fetchUserData(userId, token);
+    if (userId != null && token != null) {
+      final userData = await ApiService2().fetchUserData(userId, token);
 
-        if (userData == null) {
-          throw 'No se pudo obtener los datos del usuario.';
-        }
-
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return EditProfileDialog(
-              displayName: userData.displayName,
-              idCardNumber: userData.idCardNumber,
-              phoneNumber: userData.phoneNumber,
-              expertises: userData.expertises.map((expertise) => expertise.name).toList(),
-              expLevel: userData.expLevel,
-              onUpdateProfile: _loadAndRefreshUserData,
-            );
-          },
-        );
-      } else {
-        throw 'No se pudo obtener el ID del usuario autenticado.';
+      if (userData == null) {
+        throw 'No se pudo obtener los datos del usuario.';
       }
-    } catch (e) {
-      print('Error al obtener datos del usuario: $e');
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return EditProfileDialog(
+            displayName: userData.displayName,
+            idCardNumber: userData.idCardNumber,
+            phoneNumber: userData.phoneNumber,
+            expertises: userData.expertises,
+            expLevel: userData.expLevel,
+            apiService2: ApiService2(), // Aquí se pasa la instancia de ApiService2
+            onUpdateProfile: _loadAndRefreshUserData,
+          );
+        },
+      );
+    } else {
+      throw 'No se pudo obtener el ID del usuario autenticado.';
     }
+  } catch (e) {
+    print('Error al obtener datos del usuario: $e');
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

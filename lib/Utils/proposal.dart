@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
-
 class ProposalService {
   final BuildContext context;
   final ServiceRequest serviceRequest;
@@ -18,11 +17,12 @@ class ProposalService {
 
   Future<void> sendProposal({
     required double offeredPrice,
-    required double extraCosts, // Añadido parámetro para costos extra
+    required double extraCosts,
     required Function(String) onStatusChanged,
     required TextEditingController priceController,
-    required Function setFetchedOfferedPrice,
+    required Function(double) setFetchedOfferedPrice,
   }) async {
+    // Mostrar un indicador de carga
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -34,23 +34,22 @@ class ProposalService {
     );
 
     try {
-      // Actualizar los datos en Firestore
+      // Actualizar los datos del servicio en Firestore
       await FirebaseFirestore.instance
           .collection('services')
           .doc(serviceRequest.id)
           .update({
-        'status': 'offer',
-        'visibility': ['available', 'offer'], // Agregar visibilidad
         'offeredPrice': offeredPrice,
-        'workerId': workerId, // Añade el workerId al documento
       });
 
-      // Enviar la propuesta usando el ApiService
+
+
+      // Llamar al servicio API para enviar la propuesta
       await ApiService().sendProposalToFirestore(
         serviceRequest,
         userData.getToken!,
         offeredPrice.toString(),
-        extraCosts, // Pasa los costos extra
+        extraCosts,
         workerId,
       );
 
@@ -58,13 +57,18 @@ class ProposalService {
       setFetchedOfferedPrice(offeredPrice);
       priceController.text = offeredPrice.toString();
 
-      onStatusChanged('offer');
-
+      // Cerrar el indicador de carga y el diálogo de propuesta
       Navigator.of(context).pop(); // Cerrar el indicador de carga
       Navigator.of(context).pop(); // Cerrar el diálogo de propuesta
     } catch (e) {
       print('Error al enviar la propuesta: $e');
       Navigator.of(context).pop(); // Cerrar el indicador de carga
+
+      // Mostrar un mensaje de error al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar la propuesta: $e')),
+      );
     }
   }
+
 }
