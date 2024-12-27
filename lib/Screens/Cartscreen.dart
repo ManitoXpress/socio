@@ -599,10 +599,16 @@ class _HistorialState extends State<Historial>
                 MaterialPageRoute(
                   builder: (context) => ServiceFormWithTimeline(
                     serviceRequest: service,
-                    initialStatus: statuses[index].id, // Pasa el objeto Status aquí
+                    initialStatus: statuses.isNotEmpty && index < statuses.length
+                            ? statuses[index].id
+                            : 'default_status', // Pasa el objeto Status aquí
                     onComplete: (status) {
                       setState(() {
-                        statuses[index] = Status(id: status, name: '');
+                        if (statuses.length != services.length) {
+                          // Asegúrate de que statuses tenga el mismo tamaño que services
+                          statuses = List.generate(services.length, (index) => Status(id: '', name: ''));
+                        }
+
                       });
                     },
                     onStatusChanged: (newStatus) {},

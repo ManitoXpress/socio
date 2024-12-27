@@ -37,28 +37,46 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
 
   // Función para seleccionar o capturar imagen
   Future<void> _pickImage() async {
+  final ImagePicker _picker = ImagePicker();
+
+  // Verifica y solicita permiso de cámara
+  PermissionStatus status = await Permission.camera.status;
+
+  if (!status.isGranted) {
+    status = await Permission.camera.request(); // Solicitar permiso
+  }
+
+  if (status.isGranted) {
+    // Muestra opciones para seleccionar la imagen
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Tome una foto a su carnet'),
+          title: Text('Saque una foto de la parte anversa de su carnet'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
-                child: const Text('Tomar Foto'),
+                child: Text('Tomar Foto'),
               ),
             ],
           ),
         );
       },
     );
+  } else {
+    // Muestra un mensaje si el usuario denegó el permiso
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Por favor, habilita el acceso a la cámara.')),
+    );
   }
+}
 
   // Procesa la imagen seleccionada o capturada
   void _processImage(XFile? image) {

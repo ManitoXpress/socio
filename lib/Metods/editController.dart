@@ -185,13 +185,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           child: Text('Cancelar'),
         ),
         ElevatedButton(
-        onPressed: () {
-              _updateUserProfile(); // Llamar a la función de actualización de perfil
-              widget.onUpdateProfile?.call(); // Ejecutar la función de callback si se proporcionó
-              Navigator.pop(context); // Cerrar el diálogo de edición
-            },
-            child: Text("Guardar Cambios"),
-          )
+          onPressed: () {
+            _updateUserProfile(); // Llamar a la función para actualizar el perfil
+            widget.onUpdateProfile?.call(); // Ejecutar el callback para actualizar el perfil
+            Navigator.pop(context); // Cerrar el diálogo de edición
+          },
+          child: Text("Guardar Cambios"),
+        )
+
 
       ],
     );

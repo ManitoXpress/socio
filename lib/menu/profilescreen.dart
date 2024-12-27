@@ -45,6 +45,7 @@ class ProfilePage extends StatefulWidget {
   String paymentType;
   final UserData userData;
   String imagePath;
+  late Stream<ProfileData> userDataStream;
 
   ProfilePage({
     Key? key,
@@ -152,12 +153,11 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-
   Future<void> _loadAndRefreshUserData() async {
     try {
       final updatedUserData = await _loadUserData(widget.registrationData);
       setState(() {
-        userData = Future.value(updatedUserData);
+        userData = Future.value(updatedUserData); // Actualiza el Future con los datos nuevos
       });
     } catch (e) {
       print('Error durante la carga de datos de usuario: $e');
@@ -168,47 +168,46 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',))
+        MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',))
       );
     } catch (e) {
       print('Error al cerrar sesión: $e');
     }
   }
 
-  Future<void> _editProfile() async {
-  try {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+  void _editProfile() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
 
-    if (userId != null && token != null) {
-      final userData = await ApiService2().fetchUserData(userId, token);
+      if (userId != null && token != null) {
+        final userData = await ApiService2().fetchUserData(userId, token);
 
-      if (userData == null) {
-        throw 'No se pudo obtener los datos del usuario.';
+        if (userData == null) {
+          throw 'No se pudo obtener los datos del usuario.';
+        }
+
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return EditProfileDialog(
+              displayName: userData.displayName,
+              idCardNumber: userData.idCardNumber,
+              phoneNumber: userData.phoneNumber,
+              expertises: userData.expertises,
+              expLevel: userData.expLevel,
+              apiService2: ApiService2(), // Aquí se pasa la instancia de ApiService2
+              onUpdateProfile: _loadAndRefreshUserData, // Llama al callback para actualizar el perfil
+            );
+          },
+        );
+      } else {
+        throw 'No se pudo obtener el ID del usuario autenticado.';
       }
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return EditProfileDialog(
-            displayName: userData.displayName,
-            idCardNumber: userData.idCardNumber,
-            phoneNumber: userData.phoneNumber,
-            expertises: userData.expertises,
-            expLevel: userData.expLevel,
-            apiService2: ApiService2(), // Aquí se pasa la instancia de ApiService2
-            onUpdateProfile: _loadAndRefreshUserData,
-          );
-        },
-      );
-    } else {
-      throw 'No se pudo obtener el ID del usuario autenticado.';
+    } catch (e) {
+      print('Error al obtener datos del usuario: $e');
     }
-  } catch (e) {
-    print('Error al obtener datos del usuario: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +325,6 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Función para construir el ExpansionTile
   Widget _buildExpandableText(String value) {
     List<String> items = value.split(', ');
     return ExpansionTile(
@@ -348,37 +346,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileInfoRow(String label, String value) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: MyTextStyles.inputTextStyle2,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: MyTextStyles.inputTextStyle2,
+              ),
+              Flexible(
+                child: Container(
+                  margin: const EdgeInsets.only(left: 8.0),
+                  child: label == 'Especialidades:'
+                      ? _buildExpandableText(value)
+                      : Text(
+                          value,
+                          style: MyTextStyles.inputTextStyle2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
-                Flexible(
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 8.0),
-                    child: label == 'Especialidades:'
-                        ? _buildExpandableText(value)
-                        : Text(
-                      value,
-                      style: MyTextStyles.inputTextStyle2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-              Container(
-              margin: const EdgeInsets.only(left: 8.0),
-              child: Divider(
-              color: Color(0xFF841813),
-              height: 2,
+        ),
+        Container(
+          margin: const EdgeInsets.only(left: 8.0),
+          child: Divider(
+            color: Color(0xFF841813),
+            height: 2,
           ),
         ),
       ],

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'package:camera/camera.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
 import 'package:socio/Metods/RegisController.dart';
@@ -79,18 +80,30 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
   }
 
   Future<void> _pickImage() async {
+  final ImagePicker _picker = ImagePicker();
+
+  // Verifica y solicita permiso de cámara
+  PermissionStatus status = await Permission.camera.status;
+
+  if (!status.isGranted) {
+    status = await Permission.camera.request(); // Solicitar permiso
+  }
+
+  if (status.isGranted) {
+    // Muestra opciones para seleccionar la imagen
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Tomese una foto de perfil', style: MyTextStyles.drawerButtonTextStyle),
+          title: Text('Saque una foto de sus antecendentes policiales'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
                 child: Text('Tomar Foto'),
@@ -100,7 +113,13 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
         );
       },
     );
+  } else {
+    // Muestra un mensaje si el usuario denegó el permiso
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Por favor, habilita el acceso a la cámara.')),
+    );
   }
+}
 
   Future<void> _initializeCamera() async {
     try {

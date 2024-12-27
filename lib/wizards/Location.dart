@@ -61,98 +61,73 @@ class _LocationAndFavoritesWizardState
   final LatLng santaCruzLocation = LatLng(-17.7833, -63.1833);
   final LatLng santaCruzDefaultLocation = LatLng(-17.7833,
       -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
-
-  @override
-  void initState() {
-    super.initState();
-    _getCurrentLocation(); // Obtención de la ubicación actual cuando se inicializa el estado
-  }
-
-  // Verifica si la ubicación y los favoritos son válidos
+       // Verifica si la ubicación y los favoritos son válidos
   bool isLocationAndFavoritesValid() {
     return selectedLocation != null;
   }
 
-  // Función para obtener la ubicación actual del dispositivo
-  Future<void> _getCurrentLocation() async {
-    try {
-      location.Location loc = location.Location();
+  @override
+void dispose() {
+  locationController.dispose();
+  writtenLocationController.dispose();
+  additionalInfoController.dispose();
+  super.dispose();
+}
 
-      bool serviceEnabled = await loc.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await loc.requestService();
-        if (!serviceEnabled) {
-          return;
-        }
-      }
-
-      location.PermissionStatus permissionGranted = await loc.hasPermission();
-      if (permissionGranted == location.PermissionStatus.denied) {
-        permissionGranted = await loc.requestPermission();
-        if (permissionGranted != location.PermissionStatus.granted) {
-          return;
-        }
-      }
-
-      location.LocationData locationData = await loc.getLocation();
-      LatLng currentLocation =
-      LatLng(locationData.latitude!, locationData.longitude!);
-
-      setState(() {
-        selectedLocation = currentLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(currentLocation.toString()),
-            position: currentLocation,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
+Future<void> _getCurrentLocation() async {
+  try {
+    location.Location loc = location.Location();
+    if (!await loc.serviceEnabled()) {
+      if (!await loc.requestService()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Por favor, habilita el servicio de ubicación.')),
         );
-      });
-
-      if (_controller.isCompleted) {
-        final GoogleMapController controller = await _controller.future;
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: currentLocation,
-              zoom: 14.0,
-            ),
-          ),
-        );
+        return;
       }
-
-      _handleTap(currentLocation);
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-
-      setState(() {
-        selectedLocation = santaCruzDefaultLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(santaCruzDefaultLocation.toString()),
-            position: santaCruzDefaultLocation,
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
-        );
-      });
-
-      if (_controller.isCompleted) {
-        final GoogleMapController controller = await _controller.future;
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: santaCruzDefaultLocation,
-              zoom: 14.0,
-            ),
-          ),
-        );
-      }
-
-      _handleTap(santaCruzDefaultLocation);
     }
+    if (await loc.hasPermission() == location.PermissionStatus.denied) {
+      if (await loc.requestPermission() != location.PermissionStatus.granted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Permisos de ubicación denegados.')),
+        );
+        return;
+      }
+    }
+    final locationData = await loc.getLocation();
+    _updateLocation(LatLng(locationData.latitude!, locationData.longitude!));
+  } catch (e) {
+    print("Error obteniendo la ubicación actual: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No se pudo obtener la ubicación actual.')),
+    );
+    _updateLocation(santaCruzDefaultLocation);
   }
+}
+
+void _updateLocation(LatLng loc) {
+  setState(() {
+    selectedLocation = loc;
+    markers.clear();
+    markers.add(
+      Marker(
+        markerId: MarkerId(loc.toString()),
+        position: loc,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      ),
+    );
+  });
+  if (_controller.isCompleted) {
+    _controller.future.then((controller) {
+      controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: loc, zoom: 14.0),
+        ),
+      );
+    });
+  }
+  _handleTap(loc);
+}
+
 
   // Función para capturar y guardar una instantánea del mapa
   Future<void> _captureAndSaveMapSnapshot() async {

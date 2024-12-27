@@ -38,9 +38,17 @@ class _ProfileImageState extends State<ProfileImage> {
 
   // Función para seleccionar imagen desde la galería o la cámara
   Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker();
 
-    // Muestra un cuadro de diálogo con las opciones para tomar una foto o seleccionar desde la galería
+  // Verifica y solicita permiso de cámara
+  PermissionStatus status = await Permission.camera.status;
+
+  if (!status.isGranted) {
+    status = await Permission.camera.request(); // Solicitar permiso
+  }
+
+  if (status.isGranted) {
+    // Muestra opciones para seleccionar la imagen
     await showDialog(
       context: context,
       builder: (context) {
@@ -52,7 +60,8 @@ class _ProfileImageState extends State<ProfileImage> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
                   _processImage(image);
                 },
                 child: Text('Tomar Foto'),
@@ -62,7 +71,13 @@ class _ProfileImageState extends State<ProfileImage> {
         );
       },
     );
+  } else {
+    // Muestra un mensaje si el usuario denegó el permiso
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Por favor, habilita el acceso a la cámara.')),
+    );
   }
+}
 
   // Procesar y asignar la imagen seleccionada
   void _processImage(XFile? image) {
