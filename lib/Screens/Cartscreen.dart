@@ -60,7 +60,7 @@ class _HistorialState extends State<Historial>
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
       criminalRecordImagePath: '',
-      certificateImagePaths: [],
+      certificateImagePaths: '',
       expertises: [],
       expLevel: [], devicesId: '', fcmToken: '',
     );
@@ -80,7 +80,7 @@ class _HistorialState extends State<Historial>
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
       criminalRecordImagePath: '',
-      certificateImagePaths: [],
+      certificateImagePaths: '',
       expertises: [],
       expLevel: [],
       pdfPathController: '',
@@ -372,7 +372,7 @@ class _HistorialState extends State<Historial>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ChatScreen(),
+          builder: (context) => ChatScreen(chatId: '', userId: '', workerId: '',),
         ),
       );
     } else {

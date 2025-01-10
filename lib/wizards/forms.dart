@@ -85,7 +85,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                           workerType: '',
                           idDocumentImagePath: '',
                           idDocumentImagePath2: '',
-                          certificateImagePaths: '');
+                          certificateImagePaths: '', criminalRecordImagePath: '');
                       widget.userData.displayName = value;
                     });
                   },
@@ -118,7 +118,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                           workerType: '',
                           idDocumentImagePath: '',
                           idDocumentImagePath2: '',
-                          certificateImagePaths: '');
+                          certificateImagePaths: '', criminalRecordImagePath: '');
                       widget.userData.idCardNumber = value;
                     });
                   },
@@ -172,7 +172,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                                           workerType: value,
                                           idDocumentImagePath: '',
                                           idDocumentImagePath2: '',
-                                          certificateImagePaths: '');
+                                          certificateImagePaths: '', criminalRecordImagePath: '');
                                   widget.userData.paymentType = value;
                                 });
                               },

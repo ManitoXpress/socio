@@ -141,7 +141,7 @@ class _ProfilePageState extends State<ProfilePage> {
           criminalRecordImagePath: '',
           pdfPathController: '',
           idDocumentImagePath2: '',
-          certificateImagePaths: [],
+          certificateImagePaths: '',
           expLevel: [],
           selectedCountryCode: '',
           getToken: '',

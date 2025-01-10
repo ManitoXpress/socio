@@ -24,7 +24,7 @@ class RegistrationController {
     imagePathList: [],
     idDocumentImagePath2: '',
     criminalRecordImagePath: '',
-    certificateImagePaths: [],
+    certificateImagePaths: '',
     expLevel: [],
     selectedCountryCode: '',
     devicesId: '',
@@ -32,11 +32,6 @@ class RegistrationController {
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
-
-
-  Step7FormData step7FormData = Step7FormData(criminalRecordImagePath: '');
-  Step8FormData step8FormData = Step8FormData(certificateImagePaths: '');
-
 
 
   // Asegúrate de inicializarla con un valor predeterminado si es necesario
@@ -71,6 +66,7 @@ class RegistrationController {
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
     required String certificateImagePaths,
+    required String criminalRecordImagePath,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
     if (idCardNumber != null) registrationData.idCardNumber = idCardNumber;
@@ -104,7 +100,7 @@ class RegistrationController {
   String idDocumentImagePath;
   String idDocumentImagePath2;
   String criminalRecordImagePath;
-  List<String> certificateImagePaths;
+  String certificateImagePaths;
   List<Expertises> expertises; // Cambiado a lista de Expertise
   List<String> expLevel;
   String imagePath;
@@ -124,7 +120,7 @@ class RegistrationController {
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
     required String criminalRecordImagePath,
-    required List<String> certificateImagePaths,
+    required String certificateImagePaths,
     required List<Expertises> expertises, // Cambiado a lista de Expertise
     required List<String> expLevel,
     required String imagePath,

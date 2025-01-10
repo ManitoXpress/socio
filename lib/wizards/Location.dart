@@ -9,15 +9,11 @@ import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
 class LocationAndFavoritesWizard extends StatefulWidget {
-  final Function(LatLng)
-  onLocationSelected; // Callback para seleccionar ubicación
-  final Function(bool)
-  onFavoritesSelected; // Callback para seleccionar favoritos
+  final Function(LatLng) onLocationSelected; // Callback para seleccionar ubicación
+  final Function(bool) onFavoritesSelected; // Callback para seleccionar favoritos
   final VoidCallback onNextStep; // Callback para avanzar al siguiente paso
-  final Map<String, double>
-  location; // Ubicación proporcionada como coordenadas
-  final RegistrationController
-  registrationController; // Controlador de registro
+  final Map<String, double> location; // Ubicación proporcionada como coordenadas
+  final RegistrationController registrationController; // Controlador de registro
   final UserData userData; // Datos del usuario
   _LocationAndFavoritesWizardState? _locationAndFavoritesWizardState;
 
@@ -49,18 +45,13 @@ class _LocationAndFavoritesWizardState
   bool isFavorite = false; // Indica si es favorito
   late GoogleMapController mapController; // Controlador del mapa de Google
   Set<Marker> markers = {}; // Conjunto de marcadores para el mapa
-  TextEditingController locationController =
-  TextEditingController(); // Controlador de texto para la ubicación
-  TextEditingController writtenLocationController =
-  TextEditingController(); // Controlador de texto para la dirección escrita
+  TextEditingController locationController = TextEditingController(); // Controlador de texto para la ubicación
+  TextEditingController writtenLocationController = TextEditingController(); // Controlador de texto para la dirección escrita
   Uint8List? mapSnapshot; // Instantánea del mapa
-  TextEditingController additionalInfoController =
-  TextEditingController(); // Controlador para la información adicional
-  Completer<GoogleMapController> _controller =
-  Completer<GoogleMapController>(); // Controlador asíncrono del mapa
-  final LatLng santaCruzLocation = LatLng(-17.7833, -63.1833);
-  final LatLng santaCruzDefaultLocation = LatLng(-17.7833,
-      -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
+  TextEditingController additionalInfoController = TextEditingController(); // Controlador para la información adicional
+  Completer<GoogleMapController> _controller = Completer<GoogleMapController>(); // Controlador asíncrono del mapa
+
+  final LatLng santaCruzDefaultLocation = LatLng(-17.7833, -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
 
   @override
   void initState() {
@@ -153,6 +144,7 @@ class _LocationAndFavoritesWizardState
       _handleTap(santaCruzDefaultLocation);
     }
   }
+
 
   // Función para capturar y guardar una instantánea del mapa
   Future<void> _captureAndSaveMapSnapshot() async {
@@ -414,32 +406,6 @@ class _LocationAndFavoritesWizardState
               ],
             ),
           ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
-          child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '¿Quieres marcar esta ubicación como favorita?',
-                style: MyTextStyles.formServiceTextStyle,
-
-                textAlign: TextAlign.left,
-              )
-          ),
-        ),
-        SwitchListTile(
-          title: Text(
-            'Marcar como favorita',
-            style: MyTextStyles.drawerButtonTextStyle,
-
-          ),
-          value: isFavorite,
-          onChanged: (bool value) {
-            setState(() {
-              isFavorite = value;
-              widget.onFavoritesSelected(value);
-            });
-            },
         ),
         Padding(
           padding: EdgeInsets.only(bottom: 10.0, left: 20.0),

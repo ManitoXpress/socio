@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Cartscreen.dart';
 import 'package:socio/Screens/Historial.dart';
@@ -11,7 +12,7 @@ import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/help.dart';
 import 'package:socio/menu/profilescreen.dart';
 import 'package:socio/menu/referidos.dart';
-import 'package:persistent_bottom_nav_bar/persistent_tab_view.dart';
+
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -183,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 email: '',
                                 imagePathList: [], idDocumentImagePath2: '',
                                 criminalRecordImagePath: '',
-                                certificateImagePaths: [],
+                                certificateImagePaths: '',
                                 expLevel: [],
                                 selectedCountryCode: '', devicesId: '', fcmToken: '',
                               ),
@@ -206,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               email: '',
                               imagePathList: [], idDocumentImagePath2: '',
                               criminalRecordImagePath: '',
-                              certificateImagePaths: [],
+                              certificateImagePaths: '',
                               expLevel: [],
                               selectedCountryCode: '', devicesId: '', fcmToken: '',
                             ),

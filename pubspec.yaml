@@ -1,7 +1,7 @@
 name: socio
 description: "project manitosXpress."
 publish_to: 'none'
-version: 1.5.3+1
+version: 1.7.5+9
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -124,6 +124,7 @@ flutter:
     - assets/images/mundo.png
     - assets/manito.png
     - assets/pantallaTrabajador.png
+    - assets/map.jpeg
 
   fonts:
     - family: Xpress Heavy

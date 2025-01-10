@@ -145,7 +145,7 @@ class UserData {
   String selectedCountryCode;
   List<Expertises> expertises;
   List<String> expLevel;
-  List<String> certificateImagePaths;
+  String certificateImagePaths;
   Map<String, double?>? location;
   String paymentType;
   String email;
@@ -186,10 +186,7 @@ class UserData {
       selectedCountryCode: json['selectedCountryCode'] ?? '',
       expertises: _convertToExpertisesList(json['expertises']),
       expLevel: _convertToList(json['expLevel']),
-      certificateImagePaths: (json['certificateImagePaths'] as List<dynamic>?)
-          ?.map((item) => item.toString())
-          .toList() ??
-          [],
+      certificateImagePaths: json['criminalRecordImagePath'] ?? '',
       idCardNumber: json['idCardNumber'] ?? '',
       location: json['location'] != null
           ? Map<String, double?>.from(json['location'])
@@ -213,7 +210,7 @@ class UserData {
             : null,
         idDocumentImagePath: json['idDocumentImagePath'] ?? '',
         idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
-        email: json['email'] ?? '', imagePathList: [], criminalRecordImagePath: '', certificateImagePaths: [],
+        email: json['email'] ?? '', imagePathList: [], criminalRecordImagePath: '', certificateImagePaths: '',
       ),
     );
   }

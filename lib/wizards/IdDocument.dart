@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
+
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
@@ -37,6 +37,8 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
 
   // Función para seleccionar o capturar imagen
   Future<void> _pickImage() async {
+  try {
+    // Mostrar cuadro de diálogo para tomar una foto
     await showDialog(
       context: context,
       builder: (context) {
@@ -48,8 +50,27 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _imagePicker.pickImage(source: ImageSource.camera);
-                  _processImage(image);
+                  try {
+                    // Intentar capturar una imagen desde la cámara
+                    final XFile? image = await _imagePicker.pickImage(
+                      source: ImageSource.camera,
+                    );
+                    if (image != null) {
+                      print('Imagen capturada: ${image.path}');
+                      _processImage(image); // Procesa la imagen capturada
+                    } else {
+                      print('No se capturó ninguna imagen.');
+                    }
+                  } catch (e) {
+                    print('Error al acceder a la cámara: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'No se pudo acceder a la cámara. Por favor, verifica los permisos en la configuración del dispositivo.',
+                        ),
+                      ),
+                    );
+                  }
                 },
                 child: const Text('Tomar Foto'),
               ),
@@ -58,7 +79,16 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
         );
       },
     );
+  } catch (e) {
+    print('Error al mostrar el cuadro de diálogo: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ocurrió un error: $e'),
+      ),
+    );
   }
+}
+
 
   // Procesa la imagen seleccionada o capturada
   void _processImage(XFile? image) {
@@ -75,7 +105,7 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
         idDocumentImagePath: image.path,
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths: '',
+        certificateImagePaths: '', criminalRecordImagePath: '',
       );
 
       print('Imagen de documento seleccionada: ${image.path}');
@@ -89,7 +119,7 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 5: Necesitamos una foto de la parte frontal de su carnet",
+            "Paso 5: Necesitamos una foto de su carnet de la parte frontal",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),

@@ -254,7 +254,7 @@ class _ServiceFormPageState extends State<ServiceFormPage> {
           // Navegar hacia la pantalla de chat
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => ChatScreen()),
+            MaterialPageRoute(builder: (context) => ChatScreen(chatId: '', userId: '', workerId: '',)),
           );
         },
         child: const Icon(Icons.chat),

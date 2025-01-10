@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:socio/Metods/jobComplete.dart';
+import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
@@ -302,7 +303,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       userData: widget.userData,
     );
 
-    // Llama al método `sendProposal` con el nuevo parámetro.
+    // Llama al método sendProposal con el nuevo parámetro.
     await proposalService.sendProposal(
       offeredPrice: offeredPrice,
       extraCosts: extraCosts, // Envía los gastos informáticos como parámetro.
@@ -338,7 +339,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       // Define la comisión y los gastos informáticos.
       double commission = offeredPrice * 0.10; // Comisión del 10%.
       double extraCosts = 3.0;
-      double totalPrice = offeredPrice + commission + extraCosts; // Precio total.
+      double totalPrice = offeredPrice + extraCosts; // Precio total.
 
       String paymentStatus = 'pagado';
 
@@ -353,7 +354,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                 Text('Oferta del servicio:'),
                 Text('Precio ofertado: Bs ${offeredPrice.toStringAsFixed(2)}'),
                 SizedBox(height: 16.0),
-                Text('Se agregará una comisión del 10%: Bs ${commission.toStringAsFixed(2)}'),
+
                 SizedBox(height: 16.0),
                 Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
                 SizedBox(height: 16.0),
@@ -466,333 +467,377 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: _serviceRequestStream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error al cargar los datos del servicio'));
-          }
+      stream: _serviceRequestStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error al cargar los datos del servicio'));
+        }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-          final serviceData = snapshot.data?.data();
-          if (serviceData == null) {
-            return Center(child: Text('No se encontraron datos del servicio'));
-          }
+        final serviceData = snapshot.data?.data();
+        if (serviceData == null) {
+          return Center(child: Text('No se encontraron datos del servicio'));
+        }
 
-          _currentStatus = serviceData['status'] ?? 'available';
-          List<String> imageFiles =
-          List<String>.from(serviceData['images'] ?? []);
-          double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
-          double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+        _currentStatus = serviceData['status'] ?? 'available';
+        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
+        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-          _initialPosition = LatLng(latitude, longitude);
+        _initialPosition = LatLng(latitude, longitude);
 
-          return Scaffold(
-            appBar: AppBar(
-              iconTheme: IconThemeData(color: Colors.white),
-              title: Text(
-                'Detalles del Servicio',
-                style: MyTextStyles.buttonTextStyle,
-              ),
+        return Scaffold(
+          appBar: AppBar(
+            iconTheme: IconThemeData(color: Colors.white),
+            title: Text(
+              'Detalles del Servicio',
+              style: MyTextStyles.buttonTextStyle,
             ),
-            body: Padding(
+          ),
+          body: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Container(
               padding: EdgeInsets.all(16.0),
-              child: Container(
-                padding: EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xFF84090D), width: 2.0),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
-                      style: MyTextStyles.formServiceTextStyle,
-                    ),
-                    SizedBox(height: 16.0),
-                    Text.rich(
-                      TextSpan(
-                        text: 'Descripción: ',
-                        style: MyTextStyles.formServiceTextStyle,
-                        children: [
-                          TextSpan(
-                            text: serviceData['description'] ?? '',
-                            style: MyTextStyles.inputTextStyle,
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 16.0),
-                    Text(
-                      'Ubicación:',
-                      style: MyTextStyles.formServiceTextStyle,
-                    ),
-                    GestureDetector(
-                      onTap: () => _openFullMap(context),
-                      child: Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(color: Colors.blueAccent),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: GoogleMap(
-                            initialCameraPosition: CameraPosition(
-                              target: _initialPosition,
-                              zoom: 14.0,
-                            ),
-                            markers: {
-                              Marker(
-                                markerId: MarkerId('serviceLocation'),
-                                position: _initialPosition,
-                              ),
-                            },
-                            zoomControlsEnabled: false,
-                            scrollGesturesEnabled: false,
-                            tiltGesturesEnabled: false,
-                            rotateGesturesEnabled: false,
-                            onTap: (_) => _openFullMap(context),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.0),
-                    Text(
-                      'Imágenes:',
-                      style: MyTextStyles.formServiceTextStyle,
-                    ),
-                    Container(
-                      height: 80,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: imageFiles.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return Dialog(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Image.network(
-                                          imageFiles[index],
-                                          fit: BoxFit.contain,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              child: Image.network(
-                                imageFiles[index],
-                                height: 80,
-                                width: 80,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+              decoration: BoxDecoration(
+                border: Border.all(color: Color(0xFF84090D), width: 2.0),
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Estado del servicio
+                  Text(
+                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
 
-                    SizedBox(height: 16.0),
-                    Text(
-                      'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
+                  // Descripción del servicio
+                  Text.rich(
+                    TextSpan(
+                      text: 'Descripción: ',
                       style: MyTextStyles.formServiceTextStyle,
+                      children: [
+                        TextSpan(
+                          text: serviceData['description'] ?? '',
+                          style: MyTextStyles.inputTextStyle,
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 16.0),
-                    // Mostrar botones dependiendo del estado
-                    if (_currentStatus == 'available') ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _showProposalDialog(context);
-                            },
-                            icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
-                            label: Text(
-                              "Enviar Propuesta",
-                              style: GoogleFonts.karla(
-                                color: Color(0xFFB00020),
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Ubicación del servicio
+                  Text(
+                    'Ubicación:',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  GestureDetector(
+                    onTap: () => _openFullMap(context),
+                    child: Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border.all(color: Colors.blueAccent),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8.0),
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: _initialPosition,
+                            zoom: 14.0,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: MarkerId('serviceLocation'),
+                              position: _initialPosition,
                             ),
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 8),
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                side: BorderSide(
-                                  color: Color(0xFFB00020),
-                                ),
-                              ),
+                          },
+                          zoomControlsEnabled: false,
+                          scrollGesturesEnabled: false,
+                          tiltGesturesEnabled: false,
+                          rotateGesturesEnabled: false,
+                          onTap: (_) => _openFullMap(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Imágenes del servicio
+                  Text(
+                    'Imágenes:',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  Container(
+                    height: 80,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: imageFiles.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return Dialog(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Image.network(
+                                        imageFiles[index],
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            child: Image.network(
+                              imageFiles[index],
+                              height: 80,
+                              width: 80,
+                              fit: BoxFit.cover,
                             ),
                           ),
-                          SizedBox(width: 16.0),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _showNoParticipationDialog(context);
-                            },
-                            icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
-                            label: Text(
-                              "No Participar",
-                              style: GoogleFonts.karla(
-                                color: Color(0xFFB00020),
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 8),
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                side: BorderSide(
-                                  color: Color(0xFFB00020),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else if (_currentStatus == 'offer') ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              _showNoParticipationDialog(context);
-                            },
-                            icon: Icon(Icons.dangerous, color: Colors.white),
-                            label: Text(
-                              "No Participar",
-                              style: GoogleFonts.karla(
-                                color: Color(0xFFB00020),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFB00020),
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else if (_currentStatus == 'in_progress' ||
-                        _currentStatus == 'pending_confirmation2') ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          if (_currentStatus == 'pending_confirmation2') ...[
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                _showPendingConfirmation2Dialog(context);
-                              },
-                              icon: Icon(Icons.check_circle, color: Colors.white),
-                              label: Text(
-                                "Pago Aceptado",
-                                style: GoogleFonts.karla(
-                                  color: Color(0xFFB00020),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0),
-                                  side: BorderSide(
-                                    color: Color(0xFFB00020),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ] else ...[
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                _showNoParticipationDialog(context);
-                              },
-                              icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
-                              label: Text(
-                                "No Participar",
-                                style: GoogleFonts.karla(
-                                  color: Color(0xFFB00020),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0),
-                                  side: BorderSide(
-                                    color: Color(0xFFB00020),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 16.0),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                _showCompleteJobDialog(context);
-                              },
-                              icon: Icon(Icons.architecture_sharp,
-                                  color: Color(0xFFB00020)),
-                              label: Text(
-                                "Completar trabajo",
-                                style: GoogleFonts.karla(
-                                  color: Color(0xFFB00020),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 8),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0),
-                                  side: BorderSide(
-                                    color: Color(0xFFB00020),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ] else if (_currentStatus == 'pending_confirmation') ...[
-                      Text('Esperando la confirmación del cliente...'),
-                    ] else if (_currentStatus == 'completed') ...[
-                      Text('Este trabajo ha sido completado.'),
-                    ] else if (_currentStatus == 'cancelled') ...[
-                      Text('Este trabajo ha sido cancelado.'),
-                    ] else if (_currentStatus == 'blocked') ...[
-                      Text('No participarás en este trabajo.'),
-                    ],
-                  ],
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Precio ofertado
+                  Text(
+                    'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
+                    style: MyTextStyles.formServiceTextStyle,
+                  ),
+                  SizedBox(height: 16.0),
+
+                  // Botones dependiendo del estado
+                  _buildActionButtons(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+// Método para construir los botones de acción según el estado
+  Widget _buildActionButtons() {
+    switch (_currentStatus) {
+      case 'available':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showProposalDialog(context),
+              icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
+              label: Text(
+                "Enviar Propuesta",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(color: Color(0xFFB00020)),
                 ),
               ),
             ),
-          );
-          },
+            SizedBox(width: 16.0),
+            ElevatedButton.icon(
+              onPressed: () => _showNoParticipationDialog(context),
+              icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
+              label: Text(
+                "No Participar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(color: Color(0xFFB00020)),
+                ),
+              ),
+            ),
+          ],
         );
+      case 'offer':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showNoParticipationDialog(context),
+              icon: Icon(Icons.dangerous, color: Colors.white),
+              label: Text(
+                "No Participar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFB00020),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+              ),
+            ),
+          ],
+        );
+      case 'in_progress':
+      case 'pending_confirmation2':
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_currentStatus == 'pending_confirmation2') ...[
+              ElevatedButton.icon(
+                onPressed: () => _showPendingConfirmation2Dialog(context),
+                icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
+                label: Text(
+                  "Pago Aceptado",
+                  style: GoogleFonts.karla(
+                    color: Color(0xFFB00020),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Color(0xFFB00020)),
+                  ),
+                ),
+              ),
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: () => _showNoParticipationDialog(context),
+                icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
+                label: Text(
+                  "No Participar",
+                  style: GoogleFonts.karla(
+                    color: Color(0xFFB00020),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Color(0xFFB00020)),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.0),
+              ElevatedButton.icon(
+                onPressed: () => _showCompleteJobDialog(context),
+                icon: Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
+                label: Text(
+                  "Completar trabajo",
+                  style: GoogleFonts.karla(
+                    color: Color(0xFFB00020),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Color(0xFFB00020)),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.0),
+            ],
+            ElevatedButton.icon(
+              onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
+              icon: Icon(Icons.chat, color: Colors.white),
+              label: Text(
+                "Chat",
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+            ),
+          ],
+        );
+      case 'pending_confirmation':
+        return Text('Esperando la confirmación del cliente...');
+      case 'completed':
+        return Text('Este trabajo ha sido completado.');
+      case 'cancelled':
+        return Text('Este trabajo ha sido cancelado.');
+      case 'blocked':
+        return Text('No participarás en este trabajo.');
+      default:
+        return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
     }
+  }
+
+  void _openChat(String workerId, String userId) async {
+    final chatId = _generateChatId(workerId, userId);
+
+    // Referencia al documento del chat
+    final chatDoc = FirebaseFirestore.instance.collection('chats').doc(chatId);
+
+    // Verifica si el chat ya existe
+    final chatSnapshot = await chatDoc.get();
+
+    if (!chatSnapshot.exists) {
+      // Si el chat no existe, lo crea con información inicial
+      await chatDoc.set({
+        'chatId': chatId,
+        'participants': [userId, workerId],
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Navegar a la pantalla de chat (debes implementar esta pantalla)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          chatId: chatId,
+          userId: userId,
+          workerId: workerId,
+        ),
+      ),
+    );
+  }
+
+  String _generateChatId(String workerId, String userId) {
+    // Generar un ID único basado en los IDs de los participantes
+    return workerId.hashCode <= userId.hashCode
+        ? '$workerId\_$userId'
+        : '$userId\_$workerId';
+  }
 }

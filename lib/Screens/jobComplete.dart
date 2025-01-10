@@ -301,7 +301,7 @@ class _PhotoStepState extends State<PhotoStep> {
         idDocumentImagePath: image.path,
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths: '',
+        certificateImagePaths: '', criminalRecordImagePath: '',
       );
     } catch (e) {
       print("Error al tomar la foto: $e");

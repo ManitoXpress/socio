@@ -1,156 +1,166 @@
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class ChatMessage {
-  final String text;
-  final bool isSentByMe;
-  final String username;
-  final String userImage;
-
-  ChatMessage({
-    required this.text,
-    required this.isSentByMe,
-    required this.username,
-    required this.userImage,
-  });
-}
-
 class ChatScreen extends StatefulWidget {
+  final String chatId;
+  final String userId;
+  final String workerId;
+
+  ChatScreen({
+    required this.chatId,
+    required this.userId,
+    required this.workerId,
+  });
+
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<ChatMessage> _messages = [];
-  final List<String> _usernames = ['Alex', 'Jamie', 'Chris', 'Sam', 'Jessie'];
-  final List<String> _userImages = [
-    'https://i.imgur.com/kYR0V6J.png',
-    'https://i.imgur.com/1qPhnSi.png',
-    'https://i.imgur.com/jyGykv1.png',
-    // ... more image urls
-  ];
+  final CollectionReference _chatsCollection = FirebaseFirestore.instance.collection('chats');
+  String? userDisplayName;
+  String? workerDisplayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDisplayNames();
+  }
+
+  // Función para obtener los displayName de worker y user
+  void _fetchDisplayNames() async {
+    try {
+      // Obtener el displayName del user
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
+      if (userDoc.exists) {
+        setState(() {
+          userDisplayName = userDoc['displayName'];
+        });
+      }
+
+      // Obtener el displayName del worker
+      final workerDoc = await FirebaseFirestore.instance.collection('workers').doc(widget.workerId).get();
+      if (workerDoc.exists) {
+        setState(() {
+          workerDisplayName = workerDoc['displayName'];
+        });
+      }
+    } catch (e) {
+      print("Error al obtener displayName: $e");
+    }
+  }
 
   void _sendMessage() {
     if (_controller.text.isNotEmpty) {
-      final random = Random();
-      final username = _usernames[random.nextInt(_usernames.length)];
-      final userImage = _userImages[random.nextInt(_userImages.length)];
+      final message = {
+        'text': _controller.text,
+        'senderId': widget.workerId,
+        'timestamp': FieldValue.serverTimestamp(),
+      };
 
-      setState(() {
-        _messages.add(ChatMessage(text: _controller.text,
-            isSentByMe: true,
-            username: username,
-            userImage: userImage));
-        Future.delayed(Duration(seconds: 1), () {
-          final autoUsername = _usernames[random.nextInt(_usernames.length)];
-          final autoUserImage = _userImages[random.nextInt(_userImages.length)];
-          setState(() {
-            _messages.add(ChatMessage(text: 'Hola, soy el otro usuario.',
-                isSentByMe: false,
-                username: autoUsername,
-                userImage: autoUserImage));
-          });
-        });
-      });
-
-      _controller.clear();
+      _chatsCollection
+          .doc(widget.chatId)
+          .collection('messages')
+          .add(message)
+          .then((_) => _controller.clear());
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Chat'),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return ListTile(
-                  title: Align(
-                    alignment: message.isSentByMe
-                        ? Alignment.topRight
-                        : Alignment.topLeft,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,  // Asegúrate de que la fila tome el espacio mínimo necesario
-                      children: [
-                        if (!message.isSentByMe)
-                          Image.network(
-                            message.userImage,
-                            width: 50,
-                            height: 50,
+        appBar: AppBar(
+          title: Text('Chat con ${userDisplayName ?? "Usuario"}'),
+        ),
+        body: Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _chatsCollection
+                      .doc(widget.chatId)
+                      .collection('messages')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+
+                    final messages = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      reverse: true, // Los mensajes más recientes van al final
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final message = messages[index];
+                        final isSentByWorker = message['senderId'] == widget.workerId;
+                        final senderName = isSentByWorker
+                            ? workerDisplayName ?? "Trabajador"
+                            : userDisplayName ?? "Usuario";
+
+                        return Align(
+                          alignment: isSentByWorker
+                              ? Alignment.topRight
+                              : Alignment.topLeft,
+                          child: Container(
+                            padding: EdgeInsets.all(12.0),
+                            margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+                            decoration: BoxDecoration(
+                              color: isSentByWorker
+                                  ? Colors.green[200] // Color para mensajes del trabajador
+                                  : Colors.blue[200],  // Color para mensajes del usuario
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  senderName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(message['text'] ?? ''),
+                              ],
+                            ),
                           ),
-                        Container(
-                          padding: EdgeInsets.all(16.0),
-                          margin: EdgeInsets.symmetric(horizontal: 8.0),  // Añade un margen para separar la imagen y el mensaje
-                          decoration: BoxDecoration(
-                            color: message.isSentByMe
-                                ? Colors.blue[200]
-                                : Colors.grey[200],
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        decoration: InputDecoration(
+                          hintText: 'Escribe un mensaje...',
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20.0),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                message.username,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
-                              Text(message.text),
-                            ],
-                          ),
                         ),
-                        if (message.isSentByMe)
-                          Image.network(
-                            message.userImage,
-                            width: 50,
-                            height: 50,
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: 'Escribe un mensaje...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
+                        onSubmitted: (value) {
+                          _sendMessage();
+                        },
                       ),
                     ),
-                    onSubmitted: (value) {
-                      _sendMessage();
-                    },
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.send),
+                      onPressed: _sendMessage,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendMessage,
-                ),
-              ],
+              ),
+            ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
+        );
+    }
 }
-
-void main() => runApp(MaterialApp(
-  home: ChatScreen(),
-));

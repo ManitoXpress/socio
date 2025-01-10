@@ -8,6 +8,16 @@ import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
 
+import 'package:image/image.dart' as img;
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image/image.dart' as img;
+
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String imagePath) onImageSelected;
@@ -33,51 +43,86 @@ class ProfileImage extends StatefulWidget {
 }
 
 class _ProfileImageState extends State<ProfileImage> {
-  File? _image;  // Solo una imagen en lugar de una lista
-  ApiService apiService = ApiService(); // Instancia de ApiService
+  File? _image;
+  final ImagePicker _imagePicker = ImagePicker();
 
-  // Función para seleccionar imagen desde la galería o la cámara
-  Future<void> _pickImage() async {
-    final ImagePicker _picker = ImagePicker();
-
-    // Muestra un cuadro de diálogo con las opciones para tomar una foto o seleccionar desde la galería
+  // Función para manejar la selección de imagen
+ Future<void> _pickImage() async {
+  try {
+    // Mostrar cuadro de diálogo para tomar una foto
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Saque una foto de perfil'),
+          title: const Text('Tome una foto de perfil'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context); // Cierra el cuadro de diálogo
-                  final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-                  _processImage(image);
+                  try {
+                    // Intentar capturar una imagen desde la cámara
+                    final XFile? image = await _imagePicker.pickImage(
+                      source: ImageSource.camera,
+                    );
+                    if (image != null) {
+                      print('Imagen capturada: ${image.path}');
+                      _processImage(image); // Procesa la imagen capturada
+                    } else {
+                      print('No se capturó ninguna imagen.');
+                    }
+                  } catch (e) {
+                    print('Error al acceder a la cámara: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'No se pudo acceder a la cámara. Por favor, verifique los permisos en la configuración del dispositivo.',
+                        ),
+                      ),
+                    );
+                  }
                 },
-                child: Text('Tomar Foto'),
+                child: const Text('Tomar Foto'),
               ),
             ],
           ),
         );
       },
     );
+  } catch (e) {
+    print('Error al manejar la cámara: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Ocurrió un error: $e'),
+      ),
+    );
   }
+}
 
-  // Procesar y asignar la imagen seleccionada
-  void _processImage(XFile? image) {
+
+  // Procesa la imagen seleccionada
+  Future<void> _processImage(XFile? image) async {
     if (image != null) {
-      setState(() {
-        _image = File(image.path); // Asigna la imagen seleccionada
-      });
+      final originalFile = File(image.path);
+      final originalImage = img.decodeImage(await originalFile.readAsBytes());
 
-      // Asegúrate de que la ruta de la imagen se pasa correctamente
-      widget.onImageSelected(image.path);  // Actualiza la ruta de la imagen en userData
-      widget.isImageCaptured.value = true; // Cambia el estado de la imagen capturada
-      print('Imagen seleccionada: ${image.path}'); // Verifica la ruta de la imagen
+      if (originalImage != null) {
+        // Corrige la orientación de la imagen
+        final correctedImage = img.bakeOrientation(originalImage);
+        final correctedFile = await originalFile.writeAsBytes(img.encodeJpg(correctedImage));
+
+        setState(() {
+          _image = correctedFile; // Asigna la imagen corregida
+        });
+
+        // Notifica al controlador y actualiza los datos
+        widget.onImageSelected(correctedFile.path);
+        widget.isImageCaptured.value = true;
+        print('Imagen seleccionada: ${correctedFile.path}');
+      }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -99,23 +144,23 @@ class _ProfileImageState extends State<ProfileImage> {
               border: Border.all(color: Color(0xA3C9D2D2)),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: _image == null // Si no se ha seleccionado imagen, mostrar ícono
+            child: _image == null
                 ? Center(
-              child: Icon(
-                Icons.cloud_upload,
-                size: 48,
-                color: Color(0xA3C9D2D2),
-              ),
-            )
+                    child: Icon(
+                      Icons.cloud_upload,
+                      size: 48,
+                      color: Color(0xA3C9D2D2),
+                    ),
+                  )
                 : Image.file(
-              _image!, // Mostrar la imagen seleccionada
-              width: 200,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
+                    _image!,
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
           ),
         ),
-        if (_image == null) // Mostrar mensaje si no se ha capturado la imagen
+        if (_image == null)
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
