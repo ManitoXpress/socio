@@ -192,7 +192,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       },
       fetchExpertises: widget.apiService2.fetchExpertises,
       onServiceTypesSelected:
-          (List<Expertises> expertises, String? selectedExperienceLevel) {
+          (List<Expertise> expertises, String? selectedExperienceLevel) {
         setState(() {
           // Crear una lista de Expertises a partir de los nombres seleccionados
           userData.expertises = expertises;

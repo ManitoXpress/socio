@@ -1,6 +1,89 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:socio/Metods/RegisController.dart';
+class Offer {
+  final String id;
+  final String serviceId;
+  final String workerId;
+  final double offeredPrice;
+  final double extraCosts;
+  final double totalPrice;
+  late Status status;
+  final bool hasOffer;
+  final String userToken;
+  final DateTime createdAt;
+  List<Expertise> expertises;
+  final String subcategoryName;
+  WorkerDetails? workerDetails;
+  
+  
+
+  Offer({
+    required this.id,
+    required this.serviceId,
+    required this.workerId,
+    required this.offeredPrice,
+    required this.extraCosts,
+    required this.totalPrice,
+    required this.status,
+    required this.hasOffer,
+    required this.userToken,
+    required this.createdAt,
+    required this.expertises,
+    required this.subcategoryName,
+    this.workerDetails,
+  });
+
+  // Método toMap para convertir la oferta a un mapa
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'serviceId': serviceId,
+      'workerId': workerId,
+      'offeredPrice': offeredPrice,
+      'extraCosts': extraCosts,
+      'totalPrice': totalPrice,
+      'status': status.toMap(),
+      'hasOffer': hasOffer,
+      'userToken': userToken,
+      'createdAt': createdAt.toIso8601String(),  // Usar toIso8601String para formato de fecha
+      'expertises': expertises.map((e) => e.toMap()).toList(),
+      'subcategoryName': subcategoryName,
+      'workerDetails': workerDetails?.toMap(),
+    };
+  }
+
+  // Método de fábrica para crear una oferta a partir de un mapa
+  factory Offer.fromMap(Map<String, dynamic> map) {
+    return Offer(
+      id: map['id'] ?? '',
+      serviceId: map['serviceId'] ?? '',
+      workerId: map['workerId'] ?? '',
+      offeredPrice: map['offeredPrice']?.toDouble() ?? 0.0,
+      extraCosts: map['extraCosts']?.toDouble() ?? 0.0,
+      totalPrice: map['totalPrice']?.toDouble() ?? 0.0,
+      status: Status(
+        id: map['status'] ?? '',
+        name: Status.getNameById(map['status'] ?? ''),
+      ),
+      hasOffer: map['hasOffer'] ?? false,
+      userToken: map['userToken'] ?? '',
+      createdAt: DateTime.parse(map['createdAt'] ?? DateTime.now().toString()),
+      expertises: map['expertises'] != null
+          ? List<Expertise>.from(
+              (map['expertises'] as List).map((e) => Expertise.fromMap(e)))
+          : [],
+      subcategoryName: map['subcategoryName'] ?? '',
+      workerDetails: map['workerDetails'] != null
+          ? WorkerDetails.fromMap(map['workerDetails'])
+          : null,
+      
+      
+      
+    );
+  }
+}
 class ServiceRequest {
   String serviceDateTime;
   String id;
@@ -14,9 +97,15 @@ class ServiceRequest {
   String? selectedDate;
   String? selectedTime;
   bool acceptedTerms;
-  List<Expertises> expertises; // Cambiado a una lista de Expertises
+  List<Expertise> expertises; // Cambiado a una lista de Expertises
   late Status status;
+  List<Offer>
+      offers;
   final String subcategoryName;
+  WorkerDetails? workerDetails;
+  String workerId;
+  final Subcategory subcategory;
+  late final bool hasOffer;
 
   ServiceRequest({
     required this.serviceDateTime,
@@ -34,6 +123,11 @@ class ServiceRequest {
     required this.expertises, // Se espera una lista de Expertises
     required this.status,
     required this.subcategoryName,
+    required this.offers,
+    required this.workerId,
+    required this.subcategory,
+    required this.hasOffer,
+  
   });
 
   // Método para convertir la clase en un mapa
@@ -54,6 +148,9 @@ class ServiceRequest {
       'acceptedTerms': acceptedTerms,
       'expertises': expertises.map((e) => e.toMap()).toList(), // Convertir a Map
       'subcategoryName':subcategoryName,
+      'offers': offers.map((offer) => offer.toMap()).toList(),
+      'workerId':workerId,
+
     };
   }
 
@@ -68,18 +165,26 @@ class ServiceRequest {
       offeredPrice: _parseOfferedPrice(map['offeredPrice']),
       serviceType: ServiceType.fromMap(map['serviceType'] ?? {}),
       userId: map['userId'] ?? '',
+      workerId: map['workerId']?? '',
       isFavorite: map['isFavorite'] ?? false,
       selectedDate: map['selectedDate'],
       selectedTime: map['selectedTime'],
       acceptedTerms: map['acceptedTerms'] ?? false,
-      expertises: (map['expertises'] as List<dynamic>)
-          .map((e) => Expertises.fromJson(e as Map<String, dynamic>))
-          .toList(), // Convertir de JSON a lista de Expertises
+      expertises: map['expertises'] != null
+          ? List<Expertise>.from(
+              (map['expertises'] as List).map((e) => Expertise.fromMap(e)))
+          : [], // Convertir de JSON a lista de Expertises
       status: Status(
         id: map['status'] ?? '',
         name: Status.getNameById(map['status'] ?? ''),
       ),
       subcategoryName:map['subcategoryName']?? '',
+      offers: map['offers'] != null
+          ? List<Offer>.from(
+              (map['offers'] as List).map((e) => Offer.fromMap(e)))
+          : [],
+      subcategory: Subcategory.fromMap(map['subcategory'] ?? {}),
+      hasOffer: map['hasOffer'] ?? false,
     );
   }
 
@@ -98,7 +203,6 @@ class ServiceRequest {
     return 0.0;
   }
 }
-
 
 class ServiceType {
   String id;
@@ -131,6 +235,208 @@ class ServiceType {
     );
   }
 }
+
+class Status {
+  final String id;
+  final String name;
+
+  Status({required this.id, required this.name});
+
+  // Mapa inverso para buscar el nombre por ID
+  static final Map<String, String> _nameById = {
+    "available": "Disponible",
+    "offer": "Ofertado",
+    "in_progress": "En curso",
+    "completed": "Completado",
+    "cancelled": "Cancelado",
+    // Agrega más asignaciones de ID a nombre según sea necesario
+  };
+
+  // Método estático para obtener el nombre por ID
+  static String getNameById(String id) {
+    return _nameById[id] ?? 'Desconocido';
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+
+  // Método de fábrica para crear una instancia de Status desde un mapa
+  factory Status.fromMap(Map<String, dynamic> map) {
+    return Status(
+      id: map['id'] ?? '',
+      name: getNameById(map['id'] ?? ''),
+    );
+  }
+}
+
+class WorkerDetails {
+  final String id;
+  final List<String> certificateImagePaths;
+  final String idDocumentImagePath;
+  final String imagePath;
+  final String phoneNumber;
+  final String displayName;
+  final String email;
+  final List<String> expLevel;
+  final List<Expertise> expertises;
+  final String criminalRecordImagePath;
+  final String fcmToken;
+  final Location location; // Cambiado a un objeto Location
+  final String verificationStatus;
+  final String idCardNumber;
+
+  WorkerDetails({
+    required this.id,
+    required this.certificateImagePaths,
+    required this.idDocumentImagePath,
+    required this.imagePath,
+    required this.phoneNumber,
+    required this.displayName,
+    required this.email,
+    required this.expLevel,
+    required this.expertises,
+    required this.criminalRecordImagePath,
+    required this.fcmToken,
+    required this.location,
+    required this.verificationStatus,
+    required this.idCardNumber,
+  });
+
+  // Constructor fromMap
+  factory WorkerDetails.fromMap(Map<String, dynamic> map) {
+    return WorkerDetails(
+      id: map['id'] ?? '',
+      certificateImagePaths: List<String>.from(map['certificateImagePaths'] ?? []),
+      idDocumentImagePath: map['idDocumentImagePath'] ?? '',
+      imagePath: map['imagePath'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
+      displayName: map['displayName'] ?? '',
+      email: map['email'] ?? '',
+      expLevel: List<String>.from(map['expLevel'] ?? []),
+      expertises: (map['expertises'] as List<dynamic>?)
+              ?.map((item) => Expertise.fromMap(item))
+              .toList() ??
+          [],
+      criminalRecordImagePath: map['criminalRecordImagePath'] ?? '',
+      fcmToken: map['fcmToken'] ?? '',
+      location: map['location'] != null
+          ? Location.fromMap(map['location']) // Mapeo del objeto Location
+          : Location(lat: 0.0, lng: 0.0), // Valor por defecto
+      verificationStatus: map['verificationStatus'] ?? '',
+      idCardNumber: map['idCardNumber'] ?? '',
+    );
+  }
+
+  // Método toMap
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'certificateImagePaths': certificateImagePaths,
+      'idDocumentImagePath': idDocumentImagePath,
+      'imagePath': imagePath,
+      'phoneNumber': phoneNumber,
+      'displayName': displayName,
+      'email': email,
+      'expLevel': expLevel,
+      'expertises': expertises.map((e) => e.toMap()).toList(),
+      'criminalRecordImagePath': criminalRecordImagePath,
+      'fcmToken': fcmToken,
+      'location': location.toMap(), // Convertir objeto Location a mapa
+      'verificationStatus': verificationStatus,
+      'idCardNumber': idCardNumber,
+    };
+  }
+}
+
+// Clase Location
+class Location {
+  final double lat;
+  final double lng;
+
+  Location({
+    required this.lat,
+    required this.lng,
+  });
+
+  factory Location.fromMap(Map<String, dynamic> map) {
+    return Location(
+      lat: (map['lat'] ?? 0.0).toDouble(),
+      lng: (map['lng'] ?? 0.0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'lat': lat,
+      'lng': lng,
+    };
+  }
+}
+
+// Clase Expertise
+class Expertise {
+  final String name;
+  final String id;
+
+  Expertise({
+    required this.name,
+    required this.id,
+  });
+
+  factory Expertise.fromMap(Map<String, dynamic> map) {
+    return Expertise(
+      name: map['name'] ?? '',
+      id: map['id'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'id': id,
+    };
+  }
+}
+
+
+
+class category {
+  final String id;
+  final String name;
+
+  category({required this.id, required this.name});
+  factory category.fromMap(Map<String, dynamic> data) {
+    return category(id: data['id'], name: data['name']);
+  }
+}
+
+class Subcategory {
+  final String id;
+  final String name;
+
+  Subcategory({
+    required this.id,
+    required this.name,
+  });
+
+  factory Subcategory.fromMap(Map<String, dynamic> map) {
+    return Subcategory(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+}
 class UserData {
   String userId;
   String displayName;
@@ -143,7 +449,7 @@ class UserData {
   String idDocumentImagePath;
   String idDocumentImagePath2;
   String selectedCountryCode;
-  List<Expertises> expertises;
+  List<Expertise> expertises;
   List<String> expLevel;
   String certificateImagePaths;
   Map<String, double?>? location;
@@ -222,9 +528,9 @@ class UserData {
     return [];
   }
 
-  static List<Expertises> _convertToExpertisesList(dynamic value) {
+  static List<Expertise> _convertToExpertisesList(dynamic value) {
     if (value is List<dynamic>) {
-      return value.map((item) => Expertises.fromJson(item)).toList();
+      return value.map((item) => Expertise.fromMap(item)).toList();
     }
     return [];
   }
@@ -235,77 +541,18 @@ class UserData {
 class Category {
   final String id;
   final String name;
-  final List<Expertises> expertises;
+  final List<Expertise> expertises;
 
   Category({required this.id, required this.name, required this.expertises});
 
   factory Category.fromJson(Map<String, dynamic> json) {
     List<dynamic> expertisesData = json['expertises'];
-    List<Expertises> expertises =
-    expertisesData.map((e) => Expertises.fromJson(e)).toList();
+    List<Expertise> expertises =
+    expertisesData.map((e) => Expertise.fromMap(e)).toList();
     return Category(
       id: json['id'],
       name: json['name'],
       expertises: expertises,
     );
   }
-}
-
-class Expertises {
-  final String id;
-  final String name;
-
-  Expertises({required this.id, required this.name});
-
-  factory Expertises.fromJson(Map<String, dynamic> json) {
-    return Expertises(
-      id: json['id'],
-      name: json['name'],
-    );
-  }
-
-  // Agregar este método para convertir a Map
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-    };
-  }
-}
-
-class Status {
-  final String id;
-  final String name;
-
-  Status({required this.id, required this.name});
-
-  // Mapa inverso para buscar el nombre por ID
-  static final Map<String, String> _nameById = {
-    "available": "Disponible",
-    "offer": "Ofertado",
-    "in_progress": "En curso",
-    "completed": "Completado",
-    "cancelled": "Cancelado",
-    // Agrega más asignaciones de ID a nombre según sea necesario
-  };
-
-  // Método estático para obtener el nombre por ID
-  static String getNameById(String id) {
-    return _nameById[id] ?? 'Desconocido';
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-    };
-  }
-
-  // Método de fábrica para crear una instancia de Status desde un mapa
-  factory Status.fromMap(Map<String, dynamic> map) {
-    return Status(
-        id: map['id'] ?? '',
-        name: getNameById(map['id'] ?? ''),
-        );
-    }
 }

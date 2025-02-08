@@ -40,7 +40,7 @@ class ProfilePage extends StatefulWidget {
   final RegistrationData registrationData;
   String displayName;
   String email;
-  List<Expertises> expertises;
+  List<Expertise> expertises;
   String phoneNumber;
   String paymentType;
   final UserData userData;

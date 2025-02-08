@@ -36,6 +36,7 @@ class ServiceDataWizard extends StatefulWidget {
 class _Step1FormState extends State<ServiceDataWizard> {
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController idCardController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
   String? verificationId;
   String errorText = '';
@@ -48,7 +49,8 @@ class _Step1FormState extends State<ServiceDataWizard> {
 
   bool isStep1Valid() {
     return fullNameController.text.isNotEmpty &&
-        idCardController.text.isNotEmpty;
+        idCardController.text.isNotEmpty &&
+        phoneController.text.isNotEmpty;
   }
 
   @override
@@ -74,18 +76,13 @@ class _Step1FormState extends State<ServiceDataWizard> {
                     if (isStep1Valid()) {
                       widget.onNextStep();
                     } else {
-                      print(
-                          'Completa todos los pasos antes de completar.');
+                      print('Complete all required fields before moving to the next step.');
                     }
                   },
                   onChanged: (value) {
                     setState(() {
                       widget.registrationController.updateRegistrationData(
-                          displayName: value,
-                          workerType: '',
-                          idDocumentImagePath: '',
-                          idDocumentImagePath2: '',
-                          certificateImagePaths: '', criminalRecordImagePath: '');
+                          displayName: value, workerType: '', idDocumentImagePath: '', idDocumentImagePath2: '', certificateImagePaths: '', criminalRecordImagePath: '');
                       widget.userData.displayName = value;
                     });
                   },
@@ -114,19 +111,54 @@ class _Step1FormState extends State<ServiceDataWizard> {
                   onChanged: (value) {
                     setState(() {
                       widget.registrationController.updateRegistrationData(
-                          idCardNumber: value,
-                          workerType: '',
-                          idDocumentImagePath: '',
-                          idDocumentImagePath2: '',
-                          certificateImagePaths: '', criminalRecordImagePath: '');
+                          idCardNumber: value, workerType: '', idDocumentImagePath: '', idDocumentImagePath2: '', certificateImagePaths: '', criminalRecordImagePath: '');
                       widget.userData.idCardNumber = value;
                     });
                   },
-                  keyboardType: TextInputType.text,
+                  keyboardType: TextInputType.phone,
                   style: MyTextStyles.inputTextStyle,
                   cursorColor: const Color(0xFF830A09),
                   decoration: InputDecoration(
                     hintText: "Documento de Identidad",
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                    focusColor: Color(0xFF830A09),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Color(0xFF830A09),
+                      ),
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: phoneController,
+                  onTap: () {},
+                  onChanged: (value) {
+                    setState(() {
+                      // Verifica si el prefijo +591 está presente, si no, lo agrega automáticamente
+                      if (!value.startsWith('+591')) {
+                        value = '+591$value';
+                        phoneController.text = value; // Actualiza el valor del controlador para reflejar el prefijo
+                        phoneController.selection = TextSelection.fromPosition(
+                          TextPosition(offset: value.length), // Posiciona el cursor al final del texto
+                        );
+                      }
+
+                      // Actualiza los datos de registro con el número modificado
+                      widget.registrationController.updateRegistrationData(
+                          phoneNumber: value, workerType: '', idDocumentImagePath: '', idDocumentImagePath2: '', certificateImagePaths: '', criminalRecordImagePath: '');
+                      widget.userData.phoneNumber = value;
+                    });
+                  },
+                  keyboardType: TextInputType.phone,
+                  style: MyTextStyles.inputTextStyle,
+                  cursorColor: const Color(0xFF830A09),
+                  decoration: InputDecoration(
+                    hintText: "Número de Teléfono",
                     filled: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -160,24 +192,18 @@ class _Step1FormState extends State<ServiceDataWizard> {
                             border: Border.all(color: const Color(0xFF830A09)),
                           ),
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 10.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 10.0),
                             child: DropdownButton<String>(
                               value: widget.selectedWorkerType,
                               onChanged: (value) {
                                 setState(() {
                                   widget.selectedWorkerType = value!;
-                                  widget.registrationController
-                                      .updateRegistrationData(
-                                          workerType: value,
-                                          idDocumentImagePath: '',
-                                          idDocumentImagePath2: '',
-                                          certificateImagePaths: '', criminalRecordImagePath: '');
+                                  widget.registrationController.updateRegistrationData(
+                                      workerType: value, idDocumentImagePath: '', idDocumentImagePath2: '', certificateImagePaths: '', criminalRecordImagePath: '');
                                   widget.userData.paymentType = value;
                                 });
                               },
-                              items: ['Marque aqui', 'SI', 'NO']
-                                  .map((String value) {
+                              items: ['Marque aqui', 'SI', 'NO'].map((String value) {
                                 return DropdownMenuItem<String>(
                                   value: value,
                                   child: Text(value),

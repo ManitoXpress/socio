@@ -13,7 +13,7 @@ class EditProfileDialog extends StatefulWidget {
   final String displayName;
   final String idCardNumber;
   final String phoneNumber;
-  late List<Expertises> expertises;  // Cambiado de List<String> a List<Expertises>
+  late List<Expertise> expertises;  // Cambiado de List<String> a List<Expertises>
   late List<String> expLevel; 
   final Function()? onUpdateProfile;
   final ApiService2 apiService2; 

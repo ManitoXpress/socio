@@ -128,7 +128,7 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 6: Necesitamos una foto de su carnet de la parte anversa",
+            "Paso 8: Necesitamos una foto de su certificados profesionales(no obligatorio)",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),

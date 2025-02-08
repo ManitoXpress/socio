@@ -32,6 +32,8 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final Function(String) onStatusChanged;
   final UserData userData;
   final String workerId;
+  final WorkerDetails? workerDetails;
+  final List<Offer> offers;
 
   final List<String> images; // Parámetro images
 
@@ -43,6 +45,8 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.userData,
     required this.workerId,
     required this.images, // Asegurarse de que el parámetro esté presente
+    required this.workerDetails,
+    required this.offers,
   });
 
   @override
@@ -416,7 +420,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
           // Actualiza el precio ofertado, costos extras, comisión, estado y estado de pago en 'services'
           transaction.update(serviceRef, {
-            'offeredPrice': offeredPrice,
+          
             'commission': commission,
             'extraCosts': extraCost,
             'totalPrice': totalPrice,

@@ -101,7 +101,7 @@ class RegistrationController {
   String idDocumentImagePath2;
   String criminalRecordImagePath;
   String certificateImagePaths;
-  List<Expertises> expertises; // Cambiado a lista de Expertise
+  List<Expertise> expertises; // Cambiado a lista de Expertise
   List<String> expLevel;
   String imagePath;
   Map<String, double?>? location;
@@ -121,7 +121,7 @@ class RegistrationController {
     required String idDocumentImagePath2,
     required String criminalRecordImagePath,
     required String certificateImagePaths,
-    required List<Expertises> expertises, // Cambiado a lista de Expertise
+    required List<Expertise> expertises, // Cambiado a lista de Expertise
     required List<String> expLevel,
     required String imagePath,
     required Map<String, double?>? location,

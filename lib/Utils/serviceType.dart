@@ -7,7 +7,9 @@ class ServiceTypeListScreen extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
   final Map<String, List<String>> categories;
-  final void Function(List<Expertises> expertises, String? selectedExperienceLevel) onServiceTypesSelected;
+  final void Function(
+          List<Expertise> expertises, String? selectedExperienceLevel)
+      onServiceTypesSelected;
   final Future<List<Category>> Function() fetchExpertises;
 
   ServiceTypeListScreen({
@@ -15,7 +17,8 @@ class ServiceTypeListScreen extends StatefulWidget {
     required this.onNextStep,
     required this.onServiceTypesSelected,
     required this.categories,
-    required this.fetchExpertises, required Null Function(dynamic serviceType) onServiceTypeSelected,
+    required this.fetchExpertises,
+    required Null Function(dynamic serviceType) onServiceTypeSelected,
   });
 
   @override
@@ -24,7 +27,7 @@ class ServiceTypeListScreen extends StatefulWidget {
 
 class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
   List<String> selectedCategories = [];
-  List<Expertises> selectedSubcategories = [];
+  List<Expertise> selectedSubcategories = [];
   bool showCustomProfessionField = false;
   TextEditingController customProfessionController = TextEditingController();
   List<String> expLevel = ['0-3 años', '3-5 años', '5-7 años'];
@@ -149,9 +152,10 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
   }
 
   Widget _buildSubcategoryDropdown() {
-    Set<Expertises> uniqueSubcategories = {};
+    Set<Expertise> uniqueSubcategories = {};
     for (var categoryName in selectedCategories) {
-      final category = fetchCategories?.firstWhere((c) => c.name == categoryName);
+      final category =
+          fetchCategories?.firstWhere((c) => c.name == categoryName);
       if (category != null) {
         uniqueSubcategories.addAll(category.expertises);
       }
@@ -160,14 +164,15 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
     final sortedSubcategories = uniqueSubcategories.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
 
-    return DropdownButton<Expertises>(
+    return DropdownButton<Expertise>(
       value: null,
       onChanged: (expertise) {
         if (expertise != null && !selectedSubcategories.contains(expertise)) {
           setState(() {
             selectedSubcategories.add(expertise);
           });
-          widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
+          widget.onServiceTypesSelected(
+              selectedSubcategories, selectedExperienceLevel);
         }
       },
       items: sortedSubcategories.map((expertise) {
@@ -196,6 +201,7 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
           onPressed: () {
             setState(() {
               selectedCategories.add(customProfessionController.text);
+              selectedCategories.remove(customProfessionController.text);
               showCustomProfessionField = false;
               customProfessionController.clear();
             });
@@ -232,7 +238,8 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
         setState(() {
           selectedExperienceLevel = level;
         });
-        widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
+        widget.onServiceTypesSelected(
+            selectedSubcategories, selectedExperienceLevel);
       },
       items: expLevel.map((level) {
         return DropdownMenuItem(
@@ -244,31 +251,32 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
   }
 
   Widget _buildSummaryAndNextButton() {
-  return Column(
-    children: [
-      if (selectedExperienceLevel != null)
-        Text(
-          'Experiencia Laboral: $selectedExperienceLevel',
-          style: TextStyle(color: Color(0xFF830A09)),
-        ),
-      SizedBox(height: 20),
-      ElevatedButton(
-        onPressed: selectedSubcategories.isNotEmpty && selectedExperienceLevel != null
-            ? () {
-                // Aquí puedes hacer el guardado de cambios si es necesario
-                widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
-                
-                // Regresar a la pantalla de edición
-                Navigator.pop(context);  // Esto regresa a la pantalla anterior
-              }
-            : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Color(0xFF830A09),
-        ),
-        child: Text('Continuar', style: TextStyle(color: Colors.white)),
-      ),
-    ],
-  );
-}
+    return Column(
+      children: [
+        if (selectedExperienceLevel != null)
+          Text(
+            'Experiencia Laboral: $selectedExperienceLevel',
+            style: TextStyle(color: Color(0xFF830A09)),
+          ),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: selectedSubcategories.isNotEmpty &&
+                  selectedExperienceLevel != null
+              ? () {
+                  // Aquí puedes hacer el guardado de cambios si es necesario
+                  widget.onServiceTypesSelected(
+                      selectedSubcategories, selectedExperienceLevel);
 
+                  // Regresar a la pantalla de edición
+                  Navigator.pop(context); // Esto regresa a la pantalla anterior
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF830A09),
+          ),
+          child: Text('Continuar', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
 }

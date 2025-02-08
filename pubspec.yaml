@@ -1,7 +1,7 @@
 name: socio
 description: "project manitosXpress."
 publish_to: 'none'
-version: 1.7.6+2
+version: 1.7.7+1
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -20,6 +20,7 @@ dependencies:
   url_launcher_ios: ^6.3.1
   device_info_plus: ^10.1.2
   workmanager: ^0.5.2
+  firebase_crashlytics: ^4.3.0
 
   firebase_core: ^3.1.0
   google_sign_in: ^6.1.5

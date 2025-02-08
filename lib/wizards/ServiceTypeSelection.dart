@@ -6,7 +6,7 @@ import 'package:socio/Utils/styles.dart';
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
-  final void Function(List<Expertises> expertises, String? selectedExperienceLevel) onServiceTypesSelected;
+  final void Function(List<Expertise> expertises, String? selectedExperienceLevel) onServiceTypesSelected;
 
 
   final Future<List<Category>> Function() fetchExpertises; // Solo fetchExpertises
@@ -25,7 +25,7 @@ class ServiceTypeSelection extends StatefulWidget {
 
 class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
   List<String> selectedCategories = [];
-  List<Expertises> selectedSubcategories = [];
+  List<Expertise> selectedSubcategories = [];
   bool showCustomProfessionField = false;
   TextEditingController customProfessionController = TextEditingController();
   List<String> expLevel = ['0-3 años', '3-5 años', '5-7 años'];
@@ -267,46 +267,50 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
 
 
   Widget buildSubcategoryDropdown() {
-    Set<Expertises> uniqueSubcategories = {};
+  Set<Expertise> uniqueSubcategories = {};
 
-    selectedCategories.forEach((categoryName) {
-      final category = fetchCategories!.firstWhere((cat) => cat.name == categoryName, orElse: () => Category(id: '', name: '', expertises: []));
-      uniqueSubcategories.addAll(category.expertises);
-    });
-
-    List<Expertises> allSubcategories = uniqueSubcategories.toList();
-    allSubcategories.sort((a, b) => a.name.compareTo(b.name));
-
-    // Crear un mapa de nombre a id para los expertises
-    Map<String, String> expertiseMap = {};
-    allSubcategories.forEach((expertise) {
-      expertiseMap[expertise.name] = expertise.id;
-    });
-
-    return DropdownButton<Expertises>(
-      value: null,
-      onChanged: (expertise) {
-        if (expertise != null && !selectedSubcategories.contains(expertise)) {
-          setState(() {
-            selectedSubcategories.add(expertise);
-          });
-          // Obtener los nombres de las subcategorías seleccionadas
-          List<String> selectedSubcategoryNames = selectedSubcategories.map((expertise) => expertise.name).toList();
-          // Obtener los ids de las subcategorías seleccionadas
-          List<String> selectedSubcategoryIds = selectedSubcategories.map((expertise) => expertise.id).toList();
-          // Llama a la función onServiceTypesSelected con los nombres y los ids de las subcategorías
-          widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
-          selectedSubcategories.sort((a, b) => a.name.compareTo(b.name));
-        }
-      },
-      items: allSubcategories
-          .map((expertise) => DropdownMenuItem<Expertises>(
-        value: expertise,
-        child: Text(expertise.name),
-      ))
-          .toList(),
+  // Obtener las subcategorías de las categorías seleccionadas
+  selectedCategories.forEach((categoryName) {
+    final category = fetchCategories!.firstWhere(
+      (cat) => cat.name == categoryName,
+      orElse: () => Category(id: '', name: '', expertises: []),
     );
-  }
+    uniqueSubcategories.addAll(category.expertises);
+  });
+
+  List<Expertise> allSubcategories = uniqueSubcategories.toList();
+  allSubcategories.sort((a, b) => a.name.compareTo(b.name));
+
+  return Wrap(
+    spacing: 8.0, // Espaciado horizontal entre chips
+    runSpacing: 4.0, // Espaciado vertical entre chips
+    children: allSubcategories.map((expertise) {
+      final isSelected = selectedSubcategories.contains(expertise);
+      return ChoiceChip(
+        label: Text(expertise.name),
+        selected: isSelected,
+        selectedColor: Color(0xFF830A09),
+        backgroundColor: Colors.grey[200],
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : Colors.black,
+        ),
+        onSelected: (selected) {
+          setState(() {
+            if (selected) {
+              selectedSubcategories.add(expertise);
+            } else {
+              selectedSubcategories.remove(expertise);
+            }
+          });
+
+          // Actualizar la selección en el callback
+          widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
+        },
+      );
+    }).toList(),
+  );
+}
+
 
   Widget buildExperienceLevelDropdown() {
     return DropdownButton<String>(

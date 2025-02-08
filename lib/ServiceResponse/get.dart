@@ -12,6 +12,51 @@ class ApiService2 {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
 
+  Future<List<String>> getWorkerExpertises() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No hay usuario autenticado');
+      }
+
+      // Obtener el token actualizado de Firebase
+      final String? token = await user.getIdToken(true);
+      final String userId = user.uid;
+
+      print('[ApiService2] Obteniendo expertises del trabajador $userId');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/workers/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('[ApiService2] Respuesta: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> rawExpertises = data['expertises'] ?? [];
+
+        final expertises = rawExpertises
+            .map((e) => e?.toString().trim() ?? '')
+            .where((id) => id.isNotEmpty)
+            .toList();
+
+        print('[ApiService2] Expertises obtenidas: $expertises');
+        return expertises;
+      } else if (response.statusCode == 404) {
+        throw Exception('Trabajador no encontrado');
+      } else {
+        throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('[ApiService2] Error: $e');
+      rethrow;
+    }
+  }
+
   Future<List<ServiceResponse>> fetchServicesFromBackend(String token) async {
     try {
       final String? authToken = await AuthUtils.getToken();
@@ -49,7 +94,8 @@ class ApiService2 {
     }
   }
 
-  Future<http.Response> getAllServices(String authToken, String column, String value, String type) async {
+  Future<http.Response> getAllServices(
+      String authToken, String column, String value, String type) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
 
@@ -71,7 +117,6 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
-
 
   Future<http.Response> fetchServicebyExpertises(
       String userId, String authToken, List<String> expertises) async {
@@ -96,6 +141,93 @@ class ApiService2 {
     } catch (e) {
       print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
+    }
+  }
+
+  Future<List<ServiceRequest>> getOffers(
+    String column,
+    String value,
+    String type,
+    String deviceId,
+    List<ServiceRequest> services,
+    String status, // Nuevo parámetro para filtrar por estado
+  ) async {
+    try {
+      final String? authTokenValue = await AuthUtils.getToken();
+
+      if (authTokenValue == null) {
+        throw Exception('Token de autorización no encontrado');
+      }
+
+      if (services.isEmpty || services.any((service) => service.id.isEmpty)) {
+        throw Exception('ID del servicio no encontrado');
+      }
+
+      List<ServiceRequest> allOffers = [];
+
+      List<Future> requests = services.map((service) async {
+        final url = Uri.parse(
+          '$baseUrl/offers/${service.id}?'
+          'columns=$column&'
+          'values=$value&'
+          'type=$type&'
+          'deviceId=$deviceId&'
+          'status=$status', // Añadir parámetro de estado
+        );
+
+        final response = await http.get(
+          url,
+          headers: <String, String>{
+            'Authorization': 'Bearer $authTokenValue',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          List<dynamic> offersJson = json.decode(response.body);
+          allOffers.addAll(offersJson
+              .map((offer) => ServiceRequest.fromSnapshot(offer))
+              .where((offer) =>
+                  offer.status.id == status) // Filtro adicional en cliente
+              .toList());
+        } else {
+          print(
+              'Error al obtener ofertas para el servicio ${service.id}: ${response.statusCode}');
+        }
+      }).toList();
+
+      await Future.wait(requests);
+      return allOffers;
+    } catch (e) {
+      print('Error al obtener ofertas del backend: $e');
+      throw Exception('Error al obtener ofertas');
+    }
+  }
+
+  Future<List<ServiceRequest>> fetchServicesBySubcategory(
+      String userId, String authToken, List<String> expertiseIds) async {
+    try {
+      // Construimos la URL incluyendo los IDs de las especialidades
+      final Uri url = Uri.parse(
+          '$baseUrl/services/bySubcategories?userId=$userId&subcategoryIds=${expertiseIds.join(",")}');
+
+      // Realizamos la solicitud GET al backend
+      final response = await http.get(
+        url,
+        headers: <String, String>{
+          'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Parseamos los datos recibidos
+        final data = jsonDecode(response.body) as List;
+        return data.map((json) => ServiceRequest.fromSnapshot(json)).toList();
+      } else {
+        throw Exception(
+            'Error al obtener servicios por subcategorías: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al realizar la solicitud: $e');
     }
   }
 
@@ -131,7 +263,7 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
-  
+
   Future<List<Category>> fetchExpertises() async {
     final response =
         await http.get(Uri.parse('$baseUrl/categories/expertises'));
@@ -143,6 +275,7 @@ class ApiService2 {
       throw Exception('Failed to load expertises');
     }
   }
+
   Future<http.Response> fetchServiceByExpertises(
       String userId, List<String> expertises) async {
     try {
@@ -249,6 +382,7 @@ class ApiService2 {
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
+
   void _logError(http.Response response) {
     print('Error: ${response.statusCode}');
     print('Mensaje de error: ${response.body}');

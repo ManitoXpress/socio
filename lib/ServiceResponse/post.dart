@@ -77,23 +77,23 @@ class ApiService {
       }
 
       // Crea un documento con una propuesta en la colección "offers"
-      final newProposalRef = offersCollection.doc(); // ID generado automáticamente
+      final newProposalRef = offersCollection.doc(); 
 
       // Calcula el precio total
       double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
       double totalPrice = offeredPriceValue + extraCosts;
 
-      // Define los datos de la propuesta
+      
       final proposalData = {
-        'serviceId': serviceRequest.id, // ID del servicio al que se hace la oferta
+        'serviceId': serviceRequest.id, 
         'offeredPrice': offeredPriceValue,
-        'extraCosts': extraCosts, // Añade los costos extra
-        'totalPrice': totalPrice, // Añade el precio total calculado
-        'createdAt': FieldValue.serverTimestamp(), // Marca de tiempo para la propuesta
-        'userToken': token, // Token del usuario
-        'workerId': workerId, // Añade el workerId
-        'hasOffer': true, // Indica que este trabajador hizo una oferta
+        'extraCosts': extraCosts, 
+        'totalPrice': totalPrice, 
+        'createdAt': FieldValue.serverTimestamp(), 
+        'userToken': token, 
+        'workerId': workerId, 
         'status': 'offer',
+        'hasOffer': true, 
       };
 
       // Guarda la propuesta en Firestore
@@ -140,13 +140,13 @@ class ApiService {
       String imagePath = registrationData.imagePath; // Confirmamos que la URL no esté anidada
 
       // Mapea cada expertise a un mapa con nombre e ID
-      List<Map<String, String>> expertises = registrationData.expertises.map((expertise) {
-        return {
-          'name': expertise.name,
-          'id': expertise.id,
-        };
-      }).toList();
-
+      List<Map<String, String>> expertises = (registrationData.expertises ?? [])
+    .where((expertise) => expertise != null) // Filtra elementos nulos
+    .map((expertise) => {
+          'name': expertise!.name ?? '', // Usa `!` porque ya filtramos los nulos
+          'id': expertise.id ?? '',
+        })
+    .toList();
       // Cuerpo de la solicitud
       Map<String, dynamic> requestBody = {
         'displayName': registrationData.displayName,

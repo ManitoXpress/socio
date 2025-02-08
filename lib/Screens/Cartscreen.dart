@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,8 +6,19 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/Metods/inProgressFetcher.dart';
+import 'package:socio/Metods/offerFetcher.dart';
+import 'package:socio/Metods/serviceCancelled.dart';
+import 'package:socio/Metods/serviceComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
+import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/Utils/authUtils.dart';
+import 'package:socio/Utils/remoteNotification.dart';
+import 'package:socio/Utils/serviceFetcher.dart';
+import 'package:socio/Utils/serviceList.dart';
 import 'package:socio/Utils/service_form.dart';
+import 'package:socio/Utils/workerDetails.dart';
+import 'package:socio/main.dart';
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/request.dart';
 import '../Utils/cacheLocal.dart';
@@ -28,368 +40,264 @@ class _HistorialState extends State<Historial>
     with SingleTickerProviderStateMixin {
   List<ServiceRequest> serviceRequests = [];
   List<Status> statuses = [];
-
   late final UserData userData;
   int unreadMessagesCount = 0;
+  int offerServiceCount = 0;
+  StreamSubscription? _foregroundServiceListener;
+
   late final RegistrationData registrationData;
   late TabController _tabController;
-  List<String> workerExpertiseIds = [];
+  final ApiService apiService = ApiService();
+  late NotificationService notificationService;
+  late final ServiceDataFetcher serviceDataFetcher;
+  late OfferRepository _offerRepository;
+
+  Timer? _notificationTimer;
+  bool isLoading = false;
+  int notificationCount = 0;
   String workerId = '';
-  int offerServiceCount = 0;
-  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+  String userId = '';
+  String authToken = '';
+  String token = '';
+
+  String deviceId = '';
+  late ServiceRequest? serviceRequest;
+  String value = '';
+
+  final ServiceRepository _serviceRepository = ServiceRepository(
+    apiService: ApiService2(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepositoryInProgress _serviceRepository2 = ServiceRepositoryInProgress(
+    apiService: ApiService2(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepositoryComplete _serviceRepository3 = ServiceRepositoryComplete(
+    apiService: ApiService(),
+    firestore: FirebaseFirestore.instance,
+  );
+  final ServiceRepositoryCancelled _serviceRepository4 = ServiceRepositoryCancelled(
+    apiService: ApiService(),
+    firestore: FirebaseFirestore.instance,
+  );
+
+  NotificationService _notificationService = NotificationService();
+  int inProgressServiceCount = 0;
+
+  int globalServiceCount = 0;
+  int availableServiceCount = 0;
+
+  int completedServiceCount = 0;
+  int cancelledServiceCount = 0;
 
   @override
-  void initState() {
-    super.initState();
-    // Mostrar el diálogo al iniciar la clase
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showWelcomeDialog();
+void initState() {
+  super.initState();
+  serviceRequest = ServiceRequest(
+    serviceDateTime: '',
+    id: '',
+
+    description: '',
+    images: [],
+    location: {},
+    offeredPrice: 0.0,
+    serviceType:
+        ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+    userId: '',
+    workerId: '',
+    isFavorite: false,
+    selectedDate: null,
+    selectedTime: null,
+    acceptedTerms: false,
+    expertises: [],
+    status: Status(id: '', name: ''),
+    subcategoryName: '',
+    hasOffer: false,
+    offers: [],
+    subcategory: Subcategory(id: '', name: ''),
+  );
+  registrationData = RegistrationData(
+    userId: '',
+    displayName: '',
+    phoneNumber: '',
+    paymentType: '',
+    selectedCountryCode: '',
+    location: {},
+    email: '',
+    devicesId: '',
+    fcmToken: '', 
+    idCardNumber: '', 
+    imagePath: '', 
+    imagePathList: [], 
+    idDocumentImagePath: '', 
+    idDocumentImagePath2: '', 
+    criminalRecordImagePath: '', 
+    certificateImagePaths: '', expertises: [], expLevel: [],
+  );
+
+  userData = UserData(
+    displayName: '',
+    email: '',
+    phoneNumber: '',
+    userId: '',
+    location: {},
+    paymentType: '',
+    selectedCountryCode: '',
+    registrationData: registrationData,
+    getToken: '', imagePath: '', 
+    idCardNumber: '', pdfPathController: '', 
+    criminalRecordImagePath: '', 
+    idDocumentImagePath: '', 
+    idDocumentImagePath2: '', 
+    expertises: [],
+     expLevel: [], certificateImagePaths: '',
+  );
+
+  // Configurar el controlador de pestañas
+  _tabController = TabController(length: 5, vsync: this);
+
+
+  _offerRepository = OfferRepository(
+    apiService2: ApiService2(),
+    serviceDataFetcher: ServiceDataFetcher(),
+    firestore: FirebaseFirestore.instance,
+  );
+}
+
+// Método corregido _refreshHistorial
+Future<void> _refreshHistorial() async {
+  setState(() {
+    isLoading = true;
+    availableServiceCount = 0;
+    offerServiceCount = 0;
+    inProgressServiceCount = 0;
+    completedServiceCount = 0;
+    cancelledServiceCount = 0;
+  });
+
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print("Usuario no autenticado.");
+      return;
+    }
+    final userId = user.uid;
+    final token = await user.getIdToken();
+
+    // Crear todas las llamadas en paralelo
+    final futures = [
+      _serviceRepository.fetchServicesByStatus(
+        'available',
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token ?? '',
+        [],
+      ),
+      _offerRepository.fetchOffersForUser(
+        'offer',           // type: String
+        'status',          // column: String (nombre de columna para filtrar)
+        userId,            // userId: String
+        token ?? '',       // token: String
+        ServiceRequest(
+          serviceDateTime: '',
+          id: '',
+
+          description: '',
+          images: [],
+          location: {},
+          offeredPrice: 0.0,
+          serviceType: ServiceType(
+            id: '',
+            name: '',
+            selectedDate: '',
+            selectedTime: '',
+          ),
+          userId: '',
+          workerId: '',
+          isFavorite: false,
+          acceptedTerms: false,
+          expertises: [],
+          status: Status(id: '', name: ''),
+          subcategoryName: '',
+          hasOffer: false,
+          offers: [], subcategory: Subcategory(id: '', name: ''),
+        
+        ),
+        userId,
+      ),
+      _serviceRepository2.fetchServicesByInProgress(
+        'in_progress',           // type: String
+        'status',          // column: String (nombre de columna para filtrar)
+        userId,            // userId: String
+        token ?? '',       // token: String
+        
+    
+      ),
+      _serviceRepository.fetchServicesByStatus(
+        'completed',
+        'completed',
+        userId,
+        token ?? '',
+        [],
+      ),
+      _serviceRepository.fetchServicesByStatus(
+        'cancelled',
+        'cancelled',
+        userId,
+        token ?? '',
+        [],
+      ),
+    ];
+
+    // Ejecutar todas las llamadas en paralelo
+    final results = await Future.wait(futures);
+
+    // Extraer resultados
+    final availableServices = results[0] as List<ServiceRequest>;
+    final offerServices = results[1] as List<ServiceRequest>;
+    final inProgressServices = results[2] as List<ServiceRequest>;
+    final completedServices = results[3] as List<ServiceRequest>;
+    final cancelledServices = results[4] as List<ServiceRequest>;
+
+    // Calcular total de ofertas
+    final totalOffers = offerServices.fold<int>(
+      0,
+      (sum, service) => sum + service.offers.length,
+    );
+
+    // Actualizar estado
+    setState(() {
+      availableServiceCount = availableServices.length;
+      offerServiceCount = totalOffers;
+      inProgressServiceCount = inProgressServices.length;
+      completedServiceCount = completedServices.length;
+      cancelledServiceCount = cancelledServices.length;
+      serviceRequests = [
+        ...availableServices,
+        ...offerServices,
+        ...inProgressServices,
+        ...completedServices,
+        ...cancelledServices,
+      ];
+      isLoading = false;
     });
 
-    registrationData = RegistrationData(
-      userId: '',
-      displayName: '',
-      phoneNumber: '',
-      paymentType: '',
-      selectedCountryCode: '',
-      location: {},
-      email: '',
-      idCardNumber: '',
-      imagePath: '',
-      imagePathList: [],
-      idDocumentImagePath: '',
-      idDocumentImagePath2: '',
-      criminalRecordImagePath: '',
-      certificateImagePaths: '',
-      expertises: [],
-      expLevel: [], devicesId: '', fcmToken: '',
-    );
+    // Navegar a ofertas si hay nuevas
+    if (totalOffers > 0) {
+      _tabController.animateTo(1);
+    }
 
-    userData = UserData(
-      displayName: '',
-      email: '',
-      phoneNumber: '',
-      userId: '',
-      location: {},
-      paymentType: '',
-      selectedCountryCode: '',
-      registrationData: registrationData,
-      getToken: '',
-      idCardNumber: '',
-      imagePath: '',
-      idDocumentImagePath: '',
-      idDocumentImagePath2: '',
-      criminalRecordImagePath: '',
-      certificateImagePaths: '',
-      expertises: [],
-      expLevel: [],
-      pdfPathController: '',
-    );
-
-    _tabController = TabController(length: 5, vsync: this);
-    _initializeData();
-    calculateUnreadMessagesCount();
+  } catch (e) {
+    print("Error al actualizar el historial: $e");
+    setState(() => isLoading = false);
   }
+}
 
   @override
   void dispose() {
     _tabController.dispose();
+    _foregroundServiceListener?.cancel();
     super.dispose();
-  }
-
-  // Método para mostrar el diálogo de bienvenida
-  void _showWelcomeDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
-          ),
-          title: Text(
-            '¡Bienvenido a ManitosXpress!',
-            style: TextStyle(
-              fontSize: 20.0,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF84090D),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Gracias por unirte a ManitosXpress. Aquí podrás ofrecer tus habilidades y conectarte con clientes que necesitan tu ayuda.',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.black54,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20),
-              Icon(
-                Icons.build_rounded,
-                size: 60,
-                color: Color(0xFF84090D),
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Color(0xFF84090D),
-                backgroundColor: const Color(0xFFE8E8E8),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                side: BorderSide(
-                  color: const Color(0xFFE8E8E8),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                "Comenzar",
-                style: TextStyle(
-                  fontSize: 18,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<List<String>> fetchWorkerExpertises() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        final workerDoc = await FirebaseFirestore.instance
-            .collection('workers')
-            .doc(user.uid)
-            .get();
-
-        if (workerDoc.exists) {
-          setState(() {
-            workerId = workerDoc.id;
-          });
-
-          final List<dynamic> workerExpertises =
-              workerDoc.data()?['expertises'] ?? [];
-          return workerExpertises.map((expertise) {
-            return expertise['id'] as String;
-          }).toList();
-        }
-      }
-      return [];
-    } catch (e) {
-      print('Error al obtener los expertises del trabajador: $e');
-      return [];
-    }
-  }
-
-  Future<void> _initializeData() async {
-    workerExpertiseIds = await fetchWorkerExpertises();
-    await fetchServicesByExpertises(workerExpertiseIds);
-  }
-
-  Future<double?> fetchOfferedPrice(String serviceId) async {
-    try {
-      // Consultar Firestore en la colección 'offers'
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('offers')
-          .where('serviceId', isEqualTo: serviceId)
-          .limit(1)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        // Obtener el precio ofertado
-        final offerData = querySnapshot.docs.first.data();
-        final offeredPrice = offerData['offeredPrice'];
-
-        // Verificar el tipo de offeredPrice y convertirlo a double si es necesario
-        if (offeredPrice is String) {
-          return double.tryParse(offeredPrice);
-        } else if (offeredPrice is double) {
-          return offeredPrice;
-        } else {
-          return null;
-        }
-      }
-    } catch (e) {
-      print('Error al obtener el precio ofertado: $e');
-    }
-    return null;
-  }
-
-  Future<void> fetchServicesByExpertises(
-      List<String> workerExpertiseIds) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        final token = await user.getIdToken();
-
-        // Llamada al backend para obtener los servicios directamente, sin usar caché.
-        final serviceResponse =
-        await ApiService2().getAllServices(token!, "all", "", "");
-
-        if (serviceResponse.statusCode == 200) {
-          final List<dynamic> jsonDataList = json.decode(serviceResponse.body);
-
-          final List<ServiceRequest> serviceRequestsList =
-          jsonDataList.map((item) {
-            final statusName = item['status'] as String? ?? '';
-            final status = statusName.isNotEmpty
-                ? Status(id: statusName, name: Status.getNameById(statusName))
-                : Status(id: "unknown", name: 'Desconocido');
-
-            final List<dynamic> expertisesArray =
-                item['expertises'] as List<dynamic>? ?? [];
-            final List<Expertises> expertisesList =
-            expertisesArray.map((expertiseItem) {
-              return Expertises(
-                id: expertiseItem['id'] ?? '',
-                name: expertiseItem['name'] ?? '',
-              );
-            }).toList();
-
-            return ServiceRequest(
-              expertises: expertisesList,
-              id: item['id'] ?? '',
-              serviceDateTime: item['serviceDateTime'] ?? '',
-              description: item['description'] ?? '',
-              images: (item['images'] as List<dynamic>?)
-                  ?.map((image) => image ?? '')
-                  .cast<String>()
-                  .toList() ??
-                  [],
-              location: Map<String, double>.from(
-                (item['location']?.map((key, value) {
-                  return MapEntry(
-                      key, value is int ? value.toDouble() : value);
-                }) ??
-                    {}),
-              ),
-              offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-              userId: item['userId'] ?? '',
-              status: status,
-              isFavorite: item['isFavorite'] as bool? ?? false,
-              acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-              serviceType: ServiceType(
-                name: item['serviceType'] ?? '',
-                id: '',
-                selectedDate: '',
-                selectedTime: '',
-              ),
-              subcategoryName: item['subcategoryName'] ?? '',
-            );
-          }).toList();
-
-          // Filtrar las solicitudes de servicio según las expertises del trabajador.
-          final filteredServiceRequestsList =
-          serviceRequestsList.where((serviceRequest) {
-            // Comprobar si alguna de las expertises de la solicitud de servicio coincide con las expertises del trabajador.
-            return serviceRequest.expertises.any((expertise) {
-              return workerExpertiseIds.contains(expertise.id);
-            });
-          }).toList();
-
-          // Verificar si la lista filtrada no está vacía
-          if (filteredServiceRequestsList.isNotEmpty) {
-            // Actualizar la interfaz de usuario con los datos filtrados.
-            setState(() {
-              serviceRequests = filteredServiceRequestsList;
-              statuses = filteredServiceRequestsList
-                  .map((request) => request.status)
-                  .toList();
-
-            });
-
-            print('Servicios cargados con éxito.');
-          } else {
-            print(
-                'No se encontraron servicios que coincidan con las expertises del trabajador.');
-          }
-        } else {
-          print(
-              'Error al obtener datos del backend. Código de estado: ${serviceResponse.statusCode}');
-        }
-      } else {
-        print('Usuario no autenticado');
-      }
-    } catch (e) {
-      print('Error en la solicitud HTTP: $e');
-    }
-  }
-
-  void calculateUnreadMessagesCount() async {
-    int count = 0;
-    for (var request in serviceRequests) {
-      final messages = await FirebaseFirestore.instance
-          .collection('chats')
-          .doc(request.id)
-          .collection('messages')
-          .where('unread', isEqualTo: true)
-          .get();
-      count += messages.docs.length;
-    }
-    setState(() {
-      unreadMessagesCount = count;
-    });
-  }
-
-  double _parseOfferedPrice(dynamic value) {
-    if (value is String) {
-      try {
-        return double.parse(value);
-      } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
-        return 0.0;
-      }
-    } else if (value is num) {
-      return value.toDouble();
-    }
-    return 0.0;
-  }
-
-  void _openChatScreen() {
-    if (serviceRequests.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(chatId: '', userId: '', workerId: '',),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No hay servicios disponibles para iniciar el chat.'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _refreshHistorial() async {
-    await LocalCacheService.clearCacheForUser(
-        FirebaseAuth.instance.currentUser!.uid);
-    workerExpertiseIds = await fetchWorkerExpertises();
-    await fetchServicesByExpertises(workerExpertiseIds);
-    setState(() {});
   }
 
   @override
@@ -397,26 +305,33 @@ class _HistorialState extends State<Historial>
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
+    // Obtener el userId de Firebase Auth
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+
+    // Asegúrate de que userId no sea nulo
+    if (userId == null) {
+      return Scaffold(
+        body: Center(
+          child: Text('Usuario no autenticado.'),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-
-
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(50.0),
           child: Container(
             color: Colors.white,
             child: TabBar(
               controller: _tabController,
-              labelPadding: EdgeInsets.symmetric(
-                  horizontal: 8.0), // Ajuste de espacio entre tabs
+              labelPadding: EdgeInsets.symmetric(horizontal: 8.0),
               labelStyle: MyTextStyles.tabTextStyle,
               unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
               indicator: UnderlineTabIndicator(
-                // Línea fina como indicador
                 borderSide: BorderSide(width: 3.0, color: Color(0xFF84090D)),
-                insets: EdgeInsets.symmetric(
-                    horizontal: 20.0), // Añade espacio en los extremos
+                insets: EdgeInsets.symmetric(horizontal: 20.0),
               ),
               tabs: [
                 Tab(
@@ -424,16 +339,14 @@ class _HistorialState extends State<Historial>
                     padding: const EdgeInsets.only(bottom: 4.0),
                     child: Icon(Icons.task_alt, color: Colors.black),
                   ),
-                  text: 'Disponibles',
+                  text: 'Disponibles ($availableServiceCount)',
                 ),
                 Tab(
                   child: Column(
-                    mainAxisSize: MainAxisSize
-                        .min, // Minimiza el espacio ocupado por la columna
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Stack(
-                        clipBehavior: Clip
-                            .none, // Permite desbordar el badge de notificación
+                        clipBehavior: Clip.none,
                         children: [
                           Padding(
                             padding: const EdgeInsets.only(bottom: 4.0),
@@ -441,7 +354,7 @@ class _HistorialState extends State<Historial>
                           ),
                           if (offerServiceCount > 0)
                             Positioned(
-                              top: -10, // Ajusta la posición del badge
+                              top: -10,
                               right: -10,
                               child: Container(
                                 padding: const EdgeInsets.all(5),
@@ -465,12 +378,10 @@ class _HistorialState extends State<Historial>
                             ),
                         ],
                       ),
-                      SizedBox(
-                          height: 4.0), // Espacio entre el ícono y el texto
+                      SizedBox(height: 4.0),
                       Text(
                         'Ofertados',
-                        style: TextStyle(
-                            fontSize: 12.0), // Ajuste de tamaño del texto
+                        style: TextStyle(fontSize: 12.0),
                       ),
                     ],
                   ),
@@ -480,21 +391,21 @@ class _HistorialState extends State<Historial>
                     padding: const EdgeInsets.only(bottom: 4.0),
                     child: Icon(Icons.assignment_ind, color: Colors.black),
                   ),
-                  text: 'Asignados',
+                  text: 'Asignados ($inProgressServiceCount)',
                 ),
                 Tab(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 4.0),
                     child: Icon(Icons.check_circle, color: Colors.black),
                   ),
-                  text: 'Completados',
+                  text: 'Completados ($completedServiceCount)',
                 ),
                 Tab(
                   icon: Padding(
                     padding: const EdgeInsets.only(bottom: 4.0),
                     child: Icon(Icons.cancel, color: Colors.black),
                   ),
-                  text: 'Cancelados',
+                  text: 'Cancelados ($cancelledServiceCount)',
                 ),
               ],
             ),
@@ -512,28 +423,60 @@ class _HistorialState extends State<Historial>
                   'Historial',
                   style: MyTextStyles.buttonTextStyle3,
                 ),
-                Spacer(),
+                const Spacer(),
                 IconButton(
-                  icon: Icon(Icons.refresh, color: Color(0xFF84090D),),
+                  icon: const Icon(Icons.refresh, color: Color(0xFF1A819A)),
                   onPressed: _refreshHistorial,
                 ),
               ],
             ),
           ),
-          SizedBox(height: 1.0),
+          const SizedBox(height: 1.0),
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
                 _buildServiceListByStatus(
-                    'available', screenWidth, screenHeight),
-                _buildServiceListByStatus('offer', screenWidth, screenHeight),
-                _buildServiceListByStatus('in_progress,pending_confirmation,pending_confirmation2',
-                    screenWidth, screenHeight),
+                  'available',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
                 _buildServiceListByStatus(
-                    'completed', screenWidth, screenHeight),
+                  'offer',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
                 _buildServiceListByStatus(
-                    'cancelled', screenWidth, screenHeight),
+                  'in_progress',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
+                _buildServiceListByStatus(
+                  'completed',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
+                // Agrega esta quinta pestaña
+                _buildServiceListByStatus(
+                  'cancelled',
+                  screenWidth,
+                  screenHeight,
+                  userId,
+                  token,
+                  deviceId,
+                ),
               ],
             ),
           ),
@@ -543,218 +486,188 @@ class _HistorialState extends State<Historial>
   }
 
   Widget _buildServiceListByStatus(
-      String statusIds, double screenWidth, double screenHeight) {
-    if (statusIds == 'offer') {
-      return FutureBuilder<List<ServiceRequest>>(
-        future: _fetchServicesWithOffers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+    String statusIds,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    String token,
+    String deviceId,
+  ) {
+    Future<List<ServiceRequest>>? future;
 
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No hay servicios ofertados."));
-          }
-
-          final servicesWithOffers = snapshot.data!;
-          return _buildServiceList(servicesWithOffers, screenWidth, screenHeight);
-        },
-      );
-    } else if (statusIds == 'available') {
-      return FutureBuilder<List<ServiceRequest>>(
-        future: _fetchAvailableServicesWithoutOffers(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No hay servicios disponibles."));
-          }
-
-          final availableServices = snapshot.data!;
-          return _buildServiceList(availableServices, screenWidth, screenHeight);
-        },
-      );
-    } else {
-      // Otros estados...
-      return Container(); // Placeholder
-    }
-  }
-
-  Widget _buildServiceList(
-      List<ServiceRequest> services, double screenWidth, double screenHeight) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-
-          return GestureDetector(
-            onTap: () {
-              // Aquí se navega a la pantalla ServiceFormWithTimeline
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServiceFormWithTimeline(
-                    serviceRequest: service,
-                    initialStatus: statuses[index].id, // Pasa el objeto Status aquí
-                    onComplete: (status) {
-                      setState(() {
-                        statuses[index] = Status(id: status, name: '');
-                      });
-                    },
-                    onStatusChanged: (newStatus) {},
-                    userData: userData, // Pasa la información del usuario
-                    workerId: workerId, // Pasa el ID del trabajador
-                    images: [], // Pasa las imágenes que quieras
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.only(bottom: screenHeight * 0.02),
-              width: screenWidth,
-              height: screenHeight * 0.24,
-              child: CustomPaint(
-                size: Size(screenWidth, screenHeight * 0.35),
-                painter: CustomTicketShapePainter(
-                  status: statuses[index], // Pasa el objeto Status correspondiente
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Contenido textual...
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 30),
-                            Text(
-                              'Categoría:',
-                              style: MyTextStyles.drawerButtonTextStyle,
-                            ),
-                            Text(
-                              truncateDescription(service.subcategoryName),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
-                            ),
-                            SizedBox(height: screenHeight * 0.01),
-                            Text(
-                              'Servicio:',
-                              style: MyTextStyles.drawerButtonTextStyle,
-                            ),
-                            Text(
-                              truncateDescription(
-                                service.expertises.map((e) => e.name).join(', '),
-                              ),
-                              style: MyTextStyles.drawerButtonTextStyle5,
-                              textAlign: TextAlign.left,
-                            ),
-                            SizedBox(height: screenHeight * 0.01),
-                            Text(
-                              'Precio Ofertado: \$${service.offeredPrice.toStringAsFixed(2)}',
-                              style: MyTextStyles.drawerButtonTextStyle,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Image.asset(
-                          'assets/manito.png',
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    final offerRepository = OfferRepository(
+      apiService2: ApiService2(),
+      serviceDataFetcher: ServiceDataFetcher(),
+      firestore: FirebaseFirestore.instance,
     );
-  }
+
+    switch (statusIds) {
+      case 'available':
+      future = _serviceRepository.fetchServicesByStatus(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
+      case 'offer':
+  future = offerRepository.fetchOffersForUser(
+    statusIds,          // type: String
+    'offer',           // column: String (nombre de la columna en DB)
+    userId,             // userId: String
+    token,              // token: String
+    ServiceRequest(     // service: ServiceRequest
+      id: '',
+      serviceDateTime: '',
+    
+      description: '',
+      images: [],
+      location: {},
+      offeredPrice: 0.0,
+      serviceType: ServiceType(
+        id: '',
+        name: '',
+        selectedDate: '',
+        selectedTime: '',
+      ),
+      userId: userId,   // Usar el userId real
+      workerId: '',
+      isFavorite: false,
+      acceptedTerms: false,
+      expertises: [],
+      status: Status(id: 'offer', name: 'Ofertado'), // Estado correcto
+      subcategoryName: '',
+      hasOffer: false,
+      offers: [], subcategory: Subcategory(id: '', name: ''),
+
+      
+    ),
+    userId,
+
+  );
+  break;
+    case 'in_progress':
+    future = Future.wait([
+      _serviceRepository2.fetchServicesByInProgress(
+        'in_progress',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener in_progress: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+      _serviceRepository2.fetchServicesByInProgress(
+        'pending_confirmation',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener pending_confirmation: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+      _serviceRepository2.fetchServicesByInProgress(
+        'pending_confirmation2',
+        userId,
+        'status',
+        token,
+      ).catchError((e) {
+        print("Error al obtener pending_confirmation2: $e");
+        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+      }),
+    ]).then((results) {
+      final servicesInProgress = results[0];
+      final pendingConfirmationServices = results[1];
+      final pendingConfirmationServices2 = results[2];
+      return [...servicesInProgress, ...pendingConfirmationServices, ...pendingConfirmationServices2];
+    });
+    break;
 
 
-  Future<List<ServiceRequest>> _fetchServicesWithOffers() async {
-    try {
-      // Consulta los documentos en "offers" donde el worker ha hecho una oferta
-      final offersSnapshot = await FirebaseFirestore.instance
-          .collection('offers')
-          .where('hasOffer', isEqualTo: true)
-          .where('workerId', isEqualTo: workerId)
-          .get();
 
-      final offerServiceIds =
-      offersSnapshot.docs.map((doc) => doc['serviceId'] as String).toList();
+  case 'completed':
+      future = _serviceRepository3.fetchServicesByComplete(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
 
-      if (offerServiceIds.isEmpty) {
-        return [];
-      }
 
-      // Consulta los servicios correspondientes a esas ofertas
-      final servicesSnapshot = await FirebaseFirestore.instance
-          .collection('services')
-          .where(FieldPath.documentId, whereIn: offerServiceIds)
-          .get();
+  case 'cancelled':
+      future = _serviceRepository4.fetchServicesByCancelled(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
 
-      return servicesSnapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id; // Agrega el ID del documento al mapa
-        return ServiceRequest.fromSnapshot(data);
-      }).toList();
-    } catch (e) {
-      print('Error fetching services with offers: $e');
-      return [];
+      default:
+        return Center(child: Text("Estado no válido."));
     }
-  }
 
-  Future<List<ServiceRequest>> _fetchAvailableServicesWithoutOffers() async {
-    try {
-      // Consulta los documentos en "offers" donde el worker ha hecho una oferta
-      final offersSnapshot = await FirebaseFirestore.instance
-          .collection('offers')
-          .where('workerId', isEqualTo: workerId)
-          .get();
+    return FutureBuilder<List<ServiceRequest>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-      final offerServiceIds =
-      offersSnapshot.docs.map((doc) => doc['serviceId'] as String).toList();
+        if (snapshot.hasError) {
+          return Center(child: Text("Error al cargar servicios."));
+        }
 
-      // Consulta los servicios disponibles excluyendo aquellos con ofertas del worker
-      final servicesSnapshot = await FirebaseFirestore.instance
-          .collection('services')
-          .where('status', isEqualTo: 'available')
-          .where(
-        FieldPath.documentId,
-        whereNotIn: offerServiceIds.isEmpty ? null : offerServiceIds,
-      )
-          .get();
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+              child: Text("No hay servicios disponibles para este estado."));
+        }
 
-      return servicesSnapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id; // Agrega el ID del documento al mapa
-        return ServiceRequest.fromSnapshot(data);
-      }).toList();
-    } catch (e) {
-      print('Error fetching available services: $e');
-      return [];
-    }
-  }
+        final services = snapshot.data!;
+        if (statusIds == 'available') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
+
+        if (statusIds == 'offer') {
+            final services = snapshot.data!;
+            // Extrae todas las ofertas de los servicios
+            final offers = services.expand((s) => s.offers).toList();
+            
+            return ServiceListBuilder.buildOfferList(
+              services, // Servicio asociado
+              offers,
+              screenWidth,
+              screenHeight,
+              userId,
+              userData,
+            );
+          }
+        if (statusIds == 'in_progress') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
+        if (statusIds == 'completed') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
+        if (statusIds == 'cancelled') {
+          final services = snapshot.data!;
+          return ServiceListBuilder.buildServiceList(
+              services, screenWidth, screenHeight, userId, userData);
+        }
 
 
-  String truncateDescription(String description) {
-    final words = description.split(' ');
-    if (words.length > 6) {
-      return '${words.take(6).join(' ')}...';
-    }
-    return description;
+        return ServiceListBuilder.buildServiceList(
+            services, screenWidth, screenHeight, userId, userData);
+      },
+    );
   }
 }
