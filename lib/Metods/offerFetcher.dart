@@ -5,6 +5,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/Utils/workerDetails.dart';
 class OfferRepository {
@@ -49,10 +52,10 @@ class OfferRepository {
       isFavorite: false,
       acceptedTerms: false,
       serviceType: ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
-      subcategoryName: '',
+    
       offers: [],
-      subcategory: Subcategory(id: '', name: ''),
-      hasOffer: false,
+ 
+      hasOffer: false, devicesId: '', subcategoryName: '', 
     );
 
     // Retornar los servicios con sus ofertas
@@ -155,9 +158,9 @@ class OfferRepository {
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '',
+                
                   hasOffer: item['hasOffer'] ?? false,
-                  offers: [], subcategory: Subcategory(id: '', name: ''), // Lista vacía inicialmente
+                  offers: [], devicesId: '', subcategoryName: item['subcategoryName']?? '', // Lista vacía inicialmente
                 );
               }).toList();
 
@@ -203,8 +206,8 @@ class OfferRepository {
                       status: statusObject, // Usar el status del servicio
                       userToken: '',
                       createdAt: DateTime.now(),
-                      expertises: serviceOffer.expertises,
-                      subcategoryName: serviceOffer.subcategoryName,
+                      expertises: serviceOffer.expertises, subcategoryName: serviceOffer.subcategoryName,
+                   
                     );
                   }).toList();
 

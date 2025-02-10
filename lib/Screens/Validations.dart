@@ -8,6 +8,8 @@ import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/wizards/Certificates.dart';

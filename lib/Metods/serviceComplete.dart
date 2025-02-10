@@ -5,6 +5,10 @@ import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
 
@@ -152,10 +156,10 @@ class ServiceRepositoryComplete {
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '',
+                
             
-                  hasOffer: false,
-                  offers: [], subcategory: Subcategory(id: '', name: 'name'), // Lista vacía inicialmente
+                  hasOffer: false, devicesId: '', offers: [], subcategoryName: '', 
+          
                 );
               }).where((service) =>
                   service.status.id == 'completed' && service.userId == column) // Filtrar por userId

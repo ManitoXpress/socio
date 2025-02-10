@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:camera/camera.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;

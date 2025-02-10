@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestWorker.dart';
 
 class ServiceDataFetcher {
   // Obtener los detalles del trabajador

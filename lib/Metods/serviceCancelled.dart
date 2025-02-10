@@ -6,6 +6,9 @@ import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
 
@@ -151,10 +154,10 @@ class ServiceRepositoryCancelled {
                     selectedDate: '',
                     selectedTime: '',
                   ),
-                  subcategoryName: item['subcategoryName'] ?? '',
+               
                 
                   hasOffer: false,
-                  offers: [], subcategory: Subcategory(id: '', name: ''), // Lista vacía inicialmente
+                  offers: [], devicesId: '', subcategoryName: '', 
                 );
               }).where((service) => service.status.id == 'cancelled') // Filtro añadido
             .toList();

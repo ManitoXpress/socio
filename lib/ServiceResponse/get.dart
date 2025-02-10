@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestCategory.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
 
 class ApiService2 {
@@ -12,50 +15,45 @@ class ApiService2 {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
 
-  Future<List<String>> getWorkerExpertises() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('No hay usuario autenticado');
-      }
-
-      // Obtener el token actualizado de Firebase
-      final String? token = await user.getIdToken(true);
-      final String userId = user.uid;
-
-      print('[ApiService2] Obteniendo expertises del trabajador $userId');
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/workers/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      print('[ApiService2] Respuesta: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final List<dynamic> rawExpertises = data['expertises'] ?? [];
-
-        final expertises = rawExpertises
-            .map((e) => e?.toString().trim() ?? '')
-            .where((id) => id.isNotEmpty)
-            .toList();
-
-        print('[ApiService2] Expertises obtenidas: $expertises');
-        return expertises;
-      } else if (response.statusCode == 404) {
-        throw Exception('Trabajador no encontrado');
-      } else {
-        throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
-      }
-    } catch (e) {
-      print('[ApiService2] Error: $e');
-      rethrow;
+  Future<List<Map<String, dynamic>>> getWorkerExpertises() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('No hay usuario autenticado');
     }
+
+    final String? token = await user.getIdToken(true);
+    final String userId = user.uid;
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/workers/$userId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final List<dynamic> rawExpertises = data['expertises'] ?? [];
+
+      final expertises = rawExpertises.map((e) {
+        if (e is Map<String, dynamic>) {
+          return e;
+        } else {
+          return {'name': e, 'id': ''}; 
+        }
+      }).toList();
+
+      return expertises;
+    } else {
+      throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
+    }
+  } catch (e) {
+    print('[ApiService2] Error: $e');
+    rethrow;
   }
+}
 
   Future<List<ServiceResponse>> fetchServicesFromBackend(String token) async {
     try {

@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 
 import 'package:image/image.dart' as img;

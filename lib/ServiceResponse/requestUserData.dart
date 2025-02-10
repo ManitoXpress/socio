@@ -1,0 +1,101 @@
+import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+
+class UserData {
+  String userId;
+  String displayName;
+  String idCardNumber;
+  String phoneNumber;
+  final String? getToken;
+  String imagePath;
+  String pdfPathController;
+  String criminalRecordImagePath;
+  String idDocumentImagePath;
+  String idDocumentImagePath2;
+  String selectedCountryCode;
+  List<Expertise> expertises;
+  List<String> expLevel;
+  String certificateImagePaths;
+  Map<String, double?>? location;
+  String paymentType;
+  String email;
+  RegistrationData registrationData;
+
+  UserData({
+    required this.userId,
+    required this.displayName,
+    required this.idCardNumber,
+    required this.phoneNumber,
+    this.getToken,
+    required this.imagePath,
+    required this.pdfPathController,
+    required this.criminalRecordImagePath,
+    required this.idDocumentImagePath,
+    required this.idDocumentImagePath2,
+    required this.selectedCountryCode,
+    required this.expertises,
+    required this.expLevel,
+    required this.certificateImagePaths,
+    this.location,
+    required this.paymentType,
+    required this.email,
+    required this.registrationData,
+  });
+
+  factory UserData.fromJson(Map<String, dynamic> json) {
+    return UserData(
+      userId: json['id'] ?? '',
+      displayName: json['displayName'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      imagePath: json['imagePath'] ?? '',
+      getToken: json['getToken'],
+      pdfPathController: json['pdfPathController'] ?? '',
+      criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
+      paymentType: json['paymentType'] ?? '',
+      selectedCountryCode: json['selectedCountryCode'] ?? '',
+      expertises: _convertToExpertisesList(json['expertises']),
+      expLevel: _convertToList(json['expLevel']),
+      certificateImagePaths: json['criminalRecordImagePath'] ?? '',
+      idCardNumber: json['idCardNumber'] ?? '',
+      location: json['location'] != null
+          ? Map<String, double?>.from(json['location'])
+          : null,
+      idDocumentImagePath: json['idDocumentImagePath'] ?? '',
+      idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
+      registrationData: RegistrationData(
+        userId: json['id'] ?? '',
+        devicesId: json['devicesId'] ?? '',
+        fcmToken: json['fcmToken'] ?? '',
+        displayName: json['displayName'] ?? '',
+        idCardNumber: json['idCardNumber'] ?? '',
+        phoneNumber: json['phoneNumber'] ?? '',
+        paymentType: json['paymentType'] ?? '',
+        expertises: _convertToExpertisesList(json['expertises']),
+        expLevel: _convertToList(json['expLevel']),
+        selectedCountryCode: json['selectedCountryCode'] ?? '',
+        imagePath: json['imagePath'] ?? '',
+        location: json['location'] != null
+            ? Map<String, double?>.from(json['location'])
+            : null,
+        idDocumentImagePath: json['idDocumentImagePath'] ?? '',
+        idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
+        email: json['email'] ?? '', imagePathList: [], criminalRecordImagePath: '', certificateImagePaths: '',
+      ),
+    );
+  }
+
+  static List<String> _convertToList(dynamic value) {
+    if (value is List<dynamic>) {
+      return value.map((item) => item.toString()).toList();
+    }
+    return [];
+  }
+
+  static List<Expertise> _convertToExpertisesList(dynamic value) {
+    if (value is List<dynamic>) {
+      return value.map((item) => Expertise.fromMap(item)).toList();
+    }
+    return [];
+  }
+}

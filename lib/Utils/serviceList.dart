@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:socio/Screens/customtickets.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/Utils/timeLines.dart';
 import 'package:socio/Utils/workerDetails.dart';
@@ -34,7 +37,7 @@ class ServiceListBuilder {
                         serviceRequest: ServiceRequest(
                           id: offer.serviceId,
                           serviceDateTime: '',
-                         
+                          devicesId: '',
                           description: '',
                           images: [],
                           location: {},
@@ -52,8 +55,8 @@ class ServiceListBuilder {
                           subcategoryName: offer.subcategoryName,
                           hasOffer: false,
                           offers: [],
-                        
-                          userId: '', subcategory: Subcategory(id: '', name: ''),
+                          workerDetails: workerDetails,
+                          userId: '',
                         ),
                         initialStatus: offer.status.id,
                         onComplete: (status) {
@@ -110,7 +113,7 @@ class ServiceListBuilder {
                         serviceRequest: ServiceRequest(
                           id: offer.serviceId,
                           serviceDateTime: '',
-                       
+                          devicesId: '',
                           description: '',
                           images: [],
                           location: {},
@@ -128,8 +131,8 @@ class ServiceListBuilder {
                           subcategoryName: offer.subcategoryName,
                           hasOffer: false,
                           offers: [],
-                       
-                          userId: '', subcategory: Subcategory(id: '', name: ''),
+                          workerDetails: workerDetails,
+                          userId: '',
                         ),
                         initialStatus: offer.status.id,
                         onComplete: (status) {
@@ -183,7 +186,7 @@ class ServiceListBuilder {
                       serviceRequest: ServiceRequest(
                         id: service.id,
                         serviceDateTime: '',
-                        
+                        devicesId: '',
                         description: '',
                         images: [],
                         location: {},
@@ -201,8 +204,8 @@ class ServiceListBuilder {
                         subcategoryName: service.subcategoryName,
                         hasOffer: false,
                         offers: [],
-                      
-                        userId: '', subcategory: Subcategory(id: '', name: ''),
+                        workerDetails: workerDetails,
+                        userId: '',
                       ),
                       initialStatus: service.status.id,
                       onComplete: (status) {

@@ -9,6 +9,8 @@ import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Metods/editController.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/Colors.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/login.dart';

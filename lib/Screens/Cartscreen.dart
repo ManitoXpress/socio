@@ -12,21 +12,22 @@ import 'package:socio/Metods/serviceCancelled.dart';
 import 'package:socio/Metods/serviceComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/Utils/authUtils.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+
+import 'package:socio/ServiceResponse/requestUserData.dart';
+
 import 'package:socio/Utils/remoteNotification.dart';
 import 'package:socio/Utils/serviceFetcher.dart';
 import 'package:socio/Utils/serviceList.dart';
-import 'package:socio/Utils/service_form.dart';
+
 import 'package:socio/Utils/workerDetails.dart';
-import 'package:socio/main.dart';
+
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/request.dart';
-import '../Utils/cacheLocal.dart';
+
 import '../Utils/styles.dart';
-import '../Utils/statusUtils.dart';
-import '../Utils/timeLines.dart';
-import 'customtickets.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;
 
@@ -65,7 +66,7 @@ class _HistorialState extends State<Historial>
   String value = '';
 
   final ServiceRepository _serviceRepository = ServiceRepository(
-    apiService: ApiService2(),
+    apiService: ApiService(),
     firestore: FirebaseFirestore.instance,
   );
   final ServiceRepositoryInProgress _serviceRepository2 = ServiceRepositoryInProgress(
@@ -111,10 +112,10 @@ void initState() {
     acceptedTerms: false,
     expertises: [],
     status: Status(id: '', name: ''),
-    subcategoryName: '',
+
     hasOffer: false,
     offers: [],
-    subcategory: Subcategory(id: '', name: ''),
+    devicesId: '', subcategoryName: '', 
   );
   registrationData = RegistrationData(
     userId: '',
@@ -218,9 +219,9 @@ Future<void> _refreshHistorial() async {
           acceptedTerms: false,
           expertises: [],
           status: Status(id: '', name: ''),
-          subcategoryName: '',
+       
           hasOffer: false,
-          offers: [], subcategory: Subcategory(id: '', name: ''),
+          offers: [], devicesId: '', subcategoryName: '', 
         
         ),
         userId,
@@ -537,9 +538,9 @@ Future<void> _refreshHistorial() async {
       acceptedTerms: false,
       expertises: [],
       status: Status(id: 'offer', name: 'Ofertado'), // Estado correcto
-      subcategoryName: '',
+  
       hasOffer: false,
-      offers: [], subcategory: Subcategory(id: '', name: ''),
+      offers: [], devicesId: '', subcategoryName: '',  
 
       
     ),

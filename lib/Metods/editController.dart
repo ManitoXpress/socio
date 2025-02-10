@@ -4,16 +4,16 @@ import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/Colors.dart';
 import 'package:socio/Utils/serviceCategories.dart';
 import 'package:socio/Utils/serviceType.dart';
 import 'package:socio/Utils/styles.dart';
-
 class EditProfileDialog extends StatefulWidget {
   final String displayName;
   final String idCardNumber;
   final String phoneNumber;
-  late List<Expertise> expertises;  // Cambiado de List<String> a List<Expertises>
+  late List<Expertise> expertises;  // Cambié el tipo a List<Expertises>
   late List<String> expLevel; 
   final Function()? onUpdateProfile;
   final ApiService2 apiService2; 
@@ -57,40 +57,32 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         final updatedIdCardNumber = idCardNumberController.text;
         final updatedPhoneNumber = phoneNumberController.text;
 
-        // Recuperar los datos actuales del usuario
+        // Obtener datos actuales del usuario
         final userData = await ApiService2().fetchUserData(user.uid, token!);
 
-        // Convertir expertises a List<String> para la actualización
-        List<String> expertisesNames = widget.expertises.map((e) => e.name).toList();
+        // Convertir la lista de `Expertises` a una lista de mapas para actualizar
+       List<Expertise> expertisesList = widget.expertises.map((e) => Expertise(id: e.id, name: e.name)).toList();
 
-        // Actualizar expertises y expLevel con los nuevos valores del widget
-        userData.expertises = widget.expertises;
-        userData.expLevel = widget.expLevel;
-
+        // Actualizar los datos del usuario
         RegistrationData registrationData = RegistrationData(
           userId: user.uid,
-          displayName: updatedDisplayName.isNotEmpty
-              ? updatedDisplayName
-              : userData.displayName,
-          idCardNumber: updatedIdCardNumber.isNotEmpty
-              ? updatedIdCardNumber
-              : userData.idCardNumber,
-          phoneNumber: updatedPhoneNumber.isNotEmpty
-              ? updatedPhoneNumber
-              : userData.phoneNumber,
+          displayName: updatedDisplayName.isNotEmpty ? updatedDisplayName : userData.displayName,
+          idCardNumber: updatedIdCardNumber.isNotEmpty ? updatedIdCardNumber : userData.idCardNumber,
+          phoneNumber: updatedPhoneNumber.isNotEmpty ? updatedPhoneNumber : userData.phoneNumber,
           imagePath: userData.imagePath,
           location: userData.location,
           idDocumentImagePath: userData.idDocumentImagePath,
           idDocumentImagePath2: userData.idDocumentImagePath2,
           paymentType: userData.paymentType,
-          expertises: userData.expertises,
+          expertises: expertisesList,  // Ahora se pasa como una lista de mapas
           selectedCountryCode: userData.selectedCountryCode,
-          expLevel: userData.expLevel,
+          expLevel: widget.expLevel,
           email: userData.email,
           imagePathList: [],
           criminalRecordImagePath: userData.criminalRecordImagePath,
           certificateImagePaths: userData.certificateImagePaths, 
-          devicesId: '', fcmToken: '',
+          devicesId: '', 
+          fcmToken: '',
         );
 
         final response = await apiService.updateUser(
@@ -107,8 +99,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           print('Error en la respuesta del servidor: ${response.statusCode}');
         }
       } else {
-        print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
     } catch (error) {
       print('Error durante el proceso de registro: $error');
@@ -152,10 +143,10 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     onNextStep: () {},
                     onServiceTypesSelected: (expertises, expLevel) {
                       setState(() {
-                        // Convierte la lista de Expertises a una lista de Strings (nombres)
-                        widget.expertises = expertises.map((e) => e).toList(); // No es necesario convertir a String
+                        // Actualiza expertises con la lista de `Expertises`
+                        widget.expertises = expertises;
 
-                        // Verifica si expLevel es una cadena no nula antes de asignarla a widget.expLevel
+                        // Si `expLevel` no es nulo, lo guarda en la lista
                         if (expLevel != null) {
                           widget.expLevel = [expLevel];
                         } else {
@@ -185,14 +176,13 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           child: Text('Cancelar'),
         ),
         ElevatedButton(
-        onPressed: () {
-              _updateUserProfile(); // Llamar a la función de actualización de perfil
-              widget.onUpdateProfile?.call(); // Ejecutar la función de callback si se proporcionó
-              Navigator.pop(context); // Cerrar el diálogo de edición
-            },
-            child: Text("Guardar Cambios"),
-          )
-
+          onPressed: () {
+            _updateUserProfile(); 
+            widget.onUpdateProfile?.call(); 
+            Navigator.pop(context);
+          },
+          child: Text("Guardar Cambios"),
+        ),
       ],
     );
   }

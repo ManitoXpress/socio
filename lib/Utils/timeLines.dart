@@ -10,6 +10,8 @@ import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/ServiceResponse/requestWorker.dart';
 import 'package:socio/Utils/fullMap.dart';
 import 'package:socio/Utils/proposal.dart';
 import 'package:socio/Utils/statusUtils.dart';

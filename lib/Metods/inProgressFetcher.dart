@@ -5,6 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
 
@@ -103,10 +106,10 @@ class ServiceRepositoryInProgress {
             selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
             selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
           ),
-          subcategoryName: item['subcategoryName']?.toString() ?? '',
+        
      
           hasOffer: false,
-          offers: [], subcategory: Subcategory(id: '', name: ''),
+          offers: [],  devicesId: '', subcategoryName: item['subcategoryName']?? '',
         );
       }).whereType<ServiceRequest>().toList();
 

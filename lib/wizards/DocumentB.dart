@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';

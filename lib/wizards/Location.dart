@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:location/location.dart' as location;
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 class LocationAndFavoritesWizard extends StatefulWidget {
   final Function(LatLng) onLocationSelected; // Callback para seleccionar ubicación
