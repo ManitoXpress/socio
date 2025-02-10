@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 
@@ -97,5 +98,13 @@ class UserData {
       return value.map((item) => Expertise.fromMap(item)).toList();
     }
     return [];
+  }
+}
+Future<String?> getCurrentWorkerId() async {
+  User? user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    return user.uid; // El workerId es el UID del usuario autenticado
+  } else {
+    return null; // El usuario no está autenticado
   }
 }

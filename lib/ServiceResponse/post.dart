@@ -55,57 +55,61 @@ class ApiService {
   }
 
   Future<void> sendProposalToFirestore(
-      ServiceRequest serviceRequest,
-      String token,
-      String offeredPrice,
-      double extraCosts, // Añadido parámetro para los costos extra
-      String workerId,
-      ) async {
-    try {
-      // Obtén una referencia a la colección "offers"
-      final offersCollection = FirebaseFirestore.instance.collection('offers');
-
-      // Verificar si el trabajador ya realizó una oferta para este servicio
-      final existingOffer = await offersCollection
-          .where('serviceId', isEqualTo: serviceRequest.id)
-          .where('workerId', isEqualTo: workerId)
-          .get();
-
-      if (existingOffer.docs.isNotEmpty) {
-        print('El trabajador ya realizó una oferta para este servicio.');
-        return;
-      }
-
-      // Crea un documento con una propuesta en la colección "offers"
-      final newProposalRef = offersCollection.doc(); 
-
-      // Calcula el precio total
-      double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
-      double totalPrice = offeredPriceValue + extraCosts;
-
-      
-      final proposalData = {
-        'serviceId': serviceRequest.id, 
-        'offeredPrice': offeredPriceValue,
-        'extraCosts': extraCosts, 
-        'totalPrice': totalPrice, 
-        'createdAt': FieldValue.serverTimestamp(), 
-        'userToken': token, 
-        'workerId': workerId, 
-        'status': 'offer',
-        'hasOffer': true, 
-      };
-
-      // Guarda la propuesta en Firestore
-      await newProposalRef.set(proposalData);
-
-      print('Oferta enviada con éxito a Firestore');
-    } catch (e) {
-      print('Error al enviar oferta a Firestore: $e');
-      throw Exception('Error al enviar oferta a Firestore: $e');
+  ServiceRequest serviceRequest,
+  String token,
+  String offeredPrice,
+  double extraCosts, // Añadido parámetro para los costos extra
+  String workerId,
+) async {
+  try {
+    // Verificar si workerId es válido
+    if (workerId == null || workerId.isEmpty) {
+      print('workerId es nulo o vacío');
+      return;
     }
-  }
 
+    // Obtén una referencia a la colección "offers"
+    final offersCollection = FirebaseFirestore.instance.collection('offers');
+
+    // Verificar si el trabajador ya realizó una oferta para este servicio
+    final existingOffer = await offersCollection
+        .where('serviceId', isEqualTo: serviceRequest.id)
+        .where('workerId', isEqualTo: workerId)
+        .get();
+
+    if (existingOffer.docs.isNotEmpty) {
+      print('El trabajador ya realizó una oferta para este servicio.');
+      return;
+    }
+
+    // Crea un documento con una propuesta en la colección "offers"
+    final newProposalRef = offersCollection.doc();
+
+    // Calcula el precio total
+    double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
+    double totalPrice = offeredPriceValue + extraCosts;
+
+    final proposalData = {
+      'serviceId': serviceRequest.id,
+      'offeredPrice': offeredPriceValue,
+      'extraCosts': extraCosts,
+      'totalPrice': totalPrice,
+      'createdAt': FieldValue.serverTimestamp(),
+      'userToken': token,
+      'workerId': workerId,
+      'status': 'offer',
+      'hasOffer': true,
+    };
+
+    // Guarda la propuesta en Firestore
+    await newProposalRef.set(proposalData);
+
+    print('Oferta enviada con éxito a Firestore');
+  } catch (e) {
+    print('Error al enviar oferta a Firestore: $e');
+    throw Exception('Error al enviar oferta a Firestore: $e');
+  }
+}
 
 
 

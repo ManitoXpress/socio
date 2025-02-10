@@ -295,33 +295,44 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     );
   }
   void _sendProposal() async {
-    // Obtén el precio ofertado desde el controlador.
-    double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
+  // Obtén el precio ofertado desde el controlador.
+  double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
 
-    // Define los gastos informáticos adicionales.
-    double extraCosts = 3.0;
+  // Define los gastos informáticos adicionales.
+  double extraCosts = 3.0;
 
-    // Crea una instancia del servicio para enviar la propuesta.
-    ProposalService proposalService = ProposalService(
-      context: context,
-      serviceRequest: widget.serviceRequest,
-      workerId: widget.workerId,
-      userData: widget.userData,
-    );
+  // Obtén el workerId del usuario autenticado
+  String? workerId = await getCurrentWorkerId();
 
-    // Llama al método sendProposal con el nuevo parámetro.
-    await proposalService.sendProposal(
-      offeredPrice: offeredPrice,
-      extraCosts: extraCosts, // Envía los gastos informáticos como parámetro.
-      onStatusChanged: widget.onStatusChanged,
-      priceController: _priceController,
-      setFetchedOfferedPrice: (double price) {
-        setState(() {
-          _fetchedOfferedPrice = price; // Actualiza el precio ofertado mostrado.
-        });
-      },
-    );
+  // Verifica que el workerId no sea null
+  if (workerId == null || workerId.isEmpty) {
+    print('No se pudo obtener el workerId');
+    return;
   }
+
+  // Crea una instancia del servicio para enviar la propuesta
+  ProposalService proposalService = ProposalService(
+    context: context,
+    serviceRequest: widget.serviceRequest,
+    workerId: workerId,  // Ahora pasa el workerId obtenido
+    userData: widget.userData,
+  );
+
+  // Llama al método sendProposal con el nuevo parámetro
+  await proposalService.sendProposal(
+    offeredPrice: offeredPrice,
+    extraCosts: extraCosts, // Envía los gastos informáticos como parámetro
+    onStatusChanged: widget.onStatusChanged,
+    priceController: _priceController,
+    setFetchedOfferedPrice: (double price) {
+      setState(() {
+        _fetchedOfferedPrice = price; // Actualiza el precio ofertado mostrado
+      });
+    },
+  );
+}
+
+
 
 
   void _showPendingConfirmation2Dialog(BuildContext context) async {
