@@ -46,7 +46,7 @@ class ProposalService {
 
 
       // Llamar al servicio API para enviar la propuesta
-      await ApiService().sendProposalToFirestore(
+      await ApiService().sendProposalToServer(
         serviceRequest,
         userData.getToken!,
         offeredPrice.toString(),

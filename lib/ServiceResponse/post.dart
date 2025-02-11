@@ -54,38 +54,19 @@ class ApiService {
     }
   }
 
-  Future<void> sendProposalToFirestore(
+  Future<http.Response> sendProposalToServer(
   ServiceRequest serviceRequest,
   String token,
   String offeredPrice,
-  double extraCosts, // Añadido parámetro para los costos extra
+  double extraCosts,
   String workerId,
 ) async {
   try {
-    // Verificar si workerId es válido
-    if (workerId == null || workerId.isEmpty) {
+    if (workerId.isEmpty) {
       print('workerId es nulo o vacío');
-      return;
+      throw Exception('workerId es nulo o vacío');
     }
 
-    // Obtén una referencia a la colección "offers"
-    final offersCollection = FirebaseFirestore.instance.collection('offers');
-
-    // Verificar si el trabajador ya realizó una oferta para este servicio
-    final existingOffer = await offersCollection
-        .where('serviceId', isEqualTo: serviceRequest.id)
-        .where('workerId', isEqualTo: workerId)
-        .get();
-
-    if (existingOffer.docs.isNotEmpty) {
-      print('El trabajador ya realizó una oferta para este servicio.');
-      return;
-    }
-
-    // Crea un documento con una propuesta en la colección "offers"
-    final newProposalRef = offersCollection.doc();
-
-    // Calcula el precio total
     double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
     double totalPrice = offeredPriceValue + extraCosts;
 
@@ -94,22 +75,34 @@ class ApiService {
       'offeredPrice': offeredPriceValue,
       'extraCosts': extraCosts,
       'totalPrice': totalPrice,
-      'createdAt': FieldValue.serverTimestamp(),
-      'userToken': token,
       'workerId': workerId,
       'status': 'offer',
       'hasOffer': true,
     };
 
-    // Guarda la propuesta en Firestore
-    await newProposalRef.set(proposalData);
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/offers'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(proposalData),
+    );
 
-    print('Oferta enviada con éxito a Firestore');
+    if (response.statusCode == 201) {
+      print('Oferta enviada con éxito al servidor');
+    } else {
+      print('Error al enviar oferta al servidor: ${response.body}');
+      throw Exception('Error al enviar oferta al servidor: ${response.body}');
+    }
+
+    return response;
   } catch (e) {
-    print('Error al enviar oferta a Firestore: $e');
-    throw Exception('Error al enviar oferta a Firestore: $e');
+    print('Error al enviar oferta al servidor: $e');
+    throw Exception('Error al enviar oferta al servidor: $e');
   }
 }
+
 
 
 
