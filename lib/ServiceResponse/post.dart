@@ -12,7 +12,6 @@ import 'package:http/http.dart' as http;
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
-
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
@@ -54,55 +53,63 @@ class ApiService {
     }
   }
 
+
   Future<http.Response> sendProposalToServer(
-  ServiceRequest serviceRequest,
-  String token,
-  String offeredPrice,
-  double extraCosts,
-  String workerId,
-) async {
-  try {
-    if (workerId.isEmpty) {
-      print('workerId es nulo o vacío');
-      throw Exception('workerId es nulo o vacío');
+      ServiceRequest serviceRequest,
+      String token,
+      String offeredPrice,
+      double extraCosts,
+      String workerId,
+      ) async {
+    try {
+      if (workerId.isEmpty) {
+        print('workerId es nulo o vacío');
+        throw Exception('workerId es nulo o vacío');
+      }
+
+      // Intentar obtener un nuevo token autenticado de Firebase
+      String newToken = await FirebaseAuth.instance.currentUser?.getIdToken(true) ?? '';
+
+      if (newToken.isEmpty) {
+        print('Error: No se pudo renovar el token de autenticación.');
+        throw Exception('No se ha proporcionado un token de autenticación válido.');
+      }
+
+      double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
+      double totalPrice = offeredPriceValue + extraCosts;
+
+      final proposalData = {
+        'serviceId': serviceRequest.id,
+        'offeredPrice': offeredPriceValue,
+        'extraCosts': extraCosts,
+        'totalPrice': totalPrice,
+        'workerId': workerId,
+        'status': 'offer',
+        'hasOffer': true,
+      };
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/offers'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $newToken', // Usar el nuevo token autenticado
+        },
+        body: jsonEncode(proposalData),
+      );
+
+      if (response.statusCode == 201) {
+        print('Oferta enviada con éxito al servidor');
+      } else {
+        print('Error al enviar oferta al servidor: ${response.body}');
+        throw Exception('Error al enviar oferta al servidor: ${response.body}');
+      }
+
+      return response;
+    } catch (e) {
+      print('Error al enviar oferta al servidor: $e');
+      throw Exception('Error al enviar oferta al servidor: $e');
     }
-
-    double offeredPriceValue = double.tryParse(offeredPrice) ?? 0.0;
-    double totalPrice = offeredPriceValue + extraCosts;
-
-    final proposalData = {
-      'serviceId': serviceRequest.id,
-      'offeredPrice': offeredPriceValue,
-      'extraCosts': extraCosts,
-      'totalPrice': totalPrice,
-      'workerId': workerId,
-      'status': 'offer',
-      'hasOffer': true,
-    };
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/offers'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(proposalData),
-    );
-
-    if (response.statusCode == 201) {
-      print('Oferta enviada con éxito al servidor');
-    } else {
-      print('Error al enviar oferta al servidor: ${response.body}');
-      throw Exception('Error al enviar oferta al servidor: ${response.body}');
-    }
-
-    return response;
-  } catch (e) {
-    print('Error al enviar oferta al servidor: $e');
-    throw Exception('Error al enviar oferta al servidor: $e');
   }
-}
-
 
 
 
@@ -140,7 +147,7 @@ class ApiService {
       List<Map<String, String>> expertises = (registrationData.expertises ?? [])
     .where((expertise) => expertise != null) // Filtra elementos nulos
     .map((expertise) => {
-          'name': expertise!.name ?? '', // Usa `!` porque ya filtramos los nulos
+          'name': expertise!.name ?? '', // Usa ! porque ya filtramos los nulos
           'id': expertise.id ?? '',
         })
     .toList();

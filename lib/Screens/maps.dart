@@ -2,29 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class WalletScreen extends StatefulWidget {
   WalletScreen({Key? key}) : super(key: key);
@@ -266,8 +244,18 @@ class _WalletScreenState extends State<WalletScreen> {
       final serviceId = service['serviceId'] ?? 'Sin ID';
       final paymentStatus = service['paymentStatus'] ?? 'Desconocido';
       final status = service['status'] ?? 'Desconocido';
-      final createdAt =
-          (service['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+      final dynamic createdAtData = service['createdAt'];
+        DateTime createdAt;
+
+        if (createdAtData is Timestamp) {
+          createdAt = createdAtData.toDate();
+        } else if (createdAtData is String) {
+          // Intenta parsear la cadena a DateTime (asumiendo que está en formato ISO8601)
+          createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
+        } else {
+          createdAt = DateTime.now();
+        }
+
       final completionImageUrl = service['completionImageUrl'] ?? '';
 
       return Card(

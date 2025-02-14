@@ -16,7 +16,6 @@ import 'package:socio/main.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-
 class ServiceRepository {
   final ApiService apiService;
   final FirebaseFirestore firestore;
@@ -42,7 +41,7 @@ class ServiceRepository {
 
     // Llamar al método privado para realizar la lógica principal
     return await _fetchServicesByStatus(status, column, userId, token, offers);
-   
+
   }
 
   // Método privado para obtener los estados válidos desde Firestore
@@ -105,9 +104,9 @@ class ServiceRepository {
       // 2. Obtener servicios del API
       final response = await ApiService2().getAllServices(
         token,
-        "status", 
-        type,     
-        "services" 
+        "status",
+        type,
+        "services"
       );
 
       if (response.statusCode == 200) {
@@ -127,7 +126,7 @@ class ServiceRepository {
 
             // 4. Cachear resultados
             serviceRequestsList.forEach(LocalCacheService.cacheServiceRequest);
-            
+
             return serviceRequestsList;
           } catch (e) {
             print('Error procesando servicios: $e');
