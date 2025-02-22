@@ -291,30 +291,27 @@ class _LoginFormState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffd6e2ea),
+      backgroundColor: const Color(0xFFFFFFFF),
       appBar: AppBar(
         title: Row(
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween, // Distribuir elementos
           children: [
+            // Texto en la parte izquierda
+            Text(
+              'ManitoXpress',
+              style: MyTextStyles.buttonTextStyle,
+            ),
+            // Logo en la parte derecha
             Flexible(
               child: Container(
                 padding: EdgeInsets.all(10.w),
-                constraints: BoxConstraints(maxWidth: 0.2.sw),
+                constraints: BoxConstraints(maxWidth: 0.22.sw),
                 child: Image.asset(
                   'assets/images/LOGO1_Blanco.png',
-                  width: 0.2.sw,
+                  width: 0.22.sw,
                   fit: BoxFit.contain,
                 ),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            Text(
-              'ManitoXpress',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Xpress Heavy',
-                fontWeight: FontWeight.normal,
-                fontStyle: FontStyle.italic,
-                fontSize: 20.sp,
               ),
             ),
           ],
@@ -340,7 +337,7 @@ class _LoginFormState extends State<LoginScreen> {
                 SizedBox(height: 10.h),
                 Text(
                   'Bienvenidos a Manitos Xpress',
-                  style: MyTextStyles.buttonTextStyle3,
+                  style: MyTextStyles.welcomeTotheJungle1,
                 ),
                 SizedBox(height: 10.h),
                 Row(
@@ -349,7 +346,7 @@ class _LoginFormState extends State<LoginScreen> {
                     // Botón de Google
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF84090D),
+                        backgroundColor: Color(0xFF841813),
                         shape: CircleBorder(),
                         padding: EdgeInsets.all(3.w),
                       ),
@@ -370,15 +367,11 @@ class _LoginFormState extends State<LoginScreen> {
                                     children: [
                                       Icon(
                                         FontAwesomeIcons.google,
-                                        color: Color(0xFF84090D),
+                                        color: Color(0xFF841813),
                                       ),
                                       Text(
                                         'Inicio',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF84090D),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        style: MyTextStyles.linkTextStyle,
                                       ),
                                     ],
                                   ),
@@ -388,45 +381,6 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                     SizedBox(width: 10.w), // Espacio entre los botones
                     // Botón de Apple
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF84090D),
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: isLoadingApple ? null : signInWithApple,
-                      child: isLoadingApple
-                          ? CircularProgressIndicator() // Indicador de carga
-                          : CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 40.r,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 37.r,
-                                child: CircleAvatar(
-                                  radius: 35.r,
-                                  backgroundColor: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.apple,
-                                        color: Color(0xFF84090D),
-                                      ),
-                                      Text(
-                                        'Apple',
-                                        style: GoogleFonts.lato(
-                                          color: Color(0xFF84090D),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
                   ],
                 ),
                 SizedBox(height: 70.h),
@@ -434,22 +388,17 @@ class _LoginFormState extends State<LoginScreen> {
                   onPressed: () {
                     // Acción de borrar cuenta
                   },
-                  icon: Icon(Icons.delete, color: Colors.white),
                   label: Text(
-                    "Eliminar cuenta",
-                    style: GoogleFonts.karla(
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "Eliminar Cuenta",
+                    style: MyTextStyles.buttonTextStyle,
                   ),
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Color(0xFF84090D),
+                    backgroundColor: Color(0xFF841813),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
                       side: BorderSide(
-                        color: Color(0xFF84090D),
+                        color: Color(0xFF841813),
                       ),
                     ),
                   ),

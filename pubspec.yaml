@@ -1,7 +1,7 @@
 name: socio
 description: "project manitosXpress."
 publish_to: 'none'
-version: 1.7.8+1
+version: 1.7.9+3
 
 environment:
   sdk: '>=3.2.6 <4.0.0'

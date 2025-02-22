@@ -284,17 +284,21 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               ElevatedButton(
                 onPressed: _signOut,
-                child: const Text('Cerrar Sesión'),
+                child: const Text(
+                  'Cerrar Sesión',
+                  style: MyTextStyles.buttonTextStyle,
+                ),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
                   backgroundColor: customColor,
                 ),
               ),
               ElevatedButton(
                 onPressed: _editProfile,
-                child: const Text('Editar perfil'),
+                child: const Text(
+                  'Editar perfil',
+                  style: MyTextStyles.buttonTextStyle,
+                ),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
                   backgroundColor: customColor,
                 ),
               ),
@@ -311,11 +315,14 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 _buildProfileInfoRow('Nombre:', profileData.displayName),
                 const SizedBox(height: 10),
-                _buildProfileInfoRow('Número de Teléfono:', profileData.phoneNumber),
+                _buildProfileInfoRow(
+                    'Número de Teléfono:', profileData.phoneNumber),
                 const SizedBox(height: 10),
-                _buildProfileInfoRow('Especialidades:', profileData.expertises.join(', ')),
+                _buildProfileInfoRow(
+                    'Especialidades:', profileData.expertises.join(', ')),
                 const SizedBox(height: 10),
-                _buildProfileInfoRow('Experiencia laboral:', profileData.expLevel.join(', ')),
+                _buildProfileInfoRow(
+                    'Experiencia laboral:', profileData.expLevel.join(', ')),
                 const SizedBox(height: 10),
                 _buildProfileInfoRow('Pagos con QR:', profileData.paymentType),
                 const SizedBox(height: 10),
@@ -328,13 +335,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Función para construir el ExpansionTile
   Widget _buildExpandableText(String value) {
     List<String> items = value.split(', ');
     return ExpansionTile(
       title: Text(
         'Ver más',
-        style: MyTextStyles.servicesButtonTextStyle,
+        style: MyTextStyles.formsdetails,
       ),
       children: items.map((item) {
         return Padding(
@@ -350,37 +356,37 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileInfoRow(String label, String value) {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  label,
-                  style: MyTextStyles.inputTextStyle2,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: MyTextStyles.inputTextStyle3,
+              ),
+              Flexible(
+                child: Container(
+                  margin: const EdgeInsets.only(left: 8.0),
+                  child: label == 'Especialidades:'
+                      ? _buildExpandableText(value)
+                      : Text(
+                          value,
+                          style: MyTextStyles.formsdetails,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
-                Flexible(
-                  child: Container(
-                    margin: const EdgeInsets.only(left: 8.0),
-                    child: label == 'Especialidades:'
-                        ? _buildExpandableText(value)
-                        : Text(
-                      value,
-                      style: MyTextStyles.inputTextStyle2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-              Container(
-              margin: const EdgeInsets.only(left: 8.0),
-              child: Divider(
-              color: Color(0xFF841813),
-              height: 2,
+        ),
+        Container(
+          margin: const EdgeInsets.only(left: 8.0),
+          child: Divider(
+            color: Color(0xFF841813),
+            height: 2,
           ),
         ),
       ],

@@ -35,16 +35,7 @@ class ProposalService {
     );
 
     try {
-      // Actualizar los datos del servicio en Firestore
-      await FirebaseFirestore.instance
-          .collection('services')
-          .doc(serviceRequest.id)
-          .update({
-        'offeredPrice': offeredPrice,
-      });
-
-
-
+     
       // Llamar al servicio API para enviar la propuesta
       await ApiService().sendProposalToServer(
         serviceRequest,

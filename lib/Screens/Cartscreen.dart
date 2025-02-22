@@ -198,33 +198,31 @@ Future<void> _refreshHistorial() async {
         'offer',           // type: String
         'status',          // column: String (nombre de columna para filtrar)
         userId,            // userId: String
-        token ?? '',       // token: String
-        ServiceRequest(
-          serviceDateTime: '',
-          id: '',
-
-          description: '',
-          images: [],
-          location: {},
-          offeredPrice: 0.0,
-          serviceType: ServiceType(
-            id: '',
-            name: '',
-            selectedDate: '',
-            selectedTime: '',
-          ),
-          userId: '',
-          workerId: '',
-          isFavorite: false,
-          acceptedTerms: false,
-          expertises: [],
-          status: Status(id: '', name: ''),
-       
-          hasOffer: false,
-          offers: [], devicesId: '', subcategoryName: '', 
-        
-        ),
-        userId,
+        ServiceRequest(   // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
+      id: '',
+      serviceDateTime: '',
+      description: '',
+      images: [],
+      location: {},
+      offeredPrice: 0.0,
+      serviceType: ServiceType(
+        id: '',
+        name: '',
+        selectedDate: '',
+        selectedTime: '',
+      ),
+      userId: userId,  // Se utiliza el userId real
+      workerId: '',
+      isFavorite: false,
+      acceptedTerms: false,
+      expertises: [],
+      status: Status(id: 'offer', name: 'Ofertado'),
+      hasOffer: false,
+      offers: [],
+      devicesId: '',
+      subcategoryName: '',
+    ),
+    deviceId, 
       ),
       _serviceRepository2.fetchServicesByInProgress(
         'in_progress',           // type: String
@@ -514,14 +512,12 @@ Future<void> _refreshHistorial() async {
       break;
       case 'offer':
   future = offerRepository.fetchOffersForUser(
-    statusIds,          // type: String
-    'offer',           // column: String (nombre de la columna en DB)
-    userId,             // userId: String
-    token,              // token: String
-    ServiceRequest(     // service: ServiceRequest
+    'offer',          // type: Por ejemplo, el estado o tipo que identifica la oferta
+    userId,           // workerId: el ID del trabajador autenticado
+    token,            // token: el token de autorización
+    ServiceRequest(   // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
       id: '',
       serviceDateTime: '',
-    
       description: '',
       images: [],
       location: {},
@@ -532,20 +528,18 @@ Future<void> _refreshHistorial() async {
         selectedDate: '',
         selectedTime: '',
       ),
-      userId: userId,   // Usar el userId real
+      userId: userId,  // Se utiliza el userId real
       workerId: '',
       isFavorite: false,
       acceptedTerms: false,
       expertises: [],
-      status: Status(id: 'offer', name: 'Ofertado'), // Estado correcto
-  
+      status: Status(id: 'offer', name: 'Ofertado'),
       hasOffer: false,
-      offers: [], devicesId: '', subcategoryName: '',  
-
-      
+      offers: [],
+      devicesId: '',
+      subcategoryName: '',
     ),
-    userId,
-
+    deviceId,         // deviceId: se debe pasar el ID del dispositivo (no el userId)
   );
   break;
     case 'in_progress':

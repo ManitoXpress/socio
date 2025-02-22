@@ -15,6 +15,7 @@ import 'package:socio/menu/profilescreen.dart';
 import 'package:socio/menu/referidos.dart';
 
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -24,18 +25,42 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
-  final customColor = const MaterialColor(0xFF84090D, {
-    50: const Color(0xFF84090D),
-    100: const Color(0xFF84090D),
-    200: const Color(0xFF84090D),
-    300: const Color(0xFF84090D),
-    400: const Color(0xFF84090D),
-    500: const Color(0xFF84090D),
-    600: const Color(0xFF84090D),
-    700: const Color(0xFF84090D),
-    800: const Color(0xFF84090D),
-    900: const Color(0xFF84090D),
+  final customColor = const MaterialColor(0xFF841813, {
+    50: const Color(0xFF841813),
+    100: const Color(0xFF841813),
+    200: const Color(0xFF841813),
+    300: const Color(0xFF841813),
+    400: const Color(0xFF841813),
+    500: const Color(0xFF841813),
+    600: const Color(0xFF841813),
+    700: const Color(0xFF841813),
+    800: const Color(0xFF841813),
+    900: const Color(0xFF841813),
   });
+
+  void _openWhatsApp() async {
+    final String supportPhoneNumber = "59173666393"; // Número sin '+'
+    final String supportMessage =
+        "Hola, necesito soporte técnico en ManitosXpress.";
+    final String encodedMessage = Uri.encodeComponent(supportMessage);
+
+    final String whatsappUrl =
+        "https://wa.me/$supportPhoneNumber?text=$encodedMessage";
+
+    final Uri uri = Uri.parse(whatsappUrl);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint("No se pudo abrir WhatsApp.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              "No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado."),
+        ),
+      );
+    }
+  }
 
   List<PersistentBottomNavBarItem> _navBarItems() {
     return [
@@ -50,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
           fontStyle: FontStyle.italic,
         ),
       ),
-      
       PersistentBottomNavBarItem(
         icon: Icon(Icons.account_circle_outlined),
         title: 'Billetera',
@@ -68,7 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildScreens() {
     return [
       Historial(),
-
       WalletScreen(),
     ];
   }
@@ -78,27 +101,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Row(
+          mainAxisAlignment:
+              MainAxisAlignment.spaceBetween, // Distribuir elementos
           children: [
-            
-            // Cambiado a screenutil
+            // Texto en la parte izquierda
             Text(
-              'ManitoXpress Socio',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Xpress Heavy',
-                fontWeight: FontWeight.normal,
-                fontStyle: FontStyle.italic,
-                fontSize: 18.sp, // Cambiado a screenutil
-              ),
+              'ManitoXpress',
+              style: MyTextStyles.buttonTextStyle,
             ),
+            // Logo en la parte derecha
             Flexible(
               child: Container(
-                padding: EdgeInsets.all(10.w), // Cambiado a screenutil
-                constraints: BoxConstraints(maxWidth: 80.w), // Cambiado a screenutil
+                padding: EdgeInsets.all(10.w),
+                constraints: BoxConstraints(maxWidth: 0.22.sw),
                 child: Image.asset(
                   'assets/images/LOGO1_Blanco.png',
-                  width: double.infinity,
-                  height: 80.h, // Cambiado a screenutil
+                  width: 0.22.sw,
                   fit: BoxFit.contain,
                 ),
               ),
@@ -119,10 +137,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    constraints:
-                        BoxConstraints(maxWidth: 200.w, maxHeight: 200.h), // Cambiado a screenutil
+                    constraints: BoxConstraints(
+                        maxWidth: 200.w,
+                        maxHeight: 200.h), // Cambiado a screenutil
                     child: Image.network("https://i.imgur.com/AWrWerE.png"),
-                    margin: EdgeInsets.only(top: 70.h, bottom: 40.h), // Cambiado a screenutil
+                    margin: EdgeInsets.only(
+                        top: 70.h, bottom: 40.h), // Cambiado a screenutil
                   ),
                   SizedBox(height: 1.h), // Cambiado a screenutil
                 ],
@@ -187,7 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 criminalRecordImagePath: '',
                                 certificateImagePaths: '',
                                 expLevel: [],
-                                selectedCountryCode: '', devicesId: '', fcmToken: '',
+                                selectedCountryCode: '', devicesId: '',
+                                fcmToken: '',
                               ),
                               pdfPathController: '',
                               expLevel: [],
@@ -210,7 +231,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               criminalRecordImagePath: '',
                               certificateImagePaths: '',
                               expLevel: [],
-                              selectedCountryCode: '', devicesId: '', fcmToken: '',
+                              selectedCountryCode: '', devicesId: '',
+                              fcmToken: '',
                             ),
                           ),
                         ),
@@ -225,11 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerLeft,
                   child: const Text(
                     "Perfil",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF84090D),
-                      fontFamily: 'Xpress',
-                    ),
+                    style: MyTextStyles.linkTextStyle,
                   ),
                 ),
               ),
@@ -252,11 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerLeft,
                   child: const Text(
                     "Referidos",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF84090D),
-                      fontFamily: 'Xpress',
-                    ),
+                    style: MyTextStyles.linkTextStyle,
                   ),
                 ),
               ),
@@ -276,22 +290,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   alignment: Alignment.centerLeft,
                   child: const Text(
                     "Ayuda",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF84090D),
-                      fontFamily: 'Xpress',
-                    ),
+                    style: MyTextStyles.linkTextStyle,
                   ),
                 ),
               ),
               SizedBox(height: 3.h), // Cambiado a screenutil
               ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => HelpScreen()),
-                  );
-                },
+                onPressed: _openWhatsApp,
                 icon: const Icon(
                   Icons.help,
                   color: Color(0xFF84090D),
@@ -299,55 +304,59 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: Align(
                   alignment: Alignment.centerLeft,
                   child: const Text(
-                    "Ficha de Ingreso",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF84090D),
-                      fontFamily: 'Xpress',
-                    ),
+                    "Soporte Técnico",
+                    style: MyTextStyles.linkTextStyle,
                   ),
                 ),
               ),
-              SizedBox(height: 3.h), // Cambiado a screenutil
-
-              GestureDetector(
-                onTap: () {
-                  showAboutDialog(
-                    context: context,
-                    applicationName: "ManitoXpress",
-                    applicationVersion: "1.0.0",
-                    applicationIcon: Image.asset(
-                      'assets/images/manitoxpress_logo.png',
-                      width: 10.w, // Cambiado a screenutil
-                      height: 10.h, // Cambiado a screenutil
-                    ),
-                    children: const [
-                      Text(
-                        "Esta es una aplicación Demo",
-                        style: TextStyle(
-                          fontFamily: 'Xpress Heavy',
-                          fontWeight: FontWeight.normal,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-                child: Text(
-                  "Versión",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                    fontFamily: 'Xpress',
+              SizedBox(height: 10.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.facebook, color: Colors.white),
+                    iconSize: 40,
+                    onPressed: () async {
+                      const facebookUrl =
+                          'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress';
+                      if (await canLaunchUrl(Uri.parse(facebookUrl))) {
+                        await launchUrl(Uri.parse(facebookUrl));
+                      } else {
+                        // Si la app de Facebook no está instalada, abre en navegador
+                        await _abrirEnlace(
+                            'https://www.facebook.com/ManitosXpress');
+                      }
+                    },
                   ),
-                ),
-              ),
-              SizedBox(height: 3.h), // Cambiado a screenutil
+                  SizedBox(width: 20),
+                  IconButton(
+                    icon: const Icon(Icons.camera_alt,
+                        color: Color.fromARGB(255, 255, 255, 255)),
+                    iconSize: 40,
+                    onPressed: () async {
+                      const instagramUrl =
+                          'https://www.instagram.com/manitosxpress?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==';
+                      await _abrirEnlace(instagramUrl);
+                    },
+                  ),
+                  SizedBox(width: 20), // Separación entre íconos
+                  IconButton(
+                    icon: const Icon(Icons.tiktok,
+                        color: Color.fromARGB(255, 255, 255, 255)),
+                    iconSize: 40,
+                    onPressed: () async {
+                      const tiktokUrl =
+                          'https://www.tiktok.com/@manitosxpress?_t=ZM-8tG9ZrTUYjO&_r=1';
+                      await _abrirEnlace(tiktokUrl);
+                    },
+                  ),
+                ],
+              )
             ],
           ),
         ),
       ),
-       body: PageView(
+      body: PageView(
         controller: _pageController,
         children: _buildScreens(),
         onPageChanged: (index) {
@@ -370,7 +379,6 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'SERVICIOS',
             backgroundColor: Color(0xFF1A819A),
           ),
-          
           BottomNavigationBarItem(
             icon: const Icon(Icons.balance),
             label: 'MOVIMIENTOS',
@@ -382,14 +390,19 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedLabelStyle: MyTextStyles.navBarTextStyle,
         unselectedLabelStyle: MyTextStyles.navBarTextStyle,
         selectedIconTheme: IconThemeData(color: Colors.white),
-        unselectedIconTheme: IconThemeData(color: Color.fromARGB(255, 230, 121, 121)),
-        backgroundColor: const Color.fromARGB(255, 183, 21, 10),
+        unselectedIconTheme:
+            IconThemeData(color: Color.fromARGB(255, 230, 121, 121)),
+        backgroundColor: const Color(0xFF841813),
       ),
     );
   }
+}
 
-  void _refreshHistorial() {
-    // Actualiza el historial aquí
-    // Puedes implementar la lógica para actualizar los datos desde el backend
+Future<void> _abrirEnlace(String url) async {
+  final uri = Uri.parse(url);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } else {
+    debugPrint('No se pudo abrir $url');
   }
 }

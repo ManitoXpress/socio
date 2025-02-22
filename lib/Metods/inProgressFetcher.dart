@@ -58,7 +58,9 @@ class ServiceRepositoryInProgress {
       ) async {
     try {
       final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null && (cachedRequest.status.id == 'in_progress' || cachedRequest.status.id == 'pending_confirmation')) {
+      if (cachedRequest != null &&
+          (cachedRequest.status.id == 'in_progress' ||
+              cachedRequest.status.id == 'pending_confirmation')) {
         return [cachedRequest];
       }
 
@@ -69,12 +71,13 @@ class ServiceRepositoryInProgress {
         return [];
       }
 
-      final List<Map<String, dynamic>> servicesData = List<Map<String, dynamic>>.from(json.decode(response.body));
+      final List<Map<String, dynamic>> servicesData =
+          List<Map<String, dynamic>>.from(json.decode(response.body));
 
       // 1. Filtrar servicios por estado
       final filteredServices = servicesData.where((item) =>
-      item['status'] == 'in_progress' || item['status'] == 'pending_confirmation'
-      ).toList();
+          item['status'] == 'in_progress' ||
+          item['status'] == 'pending_confirmation').toList();
 
       // 2. Mapear a objetos ServiceRequest
       List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
@@ -84,28 +87,39 @@ class ServiceRepositoryInProgress {
         }
 
         return ServiceRequest(
-            id: item['id']?.toString() ?? '',
-        serviceDateTime: item['serviceDateTime']?.toString() ?? '',
-        description: item['description']?.toString() ?? '',
-        expertises: _extractExpertises(item),
-        images: (item['images'] as List<dynamic>?)?.map((e) => e?.toString() ?? '').toList() ?? [],
-        location: Map<String, double>.from(
-        (item['location'] as Map<String, dynamic>?)?.map((key, value) =>
-        MapEntry(key, (value as num).toDouble())) ?? {}
-        ),
-        offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-        userId: item['userId']?.toString() ?? '',
-        workerId: '',
-        status: Status(
-        id: statusName,
-        name: Status.getNameById(statusName),
-        ), devicesId: '', serviceType: ServiceType(
-        name: item['serviceType']?['name']?.toString() ?? '',
-        id: item['serviceType']?['id']?.toString() ?? '',
-        selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
-        selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
-        ),isFavorite: item['isFavorite'] as bool? ?? false,  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-        subcategoryName: item['subcategoryName']?.toString() ?? '', hasOffer: false, offers: []);
+          id: item['id']?.toString() ?? '',
+          serviceDateTime: item['serviceDateTime']?.toString() ?? '',
+          description: item['description']?.toString() ?? '',
+          expertises: _extractExpertises(item),
+          images: (item['images'] as List<dynamic>?)
+                  ?.map((e) => e?.toString() ?? '')
+                  .toList() ??
+              [],
+          location: Map<String, double>.from(
+            (item['location'] as Map<String, dynamic>?)?.map((key, value) =>
+                MapEntry(key, (value as num).toDouble())) ??
+                {},
+          ),
+          offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+          userId: item['userId']?.toString() ?? '',
+          workerId: '',
+          status: Status(
+            id: statusName,
+            name: Status.getNameById(statusName),
+          ),
+          devicesId: '',
+          serviceType: ServiceType(
+            name: item['serviceType']?['name']?.toString() ?? '',
+            id: item['serviceType']?['id']?.toString() ?? '',
+            selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
+            selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
+          ),
+          isFavorite: item['isFavorite'] as bool? ?? false,
+          acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+          subcategoryName: item['subcategoryName']?.toString() ?? '',
+          hasOffer: false,
+          offers: [],
+        );
       }).whereType<ServiceRequest>().toList();
 
       // 3. Obtener especialidades del trabajador
@@ -119,25 +133,29 @@ class ServiceRepositoryInProgress {
           expertiseNames.contains(service.subcategoryName.toLowerCase().trim()))
           .toList();
 
-      // 5. Obtener ofertas para cada servicio
+      // 5. Obtener ofertas para cada servicio y filtrar por workerId (trabajador autenticado)
       List<ServiceRequest> validServices = [];
       for (var service in serviceRequestsList) {
         try {
           final List<ServiceRequest> offers = await apiService.getOffers(
-              'in_progress',
-              deviceId,
-              'pending_confirmation',
-              deviceId,
-              serviceRequestsList,
-              status
+            'workerId',   // Columna por la que se filtra en la base de datos
+            userId,       // Valor: el id del trabajador autenticado
+            'offer',      // Tipo (o estado) de la oferta
+            deviceId,
+            [service],    // Se pasa la lista con el servicio actual
+            status,
           );
 
-          if (offers.isNotEmpty) {
-            service.workerId = offers.first.workerId;
+          // Filtrar las ofertas para conservar solo las que tengan workerId igual a userId
+          final List<ServiceRequest> filteredOffers =
+              offers.where((offer) => offer.workerId == userId).toList();
+
+          if (filteredOffers.isNotEmpty) {
+            service.workerId = filteredOffers.first.workerId;
             service.hasOffer = true;
-            service.offers = offers.first.offers;
+            service.offers = filteredOffers.first.offers;
+            validServices.add(service);
           }
-          validServices.add(service);
         } catch (e) {
           print('Error obteniendo ofertas para ${service.id}: $e');
         }
@@ -145,7 +163,7 @@ class ServiceRepositoryInProgress {
 
       // 6. Cachear y retornar resultados
       validServices.forEach(LocalCacheService.cacheServiceRequest);
-      return validServices.where((s) => s.workerId.isNotEmpty).toList();
+      return validServices;
     } catch (e) {
       print('Error crítico en _fetchServicesByInProgress: ${e.toString()}');
       return [];
@@ -154,10 +172,12 @@ class ServiceRepositoryInProgress {
 
   List<Expertise> _extractExpertises(Map<String, dynamic> item) {
     final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-    return expertisesArray.map((exp) => Expertise(
-      id: exp['id']?.toString() ?? '',
-      name: exp['name']?.toString() ?? '',
-    )).toList();
+    return expertisesArray
+        .map((exp) => Expertise(
+              id: exp['id']?.toString() ?? '',
+              name: exp['name']?.toString() ?? '',
+            ))
+        .toList();
   }
 
   double _parseOfferedPrice(dynamic value) {
