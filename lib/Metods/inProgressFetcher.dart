@@ -18,11 +18,11 @@ class ServiceRepositoryInProgress {
   ServiceRepositoryInProgress({required this.apiService, required this.firestore});
 
   Future<List<ServiceRequest>> fetchServicesByInProgress(
-      String status,
-      String userId,
-      String column,
-      String token,
-      ) async {
+    String status,
+    String userId,
+    String column,
+    String token,
+  ) async {
     List<String> validStatuses = await _getValidStatusesFromFirestore();
 
     if (!validStatuses.contains(status)) {
@@ -51,16 +51,17 @@ class ServiceRepositoryInProgress {
   }
 
   Future<List<ServiceRequest>> _fetchServicesByInProgress(
-      String status,
-      String column,
-      String userId,
-      String token,
-      ) async {
+    String status,
+    String column,
+    String userId,
+    String token,
+  ) async {
     try {
       final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
       if (cachedRequest != null &&
           (cachedRequest.status.id == 'in_progress' ||
-              cachedRequest.status.id == 'pending_confirmation')) {
+              cachedRequest.status.id == 'pending_confirmation' ||
+              cachedRequest.status.id == 'pending_confirmation2')) {
         return [cachedRequest];
       }
 
@@ -77,12 +78,15 @@ class ServiceRepositoryInProgress {
       // 1. Filtrar servicios por estado
       final filteredServices = servicesData.where((item) =>
           item['status'] == 'in_progress' ||
-          item['status'] == 'pending_confirmation').toList();
+          item['status'] == 'pending_confirmation' ||
+          item['status'] == 'pending_confirmation2').toList();
 
       // 2. Mapear a objetos ServiceRequest
       List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
         final statusName = (item['status'] as String?) ?? 'in_progress';
-        if (statusName != 'in_progress' && statusName != 'pending_confirmation') {
+        if (statusName != 'in_progress' &&
+            statusName != 'pending_confirmation' &&
+            statusName != 'pending_confirmation2') {
           return null;
         }
 
@@ -133,33 +137,56 @@ class ServiceRepositoryInProgress {
           expertiseNames.contains(service.subcategoryName.toLowerCase().trim()))
           .toList();
 
-      // 5. Obtener ofertas para cada servicio y filtrar por workerId (trabajador autenticado)
+      // Para cada servicio, se solicitan las ofertas correspondientes.
       List<ServiceRequest> validServices = [];
-      for (var service in serviceRequestsList) {
+      List<Future> offerRequests = serviceRequestsList.map((serviceRequest) async {
+        print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
         try {
-          final List<ServiceRequest> offers = await apiService.getOffers(
+          final List<ServiceRequest> offerResponses = await apiService.getOffers(
             'workerId',   // Columna por la que se filtra en la base de datos
             userId,       // Valor: el id del trabajador autenticado
             'offer',      // Tipo (o estado) de la oferta
             deviceId,
-            [service],    // Se pasa la lista con el servicio actual
+            [serviceRequest],   // Se pasa la lista con el servicio actual
             status,
           );
 
           // Filtrar las ofertas para conservar solo las que tengan workerId igual a userId
-          final List<ServiceRequest> filteredOffers =
-              offers.where((offer) => offer.workerId == userId).toList();
+          List<Offer> filteredOffers = offerResponses.map((serviceOffer) {
+            final statusName = serviceOffer.status.id;
+            final statusObject = Status(
+              id: statusName,
+              name: Status.getNameById(statusName),
+            );
+
+            return Offer(
+              id: serviceOffer.id,
+              workerId: serviceOffer.workerId,
+              offeredPrice: serviceOffer.offeredPrice,
+              hasOffer: serviceOffer.hasOffer,
+              serviceId: serviceRequest.id,
+              extraCosts: 0.0,
+              totalPrice: serviceOffer.offeredPrice,
+              status: statusObject,
+              userToken: '',
+              createdAt: DateTime.now(),
+              expertises: serviceOffer.expertises,
+              subcategoryName: serviceOffer.subcategoryName,
+            );
+          }).where((offer) => offer.workerId == userId).toList();
 
           if (filteredOffers.isNotEmpty) {
-            service.workerId = filteredOffers.first.workerId;
-            service.hasOffer = true;
-            service.offers = filteredOffers.first.offers;
-            validServices.add(service);
+            serviceRequest.workerId = filteredOffers.first.workerId;
+            serviceRequest.hasOffer = true;
+            serviceRequest.offers = filteredOffers;
+            validServices.add(serviceRequest);
           }
         } catch (e) {
-          print('Error obteniendo ofertas para ${service.id}: $e');
+          print('Error obteniendo ofertas para ${serviceRequest.id}: $e');
         }
-      }
+      }).toList();
+
+      await Future.wait(offerRequests);
 
       // 6. Cachear y retornar resultados
       validServices.forEach(LocalCacheService.cacheServiceRequest);

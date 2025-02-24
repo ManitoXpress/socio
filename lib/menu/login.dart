@@ -380,6 +380,41 @@ class _LoginFormState extends State<LoginScreen> {
                             ),
                     ),
                     SizedBox(width: 10.w), // Espacio entre los botones
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF841813),
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(3.w),
+                      ),
+                      onPressed: isLoadingApple ? null : signInWithApple,
+                      child: isLoadingApple
+                          ? CircularProgressIndicator() // Indicador de carga
+                          : CircleAvatar(
+                              backgroundColor: Colors.white,
+                              radius: 40.r,
+                              child: CircleAvatar(
+                                backgroundColor: Colors.white,
+                                radius: 37.r,
+                                child: CircleAvatar(
+                                  radius: 35.r,
+                                  backgroundColor: Colors.white,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        FontAwesomeIcons.apple,
+                                        color: Color(0xFF841813),
+                                      ),
+                                      Text(
+                                        'Inicio',
+                                        style: MyTextStyles.linkTextStyle,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                    ),
                     // Botón de Apple
                   ],
                 ),

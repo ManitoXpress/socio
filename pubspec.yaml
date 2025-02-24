@@ -1,7 +1,7 @@
 name: socio
 description: "project manitosXpress."
 publish_to: 'none'
-version: 1.7.9+3
+version: 1.7.9+6
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -78,6 +78,8 @@ dependencies:
   day_night_switch: ^1.0.3
   sqflite: ^2.2.8+4
   path: ^1.9.0
+  cached_network_image: ^3.4.1
+  
 
 dev_dependencies:
   flutter_test:

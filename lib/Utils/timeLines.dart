@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:socio/Metods/imagePreview.dart';
 import 'package:socio/Metods/jobComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
@@ -27,6 +28,7 @@ import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;
@@ -170,6 +172,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               child: Text('Confirmar No Participar'),
             ),
           ],
+          
         );
       },
     );
@@ -343,12 +346,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .get();
 
     if (querySnapshot.docs.isNotEmpty) {
-      final offerData = querySnapshot.docs.first.data();
-      var offeredPrice = offerData['offeredPrice'] ?? 0.0;
+    
+      var offeredPrice = _workerOfferedPrice;
 
       // Verifica el tipo de dato y realiza la conversión si es necesario.
       if (offeredPrice is String) {
-        offeredPrice = double.tryParse(offeredPrice) ?? 0.0;
+        offeredPrice = double.tryParse(offeredPrice.toString()) ?? 0.0;
       } else if (offeredPrice is! double) {
         offeredPrice = 0.0;
       }
@@ -369,7 +372,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Oferta del servicio:'),
-                Text('Precio ofertado: Bs ${offeredPrice.toStringAsFixed(2)}'),
+                Text('Precio ofertado: Bs ${_workerOfferedPrice}'),
                 SizedBox(height: 16.0),
 
                 SizedBox(height: 16.0),
@@ -387,7 +390,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  _handleAcceptButton(querySnapshot, offeredPrice, commission, extraCosts, totalPrice, paymentStatus);
+                  _handleAcceptButton(querySnapshot, offeredPrice!, commission, extraCosts, totalPrice, paymentStatus);
                 },
                 child: Text('Aceptar'),
               ),
@@ -500,6 +503,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
+        final List<String> images = List<String>.from(serviceData['images'] ?? []);
         List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
         double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
         double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
@@ -589,42 +593,41 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     'Imágenes:',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
-                  Container(
-                    height: 80,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: imageFiles.length,
-                      itemBuilder: (context, index) {
+                    if (images.isNotEmpty)
+                    Column(
+                      children: images.map((url) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                          padding: const EdgeInsets.only(bottom: 8.0),
                           child: GestureDetector(
                             onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return Dialog(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Image.network(
-                                        imageFiles[index],
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  );
-                                },
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ImageViewer(imageUrl: url),
+                                ),
                               );
                             },
-                            child: Image.network(
-                              imageFiles[index],
-                              height: 80,
-                              width: 80,
-                              fit: BoxFit.cover,
+                            child: Hero(
+                              tag: url,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: CachedNetworkImage(
+                                  imageUrl: url,
+                                  height: 150.0,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) => Icon(Icons.error),
+                                ),
+                              ),
                             ),
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
-                  ),
+                      
+                    
+
                   SizedBox(height: 16.0),
 
                   // Precio ofertado

@@ -47,12 +47,12 @@ class _WalletScreenState extends State<WalletScreen> {
         length: 3,
         child: Scaffold(
           appBar: AppBar(
-            title: const Text('Movimientos',
+            title: const Text('Wallet',
                 style: TextStyle(fontWeight: FontWeight.w600)),
             bottom: const TabBar(
               tabs: [
                 Tab(text: 'Adeudado'),
-                Tab(text: 'Ingresos'),
+                Tab(text: 'Movimientos'),
                 Tab(text: 'Pagado'),
               ],
             ),

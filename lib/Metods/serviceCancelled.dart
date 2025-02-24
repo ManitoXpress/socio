@@ -121,7 +121,7 @@ class ServiceRepositoryCancelled {
                   final List<ServiceRequest> offersResponse = await ApiService2().getOffers(
                     "workerId",    // Columna por la que se filtra
                     userId,        // Valor: id del trabajador autenticado
-                    "offer",       // Tipo (o estado) de la oferta (ajústalo si es necesario)
+                    "status",       // Tipo (o estado) de la oferta (ajústalo si es necesario)
                     deviceId,
                     [service],     // Se consulta para este servicio en particular
                     type,          // Se pasa el mismo estado (en este caso "cancelled")

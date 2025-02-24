@@ -74,8 +74,8 @@ class _HistorialState extends State<Historial>
     firestore: FirebaseFirestore.instance,
   );
   final ServiceRepositoryComplete _serviceRepository3 = ServiceRepositoryComplete(
-    apiService: ApiService(),
-    firestore: FirebaseFirestore.instance,
+   
+    firestore: FirebaseFirestore.instance, apiService: ApiService(),
   );
   final ServiceRepositoryCancelled _serviceRepository4 = ServiceRepositoryCancelled(
     apiService: ApiService(),
@@ -625,7 +625,7 @@ Future<void> _refreshHistorial() async {
         final services = snapshot.data!;
         if (statusIds == 'available') {
           final services = snapshot.data!;
-          return ServiceListBuilder.buildServiceList(
+          return ServiceListBuilder.buildServiceListAvailable(
               services, screenWidth, screenHeight, userId, userData);
         }
 
@@ -645,23 +645,25 @@ Future<void> _refreshHistorial() async {
           }
         if (statusIds == 'in_progress') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceList(
-              services, screenWidth, screenHeight, userId, userData);
+              services,offers, screenWidth, screenHeight, userId, userData);
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
-          return ServiceListBuilder.buildServiceList(
+       
+          return ServiceListBuilder.buildServiceListComplete(
               services, screenWidth, screenHeight, userId, userData);
         }
         if (statusIds == 'cancelled') {
           final services = snapshot.data!;
-          return ServiceListBuilder.buildServiceList(
+          return ServiceListBuilder.buildServiceListCancelled(
               services, screenWidth, screenHeight, userId, userData);
         }
 
-
+        final offers = services.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceList(
-            services, screenWidth, screenHeight, userId, userData);
+            services,offers, screenWidth, screenHeight, userId, userData);
       },
     );
   }

@@ -381,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.balance),
-            label: 'MOVIMIENTOS',
+            label: 'WALLET',
             backgroundColor: Color.fromARGB(166, 50, 196, 233),
           ),
         ],
