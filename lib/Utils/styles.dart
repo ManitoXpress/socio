@@ -111,7 +111,7 @@ class MyTextStyles {
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
-    fontSize: 28.0,
+    fontSize: 18.0,
   );
 
   static const TextStyle drawerButtonTextStyle6 = TextStyle(

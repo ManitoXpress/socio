@@ -24,6 +24,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
+import 'package:carousel_slider/carousel_slider.dart';
 
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
@@ -485,40 +486,40 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: _serviceRequestStream,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error al cargar los datos del servicio'));
-        }
+Widget build(BuildContext context) {
+  return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+    stream: _serviceRequestStream,
+    builder: (context, snapshot) {
+      if (snapshot.hasError) {
+        return Center(child: Text('Error al cargar los datos del servicio'));
+      }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return Center(child: CircularProgressIndicator());
+      }
 
-        final serviceData = snapshot.data?.data();
-        if (serviceData == null) {
-          return Center(child: Text('No se encontraron datos del servicio'));
-        }
+      final serviceData = snapshot.data?.data();
+      if (serviceData == null) {
+        return Center(child: Text('No se encontraron datos del servicio'));
+      }
 
-        _currentStatus = serviceData['status'] ?? 'available';
-        final List<String> images = List<String>.from(serviceData['images'] ?? []);
-        List<String> imageFiles = List<String>.from(serviceData['images'] ?? []);
-        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
-        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+      _currentStatus = serviceData['status'] ?? 'available';
+      final List<String> images = List<String>.from(serviceData['images'] ?? []);
+      double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+      double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-        _initialPosition = LatLng(latitude, longitude);
+      _initialPosition = LatLng(latitude, longitude);
 
-        return Scaffold(
-          appBar: AppBar(
-            iconTheme: IconThemeData(color: Colors.white),
-            title: Text(
-              'Detalles del Servicio',
-              style: MyTextStyles.buttonTextStyle,
-            ),
+      return Scaffold(
+        appBar: AppBar(
+          iconTheme: IconThemeData(color: Colors.white),
+          title: Text(
+            'Detalles del Servicio',
+            style: MyTextStyles.buttonTextStyle,
           ),
-          body: Padding(
+        ),
+        body: SingleChildScrollView(
+          child: Padding(
             padding: EdgeInsets.all(16.0),
             child: Container(
               padding: EdgeInsets.all(16.0),
@@ -593,40 +594,47 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     'Imágenes:',
                     style: MyTextStyles.formServiceTextStyle,
                   ),
-                    if (images.isNotEmpty)
-                    Column(
-                      children: images.map((url) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ImageViewer(imageUrl: url),
-                                ),
-                              );
-                            },
-                            child: Hero(
-                              tag: url,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12.0),
-                                child: CachedNetworkImage(
-                                  imageUrl: url,
-                                  height: 150.0,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) => Icon(Icons.error),
+                  if (images.isNotEmpty)
+                    CarouselSlider(
+                      options: CarouselOptions(
+                        height: 200.0,
+                        enlargeCenterPage: true,
+                        autoPlay: true,
+                        aspectRatio: 16 / 9,
+                        autoPlayCurve: Curves.fastOutSlowIn,
+                        enableInfiniteScroll: true,
+                        autoPlayAnimationDuration: Duration(milliseconds: 800),
+                        viewportFraction: 0.8,
+                      ),
+                      items: images.map((url) {
+                        return Builder(
+                          builder: (BuildContext context) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ImageViewer(imageUrl: url),
+                                  ),
+                                );
+                              },
+                              child: Hero(
+                                tag: url,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.0),
+                                  child: CachedNetworkImage(
+                                    imageUrl: url,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => CircularProgressIndicator(),
+                                    errorWidget: (context, url, error) => Icon(Icons.error),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         );
                       }).toList(),
                     ),
-                      
-                    
 
                   SizedBox(height: 16.0),
 
@@ -638,115 +646,121 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   SizedBox(height: 16.0),
 
                   // Botones dependiendo del estado
-                  _buildActionButtons(),
+                  Wrap(
+                    spacing: 10.0,
+                    runSpacing: 10.0,
+                    alignment: WrapAlignment.center,
+                    children: [_buildActionButtons()],
+                  ),
                 ],
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
 // Método para construir los botones de acción según el estado
   Widget _buildActionButtons() {
-    switch (_currentStatus) {
-      case 'available':
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => _showProposalDialog(context),
-              icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
-              label: Text(
-                "Enviar Propuesta",
-                style: GoogleFonts.karla(
-                  color: Color(0xFFB00020),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(color: Color(0xFFB00020)),
-                ),
+  switch (_currentStatus) {
+    case 'available':
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () => _showProposalDialog(context),
+            icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
+            label: Text(
+              "Enviar Propuesta",
+              style: GoogleFonts.karla(
+                color: Color(0xFFB00020),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(width: 16.0),
-            ElevatedButton.icon(
-              onPressed: () => _showNoParticipationDialog(context),
-              icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
-              label: Text(
-                "No Participar",
-                style: GoogleFonts.karla(
-                  color: Color(0xFFB00020),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(color: Color(0xFFB00020)),
-                ),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(color: Color(0xFFB00020)),
               ),
             ),
-          ],
-        );
-      case 'offer':
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton.icon(
-              onPressed: () => _showNoParticipationDialog(context),
-              icon: Icon(Icons.dangerous, color: Colors.white),
-              label: Text(
-                "No Participar",
-                style: GoogleFonts.karla(
-                  color: Color(0xFFB00020),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFB00020),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _showNoParticipationDialog(context),
+            icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
+            label: Text(
+              "No Participar",
+              style: GoogleFonts.karla(
+                color: Color(0xFFB00020),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        );
-      case 'in_progress':
-      case 'pending_confirmation2':
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_currentStatus == 'pending_confirmation2') ...[
-              ElevatedButton.icon(
-                onPressed: () => _showPendingConfirmation2Dialog(context),
-                icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
-                label: Text(
-                  "Pago Aceptado",
-                  style: GoogleFonts.karla(
-                    color: Color(0xFFB00020),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                side: BorderSide(color: Color(0xFFB00020)),
+              ),
+            ),
+          ),
+        ],
+      );
+    case 'offer':
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () => _showNoParticipationDialog(context),
+            icon: Icon(Icons.dangerous, color: Colors.white),
+            label: Text(
+              "No Participar",
+              style: GoogleFonts.karla(
+                color: Color(0xFFB00020),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFFB00020),
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            ),
+          ),
+        ],
+      );
+    case 'in_progress':
+    case 'pending_confirmation2':
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (_currentStatus == 'pending_confirmation2')
+                ElevatedButton.icon(
+                  onPressed: () => _showPendingConfirmation2Dialog(context),
+                  icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
+                  label: Text(
+                    "Pago Aceptado",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFFB00020),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFFB00020)),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Color(0xFFB00020)),
-                  ),
-                ),
-              ),
-            ] else ...[
               ElevatedButton.icon(
                 onPressed: () => _showNoParticipationDialog(context),
                 icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
@@ -767,7 +781,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   ),
                 ),
               ),
-              SizedBox(width: 16.0),
               ElevatedButton.icon(
                 onPressed: () => _showCompleteJobDialog(context),
                 icon: Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
@@ -788,40 +801,43 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   ),
                 ),
               ),
-              SizedBox(width: 16.0),
             ],
-            ElevatedButton.icon(
-              onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
-              icon: Icon(Icons.chat, color: Colors.white),
-              label: Text(
-                "Chat",
-                style: GoogleFonts.karla(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
+            icon: Icon(Icons.chat, color: Colors.white),
+            label: Text(
+              "Chat",
+              style: GoogleFonts.karla(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        );
-      case 'pending_confirmation':
-        return Text('Esperando la confirmación del cliente...');
-      case 'completed':
-        return Text('Este trabajo ha sido completado.');
-      case 'cancelled':
-        return Text('Este trabajo ha sido cancelado.');
-      case 'blocked':
-        return Text('No participarás en este trabajo.');
-      default:
-        return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
-    }
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+            ),
+          ),
+        ],
+      );
+    case 'pending_confirmation':
+      return Text('Esperando la confirmación del cliente...');
+    case 'completed':
+      return Text('Este trabajo ha sido completado.');
+    case 'cancelled':
+      return Text('Este trabajo ha sido cancelado.');
+    case 'blocked':
+      return Text('No participarás en este trabajo.');
+    default:
+      return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
   }
+}
+
+
+
 
   void _openChat(String workerId, String userId) async {
     final chatId = _generateChatId(workerId, userId);

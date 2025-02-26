@@ -1,7 +1,7 @@
 name: socio
 description: "project manitosXpress."
 publish_to: 'none'
-version: 1.7.9+6
+version: 1.7.9+7
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -79,6 +79,7 @@ dependencies:
   sqflite: ^2.2.8+4
   path: ^1.9.0
   cached_network_image: ^3.4.1
+  carousel_slider: ^5.0.0
   
 
 dev_dependencies:
