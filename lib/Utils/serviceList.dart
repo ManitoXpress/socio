@@ -9,8 +9,13 @@ import 'package:socio/Utils/timeLines.dart';
 import 'package:socio/Utils/workerDetails.dart';
 
 class ServiceListBuilder {
-  static Widget buildOfferList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
-      double screenHeight, String userId, final UserData userData) {
+  static Widget buildOfferList(
+      List<ServiceRequest> services,
+      List<Offer> offers,
+      double screenWidth,
+      double screenHeight,
+      String userId,
+      final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -21,7 +26,8 @@ class ServiceListBuilder {
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
           return GestureDetector(
             onTap: () async {
@@ -40,7 +46,7 @@ class ServiceListBuilder {
                           devicesId: '',
                           description: '',
                           images: [],
-                          location: {},
+                          location: service.location,
                           offeredPrice: offer.offeredPrice,
                           serviceType: ServiceType(
                               id: '',
@@ -84,9 +90,15 @@ class ServiceListBuilder {
       ),
     );
   }
+
   // ignore: non_constant_identifier_names
-  static Widget in_progressList(List<ServiceRequest> services,List<Offer> offers, double screenWidth,
-      double screenHeight, String userId, final UserData userData) {
+  static Widget in_progressList(
+      List<ServiceRequest> services,
+      List<Offer> offers,
+      double screenWidth,
+      double screenHeight,
+      String userId,
+      final UserData userData) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -97,7 +109,8 @@ class ServiceListBuilder {
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
           return GestureDetector(
             onTap: () async {
@@ -116,7 +129,7 @@ class ServiceListBuilder {
                           devicesId: '',
                           description: '',
                           images: [],
-                          location: {},
+                          location: service.location,
                           offeredPrice: offer.offeredPrice,
                           serviceType: ServiceType(
                               id: '',
@@ -160,6 +173,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListAvailable(
       List<ServiceRequest> services,
       double screenWidth,
@@ -188,7 +202,7 @@ class ServiceListBuilder {
                         devicesId: '',
                         description: '',
                         images: [],
-                        location: {},
+                        location: service.location,
                         offeredPrice: service.offeredPrice,
                         serviceType: ServiceType(
                             id: '',
@@ -231,6 +245,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListComplete(
       List<ServiceRequest> services,
       double screenWidth,
@@ -259,7 +274,7 @@ class ServiceListBuilder {
                         devicesId: '',
                         description: '',
                         images: [],
-                        location: {},
+                        location: service.location,
                         offeredPrice: service.offeredPrice,
                         serviceType: ServiceType(
                             id: '',
@@ -302,6 +317,7 @@ class ServiceListBuilder {
       ),
     );
   }
+
   static Widget buildServiceListCancelled(
       List<ServiceRequest> services,
       double screenWidth,
@@ -373,10 +389,10 @@ class ServiceListBuilder {
       ),
     );
   }
-static Widget buildServiceList(
+
+  static Widget buildServiceList(
       List<ServiceRequest> services,
       List<Offer> offers,
-
       double screenWidth,
       double screenHeight,
       String userId,
@@ -391,9 +407,10 @@ static Widget buildServiceList(
           // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
           );
-          
+
           return GestureDetector(
             onTap: () async {
               try {
@@ -409,7 +426,7 @@ static Widget buildServiceList(
                         devicesId: '',
                         description: '',
                         images: [],
-                        location: {},
+                        location: service.location,
                         offeredPrice: offer.offeredPrice,
                         serviceType: ServiceType(
                             id: '',
@@ -446,15 +463,15 @@ static Widget buildServiceList(
                 print('Error al cargar los detalles del trabajador: $e');
               }
             },
-            child: _buildOfferCard(service,offer, screenWidth, screenHeight),
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
           );
         },
       ),
     );
   }
 
-  static Widget _buildOfferCard(ServiceRequest service,
-      Offer offer, double screenWidth, double screenHeight) {
+  static Widget _buildOfferCard(ServiceRequest service, Offer offer,
+      double screenWidth, double screenHeight) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
       width: screenWidth,
@@ -515,8 +532,7 @@ static Widget buildServiceList(
           SizedBox(width: 10),
           Align(
             alignment: Alignment.bottomLeft,
-            child: Image.asset('assets/manito.png',
-                width: 64, height: 64),
+            child: Image.asset('assets/manito.png', width: 64, height: 64),
           ),
         ],
       ),

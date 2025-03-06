@@ -47,7 +47,7 @@ class FirstTimeLoginScreen extends StatelessWidget {
             children: <Widget>[
               // Imagen
               Image.asset(
-                'assets/images/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
+                'assets/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
                 width: 300, // Ajusta el ancho de la imagen según sea necesario
               ),
               const SizedBox(height: 20), // Espacio entre la imagen y el texto

@@ -22,11 +22,18 @@ import 'package:socio/wizards/ServiceTypeSelection.dart';
 import 'package:socio/wizards/forms.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image/image.dart' as img;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final RegistrationController registrationController;
   final VoidCallback completeRegistrationCallback;
   final ApiService2 apiService2;
+
   RegistrationScreen({
     required this.registrationController,
     required this.completeRegistrationCallback,
@@ -51,12 +58,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   bool isStep1Complete = false;
 
   late RegistrationData registrationData;
-
   late RegistrationController registrationController;
   late UserData userData;
   String? fcmToken;
 
-  // Bandera para controlar si el formulario ya se completó
   bool formCompleted = false;
   bool loadingCompleteRegistration = false;
 
@@ -69,13 +74,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       });
     });
 
-    // Restaura el estado del formulario
     restoreFormState();
-
-    // Restaura la bandera del formulario completado
     restoreFormCompletedState();
 
-    // Inicializa UserData, RegistrationData y RegistrationController aquí
     setState(() {
       registrationData = RegistrationData(
         userId: '',
@@ -142,13 +143,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         });
       },
       onFavoritesSelected: (favorite) {
-        // Puedes manejar si se selecciona como favorito, si es necesario
+        // Manejar si se selecciona como favorito, si es necesario
       },
       onNextStep: () {
         if (userData.location != null) {
           _nextStep();
         } else {
-          // Mostrar mensaje o realizar alguna acción indicando que la ubicación es obligatoria.
           print('Selecciona una ubicación antes de pasar al siguiente paso.');
         }
       },
@@ -169,14 +169,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         }
       },
       onImageSelected: (String imagePath) {
-        // Actualiza la ruta de la imagen en userData
         userData.imagePath = imagePath;
-
-        // También actualiza registrationData
         registrationData.imagePath = imagePath;
         print('Imagen seleccionada y asignada: $imagePath');
-
-        // Actualiza la UI
         setState(() {});
       },
       registrationData: registrationData,
@@ -193,13 +188,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         // Implementa lo que sea necesario
       },
       fetchExpertises: widget.apiService2.fetchExpertises,
-      onServiceTypesSelected:
-          (List<Expertise> expertises, String? selectedExperienceLevel) {
+      onServiceTypesSelected: (List<Expertise> expertises, String? selectedExperienceLevel) {
         setState(() {
-          // Crear una lista de Expertises a partir de los nombres seleccionados
           userData.expertises = expertises;
-          userData.expLevel =
-              selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
+          userData.expLevel = selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
         });
         print('Selected Expertises: $expertises');
         print('Selected Experience Level: $selectedExperienceLevel');
@@ -217,14 +209,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         }
       },
       onImageSelected: (String idDocumentImagePath) {
-        // Actualiza la ruta de la imagen en userData
         userData.idDocumentImagePath = idDocumentImagePath;
-
-        // También actualiza registrationData
         registrationData.idDocumentImagePath = idDocumentImagePath;
         print('Imagen seleccionada y asignada: $idDocumentImagePath');
-
-        // Actualiza la UI
         setState(() {});
       },
       registrationData: registrationData,
@@ -243,14 +230,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         }
       },
       onImageSelected: (String idDocumentImagePath2) {
-        // Actualiza la ruta de la imagen en userData
         userData.idDocumentImagePath2 = idDocumentImagePath2;
-
-        // También actualiza registrationData
         registrationData.idDocumentImagePath = idDocumentImagePath2;
         print('Imagen seleccionada y asignada: $idDocumentImagePath2');
-
-        // Actualiza la UI
         setState(() {});
       },
       registrationData: registrationData,
@@ -269,14 +251,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         }
       },
       onImageSelected: (String criminalRecordImagePath) {
-        // Actualiza la ruta de la imagen en userData
         userData.criminalRecordImagePath = criminalRecordImagePath;
-
-        // También actualiza registrationData
         registrationData.idDocumentImagePath = criminalRecordImagePath;
         print('Imagen seleccionada y asignada: $criminalRecordImagePath');
-
-        // Actualiza la UI
         setState(() {});
       },
       registrationData: registrationData,
@@ -295,14 +272,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         }
       },
       onImageSelected: (String certificateImagePaths) {
-        // Actualiza la ruta de la imagen en userData
         userData.certificateImagePaths = certificateImagePaths;
-
-        // También actualiza registrationData
         registrationData.certificateImagePaths = certificateImagePaths;
         print('Imagen seleccionada y asignada: $certificateImagePaths');
-
-        // Actualiza la UI
         setState(() {});
       },
       registrationData: registrationData,
@@ -320,41 +292,26 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   void _nextStep() {
-    // Validar el paso 3 (ProfileImage)
-    if (currentStep == 2) {
-      if (userData.imagePath.isEmpty) {
-        print('Selecciona una imagen antes de pasar al siguiente paso.');
-        return;
-      }
+    if (currentStep == 2 && userData.imagePath.isEmpty) {
+      print('Selecciona una imagen antes de pasar al siguiente paso.');
+      return;
     }
 
-    // Validar el paso 4 (ServiceType)
-    if (currentStep == 3) {
-      if (userData.expertises.isEmpty || userData.expLevel.isEmpty) {
-        print(
-            'Selecciona un tipo de servicio y un nivel de experiencia antes de pasar al siguiente paso.');
-        return;
-      }
+    if (currentStep == 3 && (userData.expertises.isEmpty || userData.expLevel.isEmpty)) {
+      print('Selecciona un tipo de servicio y un nivel de experiencia antes de pasar al siguiente paso.');
+      return;
     }
 
-    // Validar el paso 5 (IdCardImageStep)
-    if (currentStep == 4) {
-      if (userData.idDocumentImagePath.isEmpty) {
-        print(
-            'Selecciona una imagen del documento de identidad antes de pasar al siguiente paso.');
-        return;
-      }
+    if (currentStep == 4 && userData.idDocumentImagePath.isEmpty) {
+      print('Selecciona una imagen del documento de identidad antes de pasar al siguiente paso.');
+      return;
     }
 
-    // Validar el paso 6 (IdCardImageStepB)
-    if (currentStep == 5) {
-      if (userData.idDocumentImagePath2.isEmpty) {
-        print(
-            'Selecciona una segunda imagen del documento de identidad antes de pasar al siguiente paso.');
-        return;
-      }
+    if (currentStep == 5 && userData.idDocumentImagePath2.isEmpty) {
+      print('Selecciona una segunda imagen del documento de identidad antes de pasar al siguiente paso.');
+      return;
     }
-    // Si todos los pasos anteriores son válidos, avanza al siguiente paso
+
     setState(() {
       if (currentStep < 7) {
         currentStep += 1;
@@ -362,47 +319,36 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
   }
 
-  Future<String?> _uploadImage(
-      File imageFile, String userId, String imageType) async {
+  Future<String?> _uploadImage(File imageFile, String userId, String imageType) async {
     try {
       final apiService = ApiService();
       User? user = FirebaseAuth.instance.currentUser;
       if (imageFile.existsSync()) {
-        // Comprimir y redimensionar la imagen antes de subirla
         final compressedFile = await compressAndResizeImage(imageFile);
-
-        // Subir la imagen y obtener la URL de descarga
         String imageUrl;
         switch (imageType) {
           case 'profile':
-            imageUrl = await apiService.uploadImageToFirebaseStorage(
-                compressedFile, userId);
+            imageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, userId);
             break;
           case 'idDocument1':
-            imageUrl = await apiService.uploadImageToFirebaseStorage2(
-                compressedFile, userId);
+            imageUrl = await apiService.uploadImageToFirebaseStorage2(compressedFile, userId);
             break;
           case 'idDocument2':
-            imageUrl = await apiService.uploadImageToFirebaseStorage3(
-                compressedFile, userId);
+            imageUrl = await apiService.uploadImageToFirebaseStorage3(compressedFile, userId);
             break;
           case 'criminalRecord':
-            imageUrl = await apiService.uploadImageToFirebaseStorage4(
-                compressedFile, userId);
+            imageUrl = await apiService.uploadImageToFirebaseStorage4(compressedFile, userId);
             break;
           case 'certificate':
-            imageUrl = (await apiService.uploadImageToFirebaseStorage5(
-                [compressedFile], userId)) as String;
+            imageUrl = (await apiService.uploadImageToFirebaseStorage5([compressedFile], userId)) as String;
             break;
           default:
             return null;
         }
-
         print('URL de la imagen cargada ($imageType): $imageUrl');
         return imageUrl;
       } else {
-        print(
-            'Advertencia: La imagen no existe en la ruta proporcionada para $imageType.');
+        print('Advertencia: La imagen no existe en la ruta proporcionada para $imageType.');
         return null;
       }
     } catch (e) {
@@ -412,29 +358,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Future<File> compressAndResizeImage(File image) async {
-    // Leer el archivo de imagen
     final originalImage = img.decodeImage(image.readAsBytesSync());
-
-    // Redimensionar la imagen para reducir aún más su tamaño
-    final resizedImage = img.copyResize(originalImage!,
-        width: 600); // Cambia el tamaño según sea necesario
-
-    // Comprimir la imagen redimensionada
-    final compressedImage = img.encodeJpg(resizedImage,
-        quality: 50); // Baja la calidad si es necesario
-
-    // Obtener el directorio temporal
+    final resizedImage = img.copyResize(originalImage!, width: 600);
+    final compressedImage = img.encodeJpg(resizedImage, quality: 50);
     final tempDir = await getTemporaryDirectory();
-
-    // Guardar la imagen comprimida y redimensionada en un archivo temporal
-    final compressedFile = File(
-        '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final compressedFile = File('${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
     compressedFile.writeAsBytesSync(compressedImage);
-
     return compressedFile;
   }
 
   Future<void> _completeRegistration() async {
+    setState(() {
+      loadingCompleteRegistration = true;
+    });
+
     print('Entrando a _completeRegistration');
 
     try {
@@ -450,134 +387,101 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         registrationData.expertises = userData.expertises;
         registrationData.expLevel = userData.expLevel;
         registrationData.paymentType = userData.paymentType;
-        registrationData.phoneNumber =
-            userData.phoneNumber; // Se añade el número de teléfono
-// Subir la imagen de perfil directamente desde `registrationData.imagePath`
+        registrationData.phoneNumber = userData.phoneNumber;
+
         if (registrationData.imagePath.isNotEmpty) {
           File image = File(registrationData.imagePath);
-
           if (image.existsSync()) {
             try {
               final compressedFile = await compressAndResizeImage(image);
-              final String imageUrl = await apiService
-                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.imagePath = imageUrl.endsWith('/')
-                  ? imageUrl.substring(0, imageUrl.length - 1)
-                  : imageUrl;
-              print(
-                  'URL de la imagen de perfil: ${registrationData.imagePath}');
+              final String imageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
+              registrationData.imagePath = imageUrl.endsWith('/') ? imageUrl.substring(0, imageUrl.length - 1) : imageUrl;
+              print('URL de la imagen de perfil: ${registrationData.imagePath}');
             } catch (e) {
               print('Error al cargar la imagen de perfil: $e');
             }
           } else {
-            print(
-                'Advertencia: La imagen de perfil no existe en la ruta proporcionada.');
+            print('Advertencia: La imagen de perfil no existe en la ruta proporcionada.');
           }
         } else {
           print('Advertencia: No se proporcionó ninguna imagen de perfil.');
         }
 
-        // Manejo de las imágenes de documento de identificación
         if (registrationData.idDocumentImagePath.isNotEmpty) {
           File idDocImage = File(registrationData.idDocumentImagePath);
-
           if (idDocImage.existsSync()) {
             try {
               final compressedFile = await compressAndResizeImage(idDocImage);
-              final String idDocImageUrl = await apiService
-                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
+              final String idDocImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
               registrationData.idDocumentImagePath = idDocImageUrl;
-              print(
-                  'URL de la primera imagen de documento de identificación: $idDocImageUrl');
+              print('URL de la primera imagen de documento de identificación: $idDocImageUrl');
             } catch (e) {
-              print(
-                  'Error al cargar la primera imagen de documento de identificación: $e');
+              print('Error al cargar la primera imagen de documento de identificación: $e');
             }
           } else {
-            print(
-                'Advertencia: La primera imagen de documento no existe en la ruta proporcionada.');
+            print('Advertencia: La primera imagen de documento no existe en la ruta proporcionada.');
           }
         } else {
-          print(
-              'Advertencia: No se proporcionó ninguna imagen de documento de identificación.');
+          print('Advertencia: No se proporcionó ninguna imagen de documento de identificación.');
         }
 
         if (registrationData.idDocumentImagePath2.isNotEmpty) {
           File idDocImage2 = File(registrationData.idDocumentImagePath2);
-
           if (idDocImage2.existsSync()) {
             try {
               final compressedFile = await compressAndResizeImage(idDocImage2);
-              final String idDocImageUrl2 = await apiService
-                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
+              final String idDocImageUrl2 = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
               registrationData.idDocumentImagePath2 = idDocImageUrl2;
-              print(
-                  'URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
+              print('URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
             } catch (e) {
-              print(
-                  'Error al cargar la segunda imagen de documento de identificación: $e');
+              print('Error al cargar la segunda imagen de documento de identificación: $e');
             }
           } else {
-            print(
-                'Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
+            print('Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
           }
         } else {
-          print(
-              'Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
+          print('Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
         }
 
-        // Subir certificados
         if (registrationData.certificateImagePaths.isNotEmpty) {
-          File idDocImage2 = File(registrationData.certificateImagePaths);
-
-          if (idDocImage2.existsSync()) {
+          File certImage = File(registrationData.certificateImagePaths);
+          if (certImage.existsSync()) {
             try {
-              final compressedFile = await compressAndResizeImage(idDocImage2);
-              final String idDocImageUrl2 = await apiService
-                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.certificateImagePaths = idDocImageUrl2;
-              print(
-                  'URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
+              final compressedFile = await compressAndResizeImage(certImage);
+              final String certImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
+              registrationData.certificateImagePaths = certImageUrl;
+              print('URL de la imagen de certificado: $certImageUrl');
             } catch (e) {
-              print(
-                  'Error al cargar la segunda imagen de documento de identificación: $e');
+              print('Error al cargar la imagen de certificado: $e');
             }
           } else {
-            print(
-                'Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
+            print('Advertencia: La imagen de certificado no existe en la ruta proporcionada.');
           }
         } else {
-          print(
-              'Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
+          print('Advertencia: No se proporcionó ninguna imagen de certificado.');
         }
-        if (registrationData.criminalRecordImagePath.isNotEmpty) {
-          File idDocImage2 = File(registrationData.criminalRecordImagePath);
 
-          if (idDocImage2.existsSync()) {
+        if (registrationData.criminalRecordImagePath.isNotEmpty) {
+          File crimRecordImage = File(registrationData.criminalRecordImagePath);
+          if (crimRecordImage.existsSync()) {
             try {
-              final compressedFile = await compressAndResizeImage(idDocImage2);
-              final String idDocImageUrl2 = await apiService
-                  .uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.criminalRecordImagePath = idDocImageUrl2;
-              print(
-                  'URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
+              final compressedFile = await compressAndResizeImage(crimRecordImage);
+              final String crimRecordImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
+              registrationData.criminalRecordImagePath = crimRecordImageUrl;
+              print('URL de la imagen de antecedentes penales: $crimRecordImageUrl');
             } catch (e) {
-              print(
-                  'Error al cargar la segunda imagen de documento de identificación: $e');
+              print('Error al cargar la imagen de antecedentes penales: $e');
             }
           } else {
-            print(
-                'Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
+            print('Advertencia: La imagen de antecedentes penales no existe en la ruta proporcionada.');
           }
         } else {
-          print(
-              'Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
+          print('Advertencia: No se proporcionó ninguna imagen de antecedentes penales.');
         }
 
         String? devicesId = await AuthUtils.getDeviceId();
         String? fcmToken = await FirebaseMessaging.instance.getToken();
 
-        // Actualizar el registro del usuario con las nuevas URLs de Firebase
         registrationData = RegistrationData.fromForm(
           userId: user.uid,
           displayName: userData.displayName,
@@ -620,11 +524,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           print('Error en la respuesta del servidor: ${response.statusCode}');
         }
       } else {
-        print(
-            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
     } catch (error) {
       print('Error durante el proceso de registro: $error');
+    } finally {
+      setState(() {
+        loadingCompleteRegistration = false;
+      });
     }
   }
 
@@ -637,138 +544,135 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           style: MyTextStyles.buttonTextStyle,
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            if (currentStep == 0) ...[
-              step1Data,
-            ] else if (currentStep == 1) ...[
-              step2Location,
-            ] else if (currentStep == 2) ...[
-              step3ProfileImage,
-            ] else if (currentStep == 3) ...[
-              step4ServiceType,
-            ] else if (currentStep == 4) ...[
-              step5IdCardImage,
-            ] else if (currentStep == 5) ...[
-              step5IdCardImageB,
-            ] else if (currentStep == 6) ...[
-              step7CriminalRecordImage,
-            ] else if (currentStep == 7) ...[
-              step8CertificateImage,
-            ],
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: loadingCompleteRegistration
-                  ? null // Deshabilita el botón si está cargando
-                  : () {
-                      if (currentStep == 7) {
-                        setState(() {
-                          loadingCompleteRegistration = true;
-                        });
-
-                        // Mostrar diálogo de carga
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          // Evita que se cierre el diálogo al tocar fuera
-                          builder: (context) {
-                            return AlertDialog(
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircularProgressIndicator(),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Por favor, espere mientras completamos el registro...',
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-
-                        // Completar el registro
-                        _completeRegistration().then((_) {
-                          setState(() {
-                            loadingCompleteRegistration = false;
-                          });
-                          Navigator.of(context).pop(); // Cierra el diálogo
-
-                          // Navegar a la siguiente pantalla
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  HomeScreen(), // Cambiar por la pantalla correspondiente
-                            ),
-                          );
-                        }).catchError((error) {
-                          setState(() {
-                            loadingCompleteRegistration = false;
-                          });
-                          Navigator.of(context).pop(); // Cierra el diálogo
-
-                          // Mostrar mensaje de error
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text('Error'),
-                                content: Text(
-                                    'Ocurrió un error al completar el registro. Por favor, inténtelo de nuevo.'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text('Aceptar'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        });
-                      } else {
-                        _nextStep();
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Color(0xFF84090D),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF84090D),
+      body: Stepper(
+        type: StepperType.vertical,
+        currentStep: currentStep,
+        onStepContinue: () {
+          if (currentStep < 7) {
+            _nextStep();
+          } else {
+            _completeRegistration();
+          }
+        },
+        onStepCancel: () {
+          if (currentStep > 0) {
+            setState(() {
+              currentStep -= 1;
+            });
+          }
+        },
+        controlsBuilder: (BuildContext context, ControlsDetails details) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              if (currentStep > 0)
+                ElevatedButton(
+                  onPressed: details.onStepCancel,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancelar',
+                    style: MyTextStyles.drawerButtonLabelTextStyle,
                   ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (!loadingCompleteRegistration)
-                      Text(
-                        currentStep == 7
-                            ? 'Completar Registro'
-                            : 'Siguiente Paso',
-                        style: MyTextStyles.buttonTextStyle.copyWith(
-                          fontSize: 12,
-                        ),
-                      ),
-                    if (loadingCompleteRegistration)
-                      CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2.0,
-                      ),
-                  ],
+              ElevatedButton(
+                onPressed: details.onStepContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
+                child: loadingCompleteRegistration
+                    ? CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      )
+                    : Text(
+                        currentStep == 7 ? 'Completar Registro' : 'Continuar',
+                        style: MyTextStyles.drawerButtonLabelTextStyle,
+                      ),
               ),
+            ],
+          );
+        },
+        steps: <Step>[
+          Step(
+            title: Text(
+              'Datos del Servicio',
+              style: MyTextStyles.drawerButtonTextStyle3,
             ),
-          ],
-        ),
+            content: step1Data,
+            isActive: currentStep >= 0,
+            state: currentStep > 0 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Ubicación',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step2Location,
+            isActive: currentStep >= 1,
+            state: currentStep > 1 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Imagen de Perfil',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step3ProfileImage,
+            isActive: currentStep >= 2,
+            state: currentStep > 2 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Tipo de Servicio',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step4ServiceType,
+            isActive: currentStep >= 3,
+            state: currentStep > 3 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Documento de Identidad',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step5IdCardImage,
+            isActive: currentStep >= 4,
+            state: currentStep > 4 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Segunda Imagen del Documento',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step5IdCardImageB,
+            isActive: currentStep >= 5,
+            state: currentStep > 5 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Antecedentes Penales',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step7CriminalRecordImage,
+            isActive: currentStep >= 6,
+            state: currentStep > 6 ? StepState.complete : StepState.indexed,
+          ),
+          Step(
+            title: Text(
+              'Certificados',
+              style: MyTextStyles.drawerButtonTextStyle3,
+            ),
+            content: step8CertificateImage,
+            isActive: currentStep >= 7,
+            state: currentStep > 7 ? StepState.complete : StepState.indexed,
+          ),
+        ],
       ),
     );
   }

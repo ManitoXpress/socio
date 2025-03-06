@@ -1,34 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:socio/Metods/imagePreview.dart';
 import 'package:socio/Metods/jobComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
+
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/ServiceResponse/requestWorker.dart';
 import 'package:socio/Utils/fullMap.dart';
 import 'package:socio/Utils/proposal.dart';
-import 'package:socio/Utils/statusUtils.dart';
+
 import 'package:socio/Utils/styles.dart';
 import 'dart:io'; // Para manejar archivos locales
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:timeline_tile/timeline_tile.dart';
-import 'dart:convert';
-import 'package:path/path.dart' as path;
+
 import 'package:carousel_slider/carousel_slider.dart';
 
-import 'package:uuid/uuid.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
@@ -574,7 +565,7 @@ Widget build(BuildContext context) {
                           ),
                           markers: {
                             Marker(
-                              markerId: MarkerId('serviceLocation'),
+                              markerId: const MarkerId('serviceLocation'),
                               position: _initialPosition,
                             ),
                           },
