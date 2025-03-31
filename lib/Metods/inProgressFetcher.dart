@@ -10,6 +10,7 @@ import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
+
 class ServiceRepositoryInProgress {
   final ApiService2 apiService;
   final FirebaseFirestore firestore;

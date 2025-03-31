@@ -2,41 +2,46 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Metods/editController.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/Colors.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/login.dart';
+
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestUserData.dart';
 class ProfileData {
-  late final String displayName;
-  final String email;
-  late final String phoneNumber;
-  final String imagePath;
-  final String paymentType;
-  late final List<String> expertises;
-  late final List<String> expLevel;
-  final RegistrationData registrationData;
-  final UserData userData;
+  String displayName;
+  String email;
+  String phoneNumber;
+  String paymentType;
+  List<String> expertises;
+  List<String> expLevel;
+  String imagePath;
+  UserData userData;
+  RegistrationData registrationData;
+  int points; // Nuevo campo para los puntos
 
   ProfileData({
     required this.displayName,
     required this.email,
     required this.phoneNumber,
+    required this.paymentType,
     required this.expertises,
     required this.expLevel,
-    required this.paymentType,
     required this.imagePath,
-    required this.registrationData,
     required this.userData,
+    required this.registrationData,
+    required this.points, // Inicializa el campo points
   });
 }
+
 
 class ProfilePage extends StatefulWidget {
   final RegistrationData registrationData;
@@ -86,6 +91,10 @@ class _ProfilePageState extends State<ProfilePage> {
         final userData = await ApiService2().fetchUserData(userId, token);
         String? profileImageUrl = await ApiService2().fetchProfileImage(userId);
 
+        // Fetch points from Firestore
+        final userDoc = await FirebaseFirestore.instance.collection('workers').doc(userId).get();
+        final points = userDoc.data()?['points'] ?? 0;
+
         return ProfileData(
           displayName: userData.displayName,
           email: userData.email,
@@ -113,8 +122,10 @@ class _ProfilePageState extends State<ProfilePage> {
             pdfPathController: userData.pdfPathController,
             certificateImagePaths: userData.certificateImagePaths,
             getToken: '',
+            referrerWorkerId: userData.referrerWorkerId, referralCode: userData.referralCode, points: userData.points, verificationStatus: userData.verificationStatus,
           ),
           registrationData: registrationData,
+          points: points, // Asigna los puntos al campo points
         );
       } else {
         throw 'No se pudo obtener el ID del usuario autenticado.';
@@ -147,9 +158,11 @@ class _ProfilePageState extends State<ProfilePage> {
           expLevel: [],
           selectedCountryCode: '',
           getToken: '',
+          referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '',
         ),
         registrationData: registrationData,
         expLevel: [],
+        points: 0, // Valor predeterminado en caso de error
       );
     }
   }
@@ -169,53 +182,55 @@ class _ProfilePageState extends State<ProfilePage> {
   void _signOut() async {
     try {
       await FirebaseAuth.instance.signOut();
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => LoginScreen(deviceId: '',))
-      );
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (context) => LoginScreen(
+                deviceId: '',
+              )));
     } catch (e) {
       print('Error al cerrar sesión: $e');
     }
   }
 
   Future<void> _editProfile() async {
-  try {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
 
-    if (userId != null && token != null) {
-      final userData = await ApiService2().fetchUserData(userId, token);
+      if (userId != null && token != null) {
+        final userData = await ApiService2().fetchUserData(userId, token);
 
-      if (userData == null) {
-        throw 'No se pudo obtener los datos del usuario.';
+        if (userData == null) {
+          throw 'No se pudo obtener los datos del usuario.';
+        }
+
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return EditProfileDialog(
+              displayName: userData.displayName,
+              idCardNumber: userData.idCardNumber,
+              phoneNumber: userData.phoneNumber,
+              expertises: userData.expertises,
+              expLevel: userData.expLevel,
+              apiService2: ApiService2(),
+              onUpdateProfile:
+                  _loadAndRefreshUserData, // Pass the refresh method here
+            );
+          },
+        );
+      } else {
+        throw 'No se pudo obtener el ID del usuario autenticado.';
       }
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return EditProfileDialog(
-            displayName: userData.displayName,
-            idCardNumber: userData.idCardNumber,
-            phoneNumber: userData.phoneNumber,
-            expertises: userData.expertises,
-            expLevel: userData.expLevel,
-            apiService2: ApiService2(), // Aquí se pasa la instancia de ApiService2
-            onUpdateProfile: _loadAndRefreshUserData,
-          );
-        },
-      );
-    } else {
-      throw 'No se pudo obtener el ID del usuario autenticado.';
+    } catch (e) {
+      print('Error al obtener datos del usuario: $e');
     }
-  } catch (e) {
-    print('Error al obtener datos del usuario: $e');
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         title: const Text(
           'Perfil',
           style: MyTextStyles.buttonTextStyle,
@@ -260,21 +275,10 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 10),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star, color: Colors.yellow, size: 24),
-              Icon(Icons.star_half, color: Colors.yellow, size: 24),
-            ],
-          ),
-          const SizedBox(height: 10),
           Text(
-            '(${Random().nextInt(1000) + 1})',
+            'Puntos: ${profileData.points}', // Muestra los puntos del usuario
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.black,
               fontSize: 18,
             ),
           ),
@@ -334,6 +338,7 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
+
 
   Widget _buildExpandableText(String value) {
     List<String> items = value.split(', ');

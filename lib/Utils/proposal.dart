@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
+
 class ProposalService {
   final BuildContext context;
   final ServiceRequest serviceRequest;

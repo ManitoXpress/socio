@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../Utils/styles.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String userId;
@@ -19,7 +21,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final CollectionReference _chatsCollection = FirebaseFirestore.instance.collection('chats');
+  final CollectionReference _chatsCollection =
+      FirebaseFirestore.instance.collection('chats');
   String? userDisplayName;
   String? workerDisplayName;
 
@@ -33,7 +36,10 @@ class _ChatScreenState extends State<ChatScreen> {
   void _fetchDisplayNames() async {
     try {
       // Obtener el displayName del user
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(widget.userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
       if (userDoc.exists) {
         setState(() {
           userDisplayName = userDoc['displayName'];
@@ -41,7 +47,10 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       // Obtener el displayName del worker
-      final workerDoc = await FirebaseFirestore.instance.collection('workers').doc(widget.workerId).get();
+      final workerDoc = await FirebaseFirestore.instance
+          .collection('workers')
+          .doc(widget.workerId)
+          .get();
       if (workerDoc.exists) {
         setState(() {
           workerDisplayName = workerDoc['displayName'];
@@ -71,96 +80,104 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Chat con ${userDisplayName ?? "Usuario"}'),
+      appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text(
+          'Chat con ${userDisplayName ?? "Usuario"}',
+          style: MyTextStyles.buttonTextStyle,
         ),
-        body: Column(
-            children: [
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _chatsCollection
-                      .doc(widget.chatId)
-                      .collection('messages')
-                      .orderBy('timestamp', descending: true)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Center(child: CircularProgressIndicator());
-                    }
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatsCollection
+                  .doc(widget.chatId)
+                  .collection('messages')
+                  .orderBy('timestamp', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-                    final messages = snapshot.data!.docs;
+                final messages = snapshot.data!.docs;
 
-                    return ListView.builder(
-                      reverse: true, // Los mensajes más recientes van al final
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
-                        final isSentByWorker = message['senderId'] == widget.workerId;
-                        final senderName = isSentByWorker
-                            ? workerDisplayName ?? "Trabajador"
-                            : userDisplayName ?? "Usuario";
+                return ListView.builder(
+                  reverse: true, // Los mensajes más recientes van al final
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isSentByWorker =
+                        message['senderId'] == widget.workerId;
+                    final senderName = isSentByWorker
+                        ? workerDisplayName ?? "Trabajador"
+                        : userDisplayName ?? "Usuario";
 
-                        return Align(
-                          alignment: isSentByWorker
-                              ? Alignment.topRight
-                              : Alignment.topLeft,
-                          child: Container(
-                            padding: EdgeInsets.all(12.0),
-                            margin: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-                            decoration: BoxDecoration(
-                              color: isSentByWorker
-                                  ? Colors.green[200] // Color para mensajes del trabajador
-                                  : Colors.blue[200],  // Color para mensajes del usuario
-                              borderRadius: BorderRadius.circular(20.0),
+                    return Align(
+                      alignment: isSentByWorker
+                          ? Alignment.topRight
+                          : Alignment.topLeft,
+                      child: Container(
+                        padding: EdgeInsets.all(12.0),
+                        margin: EdgeInsets.symmetric(
+                            vertical: 4.0, horizontal: 8.0),
+                        decoration: BoxDecoration(
+                          color: isSentByWorker
+                              ? Colors.green[
+                                  200] // Color para mensajes del trabajador
+                              : Colors
+                                  .blue[200], // Color para mensajes del usuario
+                          borderRadius: BorderRadius.circular(20.0),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              senderName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  senderName,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(message['text'] ?? ''),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                            SizedBox(height: 4),
+                            Text(message['text'] ?? ''),
+                          ],
+                        ),
+                      ),
                     );
                   },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        decoration: InputDecoration(
-                          hintText: 'Escribe un mensaje...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                        ),
-                        onSubmitted: (value) {
-                          _sendMessage();
-                        },
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: 'Escribe un mensaje...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20.0),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.send),
-                      onPressed: _sendMessage,
-                    ),
-                  ],
+                    onSubmitted: (value) {
+                      _sendMessage();
+                    },
+                  ),
                 ),
-              ),
-            ],
+                IconButton(
+                  icon: Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
             ),
-        );
-    }
+          ),
+        ],
+      ),
+    );
+  }
 }

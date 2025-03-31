@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:socio/Metods/RegisController.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/styles.dart';
@@ -53,28 +52,123 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Seleccione Profesiones'),
-        backgroundColor: Color(0xFF830A09),
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text(
+          'Seleccione Profesiones',
+          style: MyTextStyles.buttonTextStyle,
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTitle('Escoja una o varias profesiones'),
-              _buildCategoryButtons(),
-              if (selectedCategories.isNotEmpty) ...[
-                _buildSubtitle('Categorías seleccionadas:'),
-                _buildSelectedCategories(),
-                _buildSubcategoryDropdown(),
-              ],
-              if (showCustomProfessionField) _buildCustomProfessionField(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (fetchCategories != null)
+                    ...fetchCategories!
+                        .take((fetchCategories!.length / 2).ceil())
+                        .map((category) {
+                      return Expanded(
+                        child: buildCategoryButton(
+                          category.name,
+                          const Color(0xFF830A09),
+                        ),
+                      );
+                    }).toList(),
+                  if (fetchCategories == null)
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  if (fetchCategories != null)
+                    ...fetchCategories!
+                        .skip((fetchCategories!.length / 2).ceil())
+                        .map((category) {
+                      return Expanded(
+                        child: buildCategoryButton(
+                          category.name,
+                          const Color(0xFF830A09),
+                        ),
+                      );
+                    }).toList(),
+                  if (fetchCategories == null)
+                    Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                ],
+              ),
+              SizedBox(height: 10),
+              if (selectedCategories.isNotEmpty)
+                Column(
+                  children: [
+                    Text(
+                      'Categorías seleccionadas: ${selectedCategories.join(", ")}',
+                      style: TextStyle(color: Color(0xFF830A09)),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      'Seleccione una o varias profesiones:',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    SizedBox(height: 10),
+                    buildSubcategoryDropdown(),
+                  ],
+                ),
+              SizedBox(height: 10),
               if (selectedSubcategories.isNotEmpty)
-                _buildSelectedSubcategories(),
-              _buildSubtitle('Seleccione su experiencia laboral:'),
-              _buildExperienceLevelDropdown(),
-              _buildSummaryAndNextButton(),
+                Column(
+                  children: [
+                    Text(
+                      'Profesiones seleccionadas: ${selectedSubcategories.map((e) => e.name).join(", ")}',
+                      style: TextStyle(color: Color(0xFF830A09)),
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              SizedBox(height: 20),
+              Text(
+                'Seleccione su experiencia laboral:',
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 10),
+              buildExperienceLevelDropdown(),
+              SizedBox(height: 20),
+              if (selectedExperienceLevel != null)
+                Column(
+                  children: [
+                    Text(
+                      'Experiencia Laboral: $selectedExperienceLevel',
+                      style: TextStyle(color: Color(0xFF830A09)),
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: selectedSubcategories.isNotEmpty &&
+                        selectedExperienceLevel != null
+                    ? () {
+                        // Aquí puedes hacer el guardado de cambios si es necesario
+                        widget.onServiceTypesSelected(
+                            selectedSubcategories, selectedExperienceLevel);
+
+                        // Regresar a la pantalla de edición
+                        Navigator.pop(
+                            context); // Esto regresa a la pantalla anterior
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF830A09),
+                ),
+                child: Text('Guardar', style: TextStyle(color: Colors.white)),
+              ),
             ],
           ),
         ),
@@ -82,203 +176,111 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
     );
   }
 
-  Widget _buildTitle(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget buildCategoryButton(String category, Color textColor) {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          if (selectedCategories.contains(category)) {
+            selectedCategories.remove(category);
+            selectedSubcategories.removeWhere((subcategory) => fetchCategories!
+                .firstWhere((cat) => cat.name == category)
+                .expertises
+                .map((expertise) => expertise.name)
+                .contains(subcategory));
+          } else {
+            selectedCategories.add(category);
+          }
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          side: BorderSide(
+            color: Color(0xFF84090D),
+          ),
+        ),
+      ),
       child: Text(
-        text,
+        category,
         style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF830A09),
+          color: textColor,
         ),
       ),
     );
   }
 
-  Widget _buildSubtitle(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  Widget buildSubcategoryDropdown() {
+    Set<Expertise> uniqueSubcategories = {};
 
-  Widget _buildCategoryButtons() {
-    if (fetchCategories == null) {
-      return Center(
-        child: CircularProgressIndicator(),
+    // Obtener las subcategorías de las categorías seleccionadas
+    selectedCategories.forEach((categoryName) {
+      final category = fetchCategories!.firstWhere(
+        (cat) => cat.name == categoryName,
+        orElse: () => Category(id: '', name: '', expertises: []),
       );
-    }
+      uniqueSubcategories.addAll(category.expertises);
+    });
 
-    final categories = fetchCategories!;
+    List<Expertise> allSubcategories = uniqueSubcategories.toList();
+    allSubcategories.sort((a, b) => a.name.compareTo(b.name));
+
     return Wrap(
-      spacing: 8.0,
-      runSpacing: 8.0,
-      children: categories.map((category) {
+      spacing: 8.0, // Espaciado horizontal entre chips
+      runSpacing: 4.0, // Espaciado vertical entre chips
+      children: allSubcategories.map((expertise) {
+        final isSelected = selectedSubcategories.contains(expertise);
         return ChoiceChip(
-          label: Text(category.name),
-          selected: selectedCategories.contains(category.name),
+          label: Text(expertise.name),
+          selected: isSelected,
+          selectedColor: Color(0xFF830A09),
+          backgroundColor: Colors.grey[200],
+          labelStyle: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+          ),
           onSelected: (selected) {
             setState(() {
               if (selected) {
-                selectedCategories.add(category.name);
+                selectedSubcategories.add(expertise);
               } else {
-                selectedCategories.remove(category.name);
-                selectedSubcategories.removeWhere((sub) =>
-                    category.expertises.map((e) => e.name).contains(sub.name));
+                selectedSubcategories.remove(expertise);
               }
             });
+
+            // Actualizar la selección en el callback
+            widget.onServiceTypesSelected(
+                selectedSubcategories, selectedExperienceLevel);
           },
-          selectedColor: Color(0xFF830A09),
-          labelStyle: TextStyle(
-            color: selectedCategories.contains(category.name)
-                ? Colors.white
-                : Colors.black,
-          ),
         );
       }).toList(),
     );
   }
 
-  Widget _buildSelectedCategories() {
-    return Text(
-      selectedCategories.join(', '),
-      style: TextStyle(color: Color(0xFF830A09)),
-    );
-  }
-
-  Widget _buildSubcategoryDropdown() {
-    Set<Expertise> uniqueSubcategories = {};
-    for (var categoryName in selectedCategories) {
-      final category =
-          fetchCategories?.firstWhere((c) => c.name == categoryName);
-      if (category != null) {
-        uniqueSubcategories.addAll(category.expertises);
-      }
-    }
-
-    final sortedSubcategories = uniqueSubcategories.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    return DropdownButton<Expertise>(
-      value: null,
-      onChanged: (expertise) {
-        if (expertise != null && !selectedSubcategories.contains(expertise)) {
-          setState(() {
-            selectedSubcategories.add(expertise);
-          });
-          widget.onServiceTypesSelected(
-              selectedSubcategories, selectedExperienceLevel);
-        }
-      },
-      items: sortedSubcategories.map((expertise) {
-        return DropdownMenuItem(
-          value: expertise,
-          child: Text(expertise.name),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildCustomProfessionField() {
-    return Column(
-      children: [
-        TextField(
-          controller: customProfessionController,
-          decoration: InputDecoration(
-            hintText: 'Ingrese la profesión o servicio que desea ofertar',
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF830A09)),
-            ),
-          ),
-        ),
-        SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              selectedCategories.add(customProfessionController.text);
-              selectedCategories.remove(customProfessionController.text);
-              showCustomProfessionField = false;
-              customProfessionController.clear();
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF830A09),
-          ),
-          child: Text('Aceptar', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelectedSubcategories() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Profesiones seleccionadas:',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        Text(
-          selectedSubcategories.map((e) => e.name).join(', '),
-          style: TextStyle(color: Color(0xFF830A09)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExperienceLevelDropdown() {
+  Widget buildExperienceLevelDropdown() {
     return DropdownButton<String>(
       value: selectedExperienceLevel,
-      onChanged: (level) {
+      onChanged: (experienceLevel) {
         setState(() {
-          selectedExperienceLevel = level;
+          selectedExperienceLevel = experienceLevel;
         });
+
+        // Obtener los ids de los expertises seleccionados
+        List<String> expertiseIds =
+            selectedSubcategories.map((expertise) => expertise.id).toList();
+
+        // Llamar a onServiceTypesSelected con los ids de expertises
         widget.onServiceTypesSelected(
             selectedSubcategories, selectedExperienceLevel);
+
+        selectedSubcategories.sort((a, b) => a.name.compareTo(b.name));
       },
-      items: expLevel.map((level) {
-        return DropdownMenuItem(
-          value: level,
-          child: Text(level),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSummaryAndNextButton() {
-    return Column(
-      children: [
-        if (selectedExperienceLevel != null)
-          Text(
-            'Experiencia Laboral: $selectedExperienceLevel',
-            style: TextStyle(color: Color(0xFF830A09)),
-          ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: selectedSubcategories.isNotEmpty &&
-                  selectedExperienceLevel != null
-              ? () {
-                  // Aquí puedes hacer el guardado de cambios si es necesario
-                  widget.onServiceTypesSelected(
-                      selectedSubcategories, selectedExperienceLevel);
-
-                  // Regresar a la pantalla de edición
-                  Navigator.pop(context); // Esto regresa a la pantalla anterior
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF830A09),
-          ),
-          child: Text('Continuar', style: TextStyle(color: Colors.white)),
-        ),
-      ],
+      items: expLevel
+          .map((level) => DropdownMenuItem<String>(
+                value: level,
+                child: Text(level),
+              ))
+          .toList(),
     );
   }
 }

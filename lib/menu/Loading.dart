@@ -1,5 +1,6 @@
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 
 class LoadingScreen extends StatelessWidget {
   @override
@@ -7,12 +8,12 @@ class LoadingScreen extends StatelessWidget {
     return Scaffold(
       body: Container(
         color: Colors.white,
-        child: Center( // Ajustar imagen centrada
+        child: Center(
           child: Image.asset(
-              'assets/pantallaTrabajador.png',
-            width: 1.sw, // Ajustar a 100% del ancho de la pantalla
-            height: 3.sh, // Ajustar a 150% de la altura de la pantalla
-            fit: BoxFit.fill,
+            'assets/pantallaTrabajador.png',
+            fit: BoxFit.fill,  // Ajusta la imagen al tamaño de la pantalla
+            width: double.infinity,
+            height: double.infinity,
           ),
         ),
       ),

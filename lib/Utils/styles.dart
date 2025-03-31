@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class MyTextStyles {
   static const TextStyle inputTextStyle = TextStyle(
     color: Color(0xFF000405),
@@ -57,7 +58,7 @@ class MyTextStyles {
   );
   static const TextStyle buttonTextStyle3 = TextStyle(
     fontSize: 24,
-    color: Color(0xFF84090D),
+    color: Color(0xFF830A09),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w200,
     fontStyle: FontStyle.normal,
@@ -86,14 +87,14 @@ class MyTextStyles {
   );
 
   static const TextStyle linkTextStyle = TextStyle(
-    color: Color(0xFF841813),
+    color: Color(0xFF830A09),
     fontSize: 18,
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
   );
   static const TextStyle tittleButton = TextStyle(
-    color: Color(0xFF841813),
+    color: Color(0xFF830A09),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w200,
     fontStyle: FontStyle.normal,
@@ -111,7 +112,15 @@ class MyTextStyles {
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
-    fontSize: 18.0,
+    fontSize: 28.0,
+  );
+
+  static const TextStyle drawerButtonTextStyle8 = TextStyle(
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.italic,
+    fontSize: 14.0,
   );
 
   static const TextStyle drawerButtonTextStyle6 = TextStyle(
@@ -158,6 +167,13 @@ class MyTextStyles {
     fontStyle: FontStyle.italic,
     fontSize: 14.0,
   );
+
+  static const TextStyle drawerButtonTextStyle1 = TextStyle(
+    color: Color(0xFF000405),
+    fontFamily: 'Xpress Heavy',
+    fontWeight: FontWeight.bold,
+    fontSize: 18.0,
+  );
   static const TextStyle servicesButtonTextStyle = TextStyle(
     color: Color(0xFF000405),
     fontFamily: 'Xpress',
@@ -179,6 +195,15 @@ class MyTextStyles {
     fontStyle: FontStyle.italic,
     fontSize: 20.0,
   );
+
+  static const TextStyle tabTextStyle1 = TextStyle(
+    fontSize: 12,
+    color: Color(0xFFFFFFFF),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.normal,
+  );
+
   static const TextStyle welcomeTotheJungle = TextStyle(
     color: Color(0xFF830A09),
     fontFamily: 'Xpress',
@@ -208,7 +233,7 @@ class MyTextStyles {
   );
 
   static const TextStyle linkTextStyle2 = TextStyle(
-    color: Color(0xFF841813),
+    color: Color(0xFF830A09),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
@@ -247,5 +272,13 @@ class MyTextStyles {
     fontWeight: FontWeight.w200,
     fontStyle: FontStyle.normal,
     fontSize: 14.0,
+  );
+
+  static const TextStyle sendphoto = TextStyle(
+    color: Color(0xFF1A819A),
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w200,
+    fontStyle: FontStyle.normal,
+    fontSize: 18.0,
   );
 }

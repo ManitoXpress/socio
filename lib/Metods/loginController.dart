@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/menu/welcome.dart';
+
+
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/menu/welcome.dart';
 
 class LoginScreenController {
   static final ApiService apiService = ApiService();
@@ -91,17 +94,35 @@ class LoginScreenController {
   }
 
   // Navegación según el estado del usuario
-  static void _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) {
+  static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) async {
     final registrationController = RegistrationController();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => alreadyRegistered
-            ? HomeScreen()
-            : FirstTimeLoginScreen(registrationController: registrationController),
-      ),
-    );
+    if (alreadyRegistered) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userData = await fetchUserData(user.uid); // Obtén los datos del usuario
+        final registrationData = userData.registrationData;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(registrationData: registrationData, userData: userData),
+          ),
+        );
+      }
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FirstTimeLoginScreen(registrationController: registrationController),
+        ),
+      );
+    }
+  }
+
+  static Future<void> _updateLoginState(bool isLoggedIn) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', isLoggedIn);
   }
 
   // Inicio de sesión con Apple
@@ -126,8 +147,14 @@ class LoginScreenController {
       if (user != null) {
         final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
         await storeUserData(user);
+
+        await _updateLoginState(alreadyRegistered); // Actualizar estado de login
+
         print('Inicio de sesión con Apple exitoso para ${user.displayName}');
-        _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+        await _navigateToRegisterScreen(
+            context,
+            alreadyRegistered: alreadyRegistered
+        );
       }
     } catch (e) {
       print('Error durante el inicio de sesión con Apple: $e');
@@ -152,8 +179,14 @@ class LoginScreenController {
         if (user != null) {
           final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
           await storeUserData(user);
+
+          await _updateLoginState(alreadyRegistered); // Actualizar estado de login
+
           print('Inicio de sesión con Google exitoso para ${user.displayName}');
-          _navigateToRegisterScreen(context, alreadyRegistered: alreadyRegistered);
+          await _navigateToRegisterScreen(
+              context,
+              alreadyRegistered: alreadyRegistered
+          );
         }
       }
     } catch (e) {
@@ -174,7 +207,7 @@ class LoginScreenController {
       if (user != null) {
         if (user.emailVerified) {
           await storeUserData(user);
-          _navigateToRegisterScreen(context);
+          await _navigateToRegisterScreen(context, alreadyRegistered: true);
           return user;
         } else {
           _showErrorDialog(context, 'Por favor, verifica tu correo electrónico.');
@@ -204,4 +237,56 @@ class LoginScreenController {
       ),
     );
   }
+}
+
+// Ejemplo de función para obtener los datos del usuario
+Future<UserData> fetchUserData(String userId) async {
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
+  return UserData(
+    userId: userId,
+    displayName: 'John Doe',
+    idCardNumber: '123456789',
+    phoneNumber: '555-1234',
+    getToken: null,
+    imagePath: '',
+    pdfPathController: '',
+    criminalRecordImagePath: '',
+    idDocumentImagePath: '',
+    idDocumentImagePath2: '',
+    selectedCountryCode: '',
+    expertises: [],
+    expLevel: [],
+    certificateImagePaths: '',
+    location: null,
+    paymentType: '',
+    email: 'john.doe@example.com',
+    registrationData: RegistrationData(
+      userId: userId,
+      devicesId: '',
+      fcmToken: '',
+      displayName: 'John Doe',
+      idCardNumber: '123456789',
+      phoneNumber: '555-1234',
+      paymentType: '',
+      expertises: [],
+      expLevel: [],
+      selectedCountryCode: '',
+      imagePath: '',
+      location: null,
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      email: 'john.doe@example.com',
+      imagePathList: [],
+      criminalRecordImagePath: '',
+      certificateImagePaths: '',
+      referralCode: '',
+      points: 0,
+      codeReferral: '', verificationStatus: '',
+    ),
+    referrerWorkerId: '',
+    referralCode: '',
+    points: 0, verificationStatus: '',
+  );
 }

@@ -1,13 +1,15 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import 'package:image/image.dart' as img;
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
@@ -20,7 +22,6 @@ import 'package:socio/wizards/Location.dart';
 import 'package:socio/wizards/ProfileImage.dart';
 import 'package:socio/wizards/ServiceTypeSelection.dart';
 import 'package:socio/wizards/forms.dart';
-import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -28,7 +29,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image/image.dart' as img;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-
 class RegistrationScreen extends StatefulWidget {
   final RegistrationController registrationController;
   final VoidCallback completeRegistrationCallback;
@@ -96,7 +96,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         expLevel: [],
         selectedCountryCode: '',
         devicesId: '',
-        fcmToken: '',
+        fcmToken: '', referralCode: '', points: 0, codeReferral: '', verificationStatus: '',
       );
 
       userData = UserData(
@@ -117,7 +117,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         certificateImagePaths: '',
         expLevel: [],
         selectedCountryCode: '',
-        getToken: '',
+        getToken: '', referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '',
       );
 
       userData.imagePath = '';
@@ -188,10 +188,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         // Implementa lo que sea necesario
       },
       fetchExpertises: widget.apiService2.fetchExpertises,
-      onServiceTypesSelected: (List<Expertise> expertises, String? selectedExperienceLevel) {
+      onServiceTypesSelected:
+          (List<Expertise> expertises, String? selectedExperienceLevel) {
         setState(() {
           userData.expertises = expertises;
-          userData.expLevel = selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
+          userData.expLevel =
+              selectedExperienceLevel != null ? [selectedExperienceLevel] : [];
         });
         print('Selected Expertises: $expertises');
         print('Selected Experience Level: $selectedExperienceLevel');
@@ -252,7 +254,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       },
       onImageSelected: (String criminalRecordImagePath) {
         userData.criminalRecordImagePath = criminalRecordImagePath;
-        registrationData.idDocumentImagePath = criminalRecordImagePath;
+        registrationData.criminalRecordImagePath = criminalRecordImagePath;
         print('Imagen seleccionada y asignada: $criminalRecordImagePath');
         setState(() {});
       },
@@ -297,18 +299,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    if (currentStep == 3 && (userData.expertises.isEmpty || userData.expLevel.isEmpty)) {
-      print('Selecciona un tipo de servicio y un nivel de experiencia antes de pasar al siguiente paso.');
+    if (currentStep == 3 &&
+        (userData.expertises.isEmpty || userData.expLevel.isEmpty)) {
+      print(
+          'Selecciona un tipo de servicio y un nivel de experiencia antes de pasar al siguiente paso.');
       return;
     }
 
     if (currentStep == 4 && userData.idDocumentImagePath.isEmpty) {
-      print('Selecciona una imagen del documento de identidad antes de pasar al siguiente paso.');
+      print(
+          'Selecciona una imagen del documento de identidad antes de pasar al siguiente paso.');
       return;
     }
 
     if (currentStep == 5 && userData.idDocumentImagePath2.isEmpty) {
-      print('Selecciona una segunda imagen del documento de identidad antes de pasar al siguiente paso.');
+      print(
+          'Selecciona una segunda imagen del documento de identidad antes de pasar al siguiente paso.');
       return;
     }
 
@@ -319,55 +325,85 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
   }
 
-  Future<String?> _uploadImage(File imageFile, String userId, String imageType) async {
-    try {
-      final apiService = ApiService();
-      User? user = FirebaseAuth.instance.currentUser;
-      if (imageFile.existsSync()) {
-        final compressedFile = await compressAndResizeImage(imageFile);
-        String imageUrl;
-        switch (imageType) {
-          case 'profile':
-            imageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, userId);
-            break;
-          case 'idDocument1':
-            imageUrl = await apiService.uploadImageToFirebaseStorage2(compressedFile, userId);
-            break;
-          case 'idDocument2':
-            imageUrl = await apiService.uploadImageToFirebaseStorage3(compressedFile, userId);
-            break;
-          case 'criminalRecord':
-            imageUrl = await apiService.uploadImageToFirebaseStorage4(compressedFile, userId);
-            break;
-          case 'certificate':
-            imageUrl = (await apiService.uploadImageToFirebaseStorage5([compressedFile], userId)) as String;
-            break;
-          default:
-            return null;
-        }
-        print('URL de la imagen cargada ($imageType): $imageUrl');
-        return imageUrl;
-      } else {
-        print('Advertencia: La imagen no existe en la ruta proporcionada para $imageType.');
-        return null;
-      }
-    } catch (e) {
-      print('Error al cargar la imagen ($imageType): $e');
-      return null;
-    }
-  }
 
   Future<File> compressAndResizeImage(File image) async {
     final originalImage = img.decodeImage(image.readAsBytesSync());
     final resizedImage = img.copyResize(originalImage!, width: 600);
     final compressedImage = img.encodeJpg(resizedImage, quality: 50);
     final tempDir = await getTemporaryDirectory();
-    final compressedFile = File('${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final compressedFile = File(
+        '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
     compressedFile.writeAsBytesSync(compressedImage);
     return compressedFile;
   }
+  // 2. Función para registrar el referido en la colección "referrals"
+  Future<void> _registerReferralInFirestore(String userId, String referralCode) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    try {
+      if (referralCode.isEmpty) {
+        print('No hay código de referido para registrar.');
+        return;
+      }
+
+      final workersCollection = FirebaseFirestore.instance.collection('workers');
+      final querySnapshot = await workersCollection.where('codeReferral', isEqualTo: referralCode).limit(1).get();
+
+      if (querySnapshot.docs.isEmpty) {
+        print('No se encontró un trabajador con este código de referido.');
+        return;
+      }
+      String? token = await user?.getIdToken();
+
+      final referrerDoc = querySnapshot.docs.first;
+      final referrerId = referrerDoc.id;
+
+      // Guardar la relación de referido en Firestore
+      final referralsCollection = FirebaseFirestore.instance.collection('referrals');
+      await referralsCollection.add({
+        'referrerId': referrerId,
+        'referrerCodeReferral': referralCode,
+        'referredUserId': userId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'processed': false
+      });
+
+      // Llamar al backend para actualizar los puntos
+      final apiService = ApiService2();
+      await apiService.updateWorkerPoints(referrerId,token!);
+
+    } catch (e) {
+      print('Error al registrar el referido: $e');
+    }
+  }
+
+
 
   Future<void> _completeRegistration() async {
+    // Mostrar diálogo de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text(
+                  'Espere por favor, estamos registrando en el sistema',
+                  style: MyTextStyles.drawerButtonTextStyle3,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
     setState(() {
       loadingCompleteRegistration = true;
     });
@@ -388,99 +424,87 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         registrationData.expLevel = userData.expLevel;
         registrationData.paymentType = userData.paymentType;
         registrationData.phoneNumber = userData.phoneNumber;
+        registrationData.referralCode = userData.referrerWorkerId; // Asegúrate de incluir el referralCode
 
-        if (registrationData.imagePath.isNotEmpty) {
-          File image = File(registrationData.imagePath);
-          if (image.existsSync()) {
-            try {
-              final compressedFile = await compressAndResizeImage(image);
-              final String imageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.imagePath = imageUrl.endsWith('/') ? imageUrl.substring(0, imageUrl.length - 1) : imageUrl;
-              print('URL de la imagen de perfil: ${registrationData.imagePath}');
-            } catch (e) {
-              print('Error al cargar la imagen de perfil: $e');
+        // Función para subir un archivo y actualizar la URL en registrationData
+        Future<void> uploadAndUpdatePath(
+            String currentPath,
+            Future<String> Function(File, String) uploadFunction,
+            String Function(String) setUrlFunction) async {
+          if (currentPath.isNotEmpty) {
+            File file = File(currentPath);
+            if (file.existsSync()) {
+              try {
+                final compressedFile = await compressAndResizeImage(file);
+                final String fileUrl =
+                await uploadFunction(compressedFile, user.uid);
+                if (fileUrl.isNotEmpty) {
+                  setUrlFunction(fileUrl);
+                  print('URL del archivo: $fileUrl');
+                } else {
+                  print('Advertencia: La URL del archivo está vacía.');
+                }
+              } catch (e) {
+                print('Error al cargar el archivo: $e');
+              }
+            } else {
+              print(
+                  'Advertencia: El archivo no existe en la ruta proporcionada.');
             }
           } else {
-            print('Advertencia: La imagen de perfil no existe en la ruta proporcionada.');
+            print('Advertencia: No se proporcionó ningún archivo.');
           }
-        } else {
-          print('Advertencia: No se proporcionó ninguna imagen de perfil.');
         }
 
-        if (registrationData.idDocumentImagePath.isNotEmpty) {
-          File idDocImage = File(registrationData.idDocumentImagePath);
-          if (idDocImage.existsSync()) {
-            try {
-              final compressedFile = await compressAndResizeImage(idDocImage);
-              final String idDocImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.idDocumentImagePath = idDocImageUrl;
-              print('URL de la primera imagen de documento de identificación: $idDocImageUrl');
-            } catch (e) {
-              print('Error al cargar la primera imagen de documento de identificación: $e');
-            }
-          } else {
-            print('Advertencia: La primera imagen de documento no existe en la ruta proporcionada.');
-          }
-        } else {
-          print('Advertencia: No se proporcionó ninguna imagen de documento de identificación.');
-        }
+        // Subir y actualizar cada archivo
+        await uploadAndUpdatePath(
+            registrationData.imagePath,
+            apiService.uploadImageToFirebaseStorage,
+                (url) => registrationData.imagePath = url);
+        await uploadAndUpdatePath(
+            registrationData.idDocumentImagePath,
+            apiService.uploadImageToFirebaseStorage2,
+                (url) => registrationData.idDocumentImagePath = url);
+        await uploadAndUpdatePath(
+            registrationData.idDocumentImagePath2,
+            apiService.uploadImageToFirebaseStorage3,
+                (url) => registrationData.idDocumentImagePath2 = url);
+        await uploadAndUpdatePath(
+            registrationData.certificateImagePaths,
+            apiService.uploadImageToFirebaseStorage4,
+                (url) => registrationData.certificateImagePaths = url);
 
-        if (registrationData.idDocumentImagePath2.isNotEmpty) {
-          File idDocImage2 = File(registrationData.idDocumentImagePath2);
-          if (idDocImage2.existsSync()) {
-            try {
-              final compressedFile = await compressAndResizeImage(idDocImage2);
-              final String idDocImageUrl2 = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.idDocumentImagePath2 = idDocImageUrl2;
-              print('URL de la segunda imagen de documento de identificación: $idDocImageUrl2');
-            } catch (e) {
-              print('Error al cargar la segunda imagen de documento de identificación: $e');
-            }
-          } else {
-            print('Advertencia: La segunda imagen de documento no existe en la ruta proporcionada.');
-          }
-        } else {
-          print('Advertencia: No se proporcionó la segunda imagen de documento de identificación.');
-        }
-
-        if (registrationData.certificateImagePaths.isNotEmpty) {
-          File certImage = File(registrationData.certificateImagePaths);
-          if (certImage.existsSync()) {
-            try {
-              final compressedFile = await compressAndResizeImage(certImage);
-              final String certImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.certificateImagePaths = certImageUrl;
-              print('URL de la imagen de certificado: $certImageUrl');
-            } catch (e) {
-              print('Error al cargar la imagen de certificado: $e');
-            }
-          } else {
-            print('Advertencia: La imagen de certificado no existe en la ruta proporcionada.');
-          }
-        } else {
-          print('Advertencia: No se proporcionó ninguna imagen de certificado.');
-        }
-
+        // Subir el PDF del criminal record
         if (registrationData.criminalRecordImagePath.isNotEmpty) {
-          File crimRecordImage = File(registrationData.criminalRecordImagePath);
-          if (crimRecordImage.existsSync()) {
+          File crimRecordFile = File(registrationData.criminalRecordImagePath);
+          if (crimRecordFile.existsSync()) {
             try {
-              final compressedFile = await compressAndResizeImage(crimRecordImage);
-              final String crimRecordImageUrl = await apiService.uploadImageToFirebaseStorage(compressedFile, user.uid);
-              registrationData.criminalRecordImagePath = crimRecordImageUrl;
-              print('URL de la imagen de antecedentes penales: $crimRecordImageUrl');
+              final String crimRecordUrl = await apiService
+                  .uploadImageToFirebaseStorage5(crimRecordFile, user.uid);
+              if (crimRecordUrl.isNotEmpty) {
+                registrationData.criminalRecordImagePath = crimRecordUrl;
+                print('URL del PDF de antecedentes penales: $crimRecordUrl');
+              } else {
+                print(
+                    'Advertencia: La URL del PDF de antecedentes penales está vacía.');
+              }
             } catch (e) {
-              print('Error al cargar la imagen de antecedentes penales: $e');
+              print('Error al cargar el PDF de antecedentes penales: $e');
             }
           } else {
-            print('Advertencia: La imagen de antecedentes penales no existe en la ruta proporcionada.');
+            print(
+                'Advertencia: El PDF de antecedentes penales no existe en la ruta proporcionada.');
           }
         } else {
-          print('Advertencia: No se proporcionó ninguna imagen de antecedentes penales.');
+          print(
+              'Advertencia: No se proporcionó ningún PDF de antecedentes penales.');
         }
 
         String? devicesId = await AuthUtils.getDeviceId();
         String? fcmToken = await FirebaseMessaging.instance.getToken();
+        // Obtener los últimos 4 dígitos del idCardNumber como codeReferral
+
+
 
         registrationData = RegistrationData.fromForm(
           userId: user.uid,
@@ -501,10 +525,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           certificateImagePaths: registrationData.certificateImagePaths,
           devicesId: devicesId ?? '',
           fcmToken: fcmToken ?? '',
+          referralCode: userData.referralCode, points: 0, codeReferral: registrationData.codeReferral, verificationStatus: registrationData.verificationStatus,
+
         );
 
         print('Después de RegistrationData.fromForm:');
         String? token = await user.getIdToken();
+
+        // Registrar el referido si hay un código válido
+        if (userData.referralCode.isNotEmpty && userData.referrerWorkerId.isNotEmpty) {
+          await _registerReferralInFirestore(user.uid, userData.referralCode);
+        }
+
+        // Obtener los puntos actualizados del trabajador
+        final userDoc = await FirebaseFirestore.instance.collection('workers').doc(user.uid).get();
+        final points = userDoc.data()?['points'] ?? 0;
+        registrationData.points = points; // Asignar los puntos al registrationData
 
         final response = await apiService.updateUser(
           user.uid,
@@ -514,20 +550,41 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
         widget.completeRegistrationCallback();
 
+        // Cerrar el diálogo de carga antes de navegar
+        Navigator.of(context).pop();
+
         if (response.statusCode == 200) {
           print('Usuario actualizado con éxito');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => HomeScreen(
+                userData: userData,
+                registrationData: registrationData,
+              ),
+            ),
           );
         } else {
           print('Error en la respuesta del servidor: ${response.statusCode}');
+          // Mostrar error al usuario
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+              Text('Error al registrar usuario. Intente nuevamente.')));
         }
       } else {
-        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        // Cerrar el diálogo de carga si el usuario es nulo
+        Navigator.of(context).pop();
+        print(
+            'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error de autenticación. Intente nuevamente.')));
       }
     } catch (error) {
+      // Cerrar el diálogo de carga en caso de error
+      Navigator.of(context).pop();
       print('Error durante el proceso de registro: $error');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+          Text('Error en el proceso de registro. Intente nuevamente.')));
     } finally {
       setState(() {
         loadingCompleteRegistration = false;
@@ -535,144 +592,162 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        iconTheme: IconThemeData(color: Colors.white),
         title: Text(
           'Registro de Usuario',
           style: MyTextStyles.buttonTextStyle,
         ),
       ),
-      body: Stepper(
-        type: StepperType.vertical,
-        currentStep: currentStep,
-        onStepContinue: () {
-          if (currentStep < 7) {
-            _nextStep();
-          } else {
-            _completeRegistration();
-          }
-        },
-        onStepCancel: () {
-          if (currentStep > 0) {
-            setState(() {
-              currentStep -= 1;
-            });
-          }
-        },
-        controlsBuilder: (BuildContext context, ControlsDetails details) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              if (currentStep > 0)
+      body: Theme(
+        data: ThemeData(
+          colorScheme: ColorScheme.light(primary: Color(0xFF830A09)),
+        ),
+        child: Stepper(
+          type: StepperType.vertical,
+          currentStep: currentStep,
+          onStepContinue: () {
+            if (currentStep < 7) {
+              _nextStep();
+            } else {
+              _completeRegistration();
+            }
+          },
+          onStepCancel: () {
+            if (currentStep > 0) {
+              setState(() {
+                currentStep -= 1;
+              });
+            }
+          },
+          controlsBuilder: (BuildContext context, ControlsDetails details) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                if (currentStep > 0)
+                  ElevatedButton(
+                    onPressed: details.onStepCancel,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF830A09),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancelar',
+                      style: MyTextStyles.drawerButtonLabelTextStyle,
+                    ),
+                  ),
                 ElevatedButton(
-                  onPressed: details.onStepCancel,
+                  onPressed: details.onStepContinue,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: const Color(0xFF830A09),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  child: const Text(
-                    'Cancelar',
+                  child: loadingCompleteRegistration
+                      ? CircularProgressIndicator(
+                    valueColor:
+                    AlwaysStoppedAnimation<Color>(Colors.white),
+                  )
+                      : Text(
+                    currentStep == 7 ? 'Completar Registro' : 'Continuar',
                     style: MyTextStyles.drawerButtonLabelTextStyle,
                   ),
                 ),
-              ElevatedButton(
-                onPressed: details.onStepContinue,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: loadingCompleteRegistration
-                    ? CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      )
-                    : Text(
-                        currentStep == 7 ? 'Completar Registro' : 'Continuar',
-                        style: MyTextStyles.drawerButtonLabelTextStyle,
-                      ),
+              ],
+            );
+          },
+          steps: <Step>[
+            Step(
+              title: Text(
+                'Datos del Servicio',
+                style: MyTextStyles.drawerButtonTextStyle3,
               ),
-            ],
-          );
-        },
-        steps: <Step>[
-          Step(
-            title: Text(
-              'Datos del Servicio',
-              style: MyTextStyles.drawerButtonTextStyle3,
+              content: step1Data,
+              isActive: currentStep >= 0,
+              state: currentStep > 0 ? StepState.complete : StepState.indexed,
             ),
-            content: step1Data,
-            isActive: currentStep >= 0,
-            state: currentStep > 0 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Ubicación',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Ubicación',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step2Location,
+              isActive: currentStep >= 1,
+              state: currentStep > 1 ? StepState.complete : StepState.indexed,
             ),
-            content: step2Location,
-            isActive: currentStep >= 1,
-            state: currentStep > 1 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Imagen de Perfil',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Imagen de Perfil',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step3ProfileImage,
+              isActive: currentStep >= 2,
+              state: currentStep > 2 ? StepState.complete : StepState.indexed,
             ),
-            content: step3ProfileImage,
-            isActive: currentStep >= 2,
-            state: currentStep > 2 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Tipo de Servicio',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Tipo de Servicio',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step4ServiceType,
+              isActive: currentStep >= 3,
+              state: currentStep > 3 ? StepState.complete : StepState.indexed,
             ),
-            content: step4ServiceType,
-            isActive: currentStep >= 3,
-            state: currentStep > 3 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Documento de Identidad',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Documento de Identidad',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step5IdCardImage,
+              isActive: currentStep >= 4,
+              state: currentStep > 4 ? StepState.complete : StepState.indexed,
             ),
-            content: step5IdCardImage,
-            isActive: currentStep >= 4,
-            state: currentStep > 4 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Segunda Imagen del Documento',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Segunda Imagen del Documento',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step5IdCardImageB,
+              isActive: currentStep >= 5,
+              state: currentStep > 5 ? StepState.complete : StepState.indexed,
             ),
-            content: step5IdCardImageB,
-            isActive: currentStep >= 5,
-            state: currentStep > 5 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Antecedentes Penales',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Antecedentes Penales',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step7CriminalRecordImage,
+              isActive: currentStep >= 6,
+              state: currentStep > 6 ? StepState.complete : StepState.indexed,
             ),
-            content: step7CriminalRecordImage,
-            isActive: currentStep >= 6,
-            state: currentStep > 6 ? StepState.complete : StepState.indexed,
-          ),
-          Step(
-            title: Text(
-              'Certificados',
-              style: MyTextStyles.drawerButtonTextStyle3,
+            Step(
+              title: Text(
+                'Certificados',
+                style: MyTextStyles.drawerButtonTextStyle3,
+              ),
+              content: step8CertificateImage,
+              isActive: currentStep >= 7,
+              state: currentStep > 7 ? StepState.complete : StepState.indexed,
             ),
-            content: step8CertificateImage,
-            isActive: currentStep >= 7,
-            state: currentStep > 7 ? StepState.complete : StepState.indexed,
-          ),
-        ],
+          ],
+          stepIconBuilder: (int stepIndex, StepState state) {
+            return CircleAvatar(
+              backgroundColor: Color(0xFF830A09),
+              child: Text(
+                '${stepIndex + 1}',
+                style: MyTextStyles.tabTextStyle1,
+              ),
+            );
+          },
+        ),
       ),
     );
   }

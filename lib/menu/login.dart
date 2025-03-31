@@ -6,21 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:rive/rive.dart' as rive; // Alias para Rive
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Metods/loginController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/styles.dart';
-import 'package:socio/menu/register.dart';
-import 'package:socio/menu/welcome.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:rive/rive.dart' as rive;
 import 'package:google_fonts/google_fonts.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import 'package:flutter/widgets.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key, required String deviceId}) : super(key: key);
@@ -39,8 +37,8 @@ class _LoginFormState extends State<LoginScreen> {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   List<ServiceRequest> serviceRequests = [];
   bool isPasswordVisible = false;
-  bool isLoadingGoogle = false;  // Indicador de carga para Google
-  bool isLoadingApple = false;  // Indicador de carga para Apple
+  bool isLoadingGoogle = false; // Indicador de carga para Google
+  bool isLoadingApple = false; // Indicador de carga para Apple
 
   rive.StateMachineController? stateMachineController;
   final TextEditingController _emailController = TextEditingController();
@@ -49,20 +47,19 @@ class _LoginFormState extends State<LoginScreen> {
 
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-
   @override
   void initState() {
     super.initState();
     animationURL = defaultTargetPlatform == TargetPlatform.android ||
             defaultTargetPlatform == TargetPlatform.iOS
         ? 'assets/animations/login.riv'
-        : 'animations/login.riv';
+        : 'assets/animations/login.riv';
     rootBundle.load(animationURL).then(
       (data) {
         final file = rive.RiveFile.import(data);
         final artboard = file.mainArtboard;
-        stateMachineController =
-            rive.StateMachineController.fromArtboard(artboard, "State Machine 1");
+        stateMachineController = rive.StateMachineController.fromArtboard(
+            artboard, "State Machine 1");
         if (stateMachineController != null) {
           artboard.addController(stateMachineController!);
 
@@ -92,37 +89,40 @@ class _LoginFormState extends State<LoginScreen> {
         setState(() => _teddyArtboard = artboard);
       },
     );
-   // Mostrar el AlertDialog después de cargar la pantalla de inicio de sesión
+    // Mostrar el AlertDialog después de cargar la pantalla de inicio de sesión
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text("Términos y Condiciones"),
+            title: Text(
+              "Términos y Condiciones",
+              style: MyTextStyles.inputTextStyle4,
+            ),
             content: TextButton(
               onPressed: () {
                 launch('https://manitoxpress-cf855.web.app/#/PrivacyPage');
               },
               child: Text(
                 'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 2, 8, 168),
-                  fontSize: 16, // Cambia el tamaño según tu preferencia
-                  decoration: TextDecoration.underline,
-                ),
+                style: MyTextStyles.drawerButtonTextStyle6,
               ),
             ),
             actions: [
               TextButton(
-                child: Text("Aceptar"),
+                child: Text(
+                  "Aceptar",
+                  style: MyTextStyles.linkTextStyle,
+                ),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   backgroundColor: Colors.white,
-                  foregroundColor: Color(0xFFB00020), // Color del texto, el mismo que el borde
+                  foregroundColor: Color(
+                      0xFF841813), // Color del texto, el mismo que el borde
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                     side: BorderSide(
-                      color: Color(0xFFB00020), // Color del borde
+                      color: Color(0xFF841813), // Color del borde
                     ),
                   ),
                 ),
@@ -130,15 +130,12 @@ class _LoginFormState extends State<LoginScreen> {
                   Navigator.of(context).pop();
                 },
               ),
-
             ],
           );
         },
       );
     });
   }
-  
-  
 
   Future<void> login() async {
     isChecking?.change(false);
@@ -149,7 +146,10 @@ class _LoginFormState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
-      final userDoc = await _firestore.collection('workers').doc(userCredential.user?.uid).get();
+      final userDoc = await _firestore
+          .collection('workers')
+          .doc(userCredential.user?.uid)
+          .get();
 
       if (userDoc.exists) {
         successTrigger?.fire();
@@ -164,7 +164,10 @@ class _LoginFormState extends State<LoginScreen> {
               content: Text("El usuario no existe en la colección de workers."),
               actions: [
                 TextButton(
-                  child: Text("Aceptar"),
+                  child: Text(
+                    "Aceptar",
+                    style: MyTextStyles.linkTextStyle,
+                  ),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -181,10 +184,14 @@ class _LoginFormState extends State<LoginScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text("Inicio de sesión fallido"),
-            content: Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
+            content:
+                Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
             actions: [
               TextButton(
-                child: Text("Aceptar"),
+                child: Text(
+                  "Aceptar",
+                  style: MyTextStyles.linkTextStyle,
+                ),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -195,7 +202,6 @@ class _LoginFormState extends State<LoginScreen> {
       );
     }
   }
-  
 
   Future<void> signInWithGoogle() async {
     setState(() => isLoadingGoogle = true);
@@ -236,7 +242,7 @@ class _LoginFormState extends State<LoginScreen> {
               Text(
                 'Al iniciar sesión, aceptas nuestros Términos y Condiciones.',
                 style: TextStyle(
-                  color: Color.fromARGB(255, 168, 2, 2),
+                  color: Color(0xFF841813),
                   fontSize: 16.sp,
                   decoration: TextDecoration.underline, // Subrayado
                 ),
@@ -250,11 +256,7 @@ class _LoginFormState extends State<LoginScreen> {
                 },
                 child: Text(
                   'Ver Términos y Condiciones',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline, // Subrayado
-                  ),
+                  style: MyTextStyles.drawerButtonTextStyle6,
                 ),
               ),
             ],
@@ -266,11 +268,7 @@ class _LoginFormState extends State<LoginScreen> {
               },
               child: Text(
                 'Aceptar',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  color: Color(0xFF84090D),
-                  fontWeight: FontWeight.bold,
-                ),
+                style: MyTextStyles.linkTextStyle,
               ),
             ),
           ],
@@ -280,7 +278,8 @@ class _LoginFormState extends State<LoginScreen> {
   }
 
   void _launchTermsAndConditionsUrl() async {
-    const url = 'https://manitoxpress-cf855.web.app/#/PrivacyPage'; // URL de tus términos y condiciones
+    const url =
+        'https://manitoxpress-cf855.web.app/#/PrivacyPage'; // URL de tus términos y condiciones
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -418,27 +417,6 @@ class _LoginFormState extends State<LoginScreen> {
                     // Botón de Apple
                   ],
                 ),
-                SizedBox(height: 70.h),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Acción de borrar cuenta
-                  },
-                  label: Text(
-                    "Eliminar Cuenta",
-                    style: MyTextStyles.buttonTextStyle,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Color(0xFF841813),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(
-                        color: Color(0xFF841813),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 40.h),
               ],
             ),
           ),

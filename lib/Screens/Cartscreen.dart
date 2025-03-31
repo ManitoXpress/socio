@@ -10,17 +10,13 @@ import 'package:socio/Metods/inProgressFetcher.dart';
 import 'package:socio/Metods/offerFetcher.dart';
 import 'package:socio/Metods/serviceCancelled.dart';
 import 'package:socio/Metods/serviceComplete.dart';
-import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
-
 import 'package:socio/ServiceResponse/requestUserData.dart';
-
-import 'package:socio/Utils/remoteNotification.dart';
+import 'package:socio/Utils/notification.dart';
 import 'package:socio/Utils/serviceFetcher.dart';
 import 'package:socio/Utils/serviceList.dart';
-
 import 'package:socio/Utils/workerDetails.dart';
 
 import '../ServiceResponse/get.dart';
@@ -69,15 +65,18 @@ class _HistorialState extends State<Historial>
     apiService: ApiService(),
     firestore: FirebaseFirestore.instance,
   );
-  final ServiceRepositoryInProgress _serviceRepository2 = ServiceRepositoryInProgress(
+  final ServiceRepositoryInProgress _serviceRepository2 =
+      ServiceRepositoryInProgress(
     apiService: ApiService2(),
     firestore: FirebaseFirestore.instance,
   );
-  final ServiceRepositoryComplete _serviceRepository3 = ServiceRepositoryComplete(
-   
-    firestore: FirebaseFirestore.instance, apiService: ApiService(),
+  final ServiceRepositoryComplete _serviceRepository3 =
+      ServiceRepositoryComplete(
+    firestore: FirebaseFirestore.instance,
+    apiService: ApiService(),
   );
-  final ServiceRepositoryCancelled _serviceRepository4 = ServiceRepositoryCancelled(
+  final ServiceRepositoryCancelled _serviceRepository4 =
+      ServiceRepositoryCancelled(
     apiService: ApiService(),
     firestore: FirebaseFirestore.instance,
   );
@@ -92,205 +91,276 @@ class _HistorialState extends State<Historial>
   int cancelledServiceCount = 0;
 
   @override
-void initState() {
-  super.initState();
-  serviceRequest = ServiceRequest(
-    serviceDateTime: '',
-    id: '',
-
-    description: '',
-    images: [],
-    location: {},
-    offeredPrice: 0.0,
-    serviceType:
-        ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
-    userId: '',
-    workerId: '',
-    isFavorite: false,
-    selectedDate: null,
-    selectedTime: null,
-    acceptedTerms: false,
-    expertises: [],
-    status: Status(id: '', name: ''),
-
-    hasOffer: false,
-    offers: [],
-    devicesId: '', subcategoryName: '', 
-  );
-  registrationData = RegistrationData(
-    userId: '',
-    displayName: '',
-    phoneNumber: '',
-    paymentType: '',
-    selectedCountryCode: '',
-    location: {},
-    email: '',
-    devicesId: '',
-    fcmToken: '', 
-    idCardNumber: '', 
-    imagePath: '', 
-    imagePathList: [], 
-    idDocumentImagePath: '', 
-    idDocumentImagePath2: '', 
-    criminalRecordImagePath: '', 
-    certificateImagePaths: '', expertises: [], expLevel: [],
-  );
-
-  userData = UserData(
-    displayName: '',
-    email: '',
-    phoneNumber: '',
-    userId: '',
-    location: {},
-    paymentType: '',
-    selectedCountryCode: '',
-    registrationData: registrationData,
-    getToken: '', imagePath: '', 
-    idCardNumber: '', pdfPathController: '', 
-    criminalRecordImagePath: '', 
-    idDocumentImagePath: '', 
-    idDocumentImagePath2: '', 
-    expertises: [],
-     expLevel: [], certificateImagePaths: '',
-  );
-
-  // Configurar el controlador de pestañas
-  _tabController = TabController(length: 5, vsync: this);
-
-
-  _offerRepository = OfferRepository(
-    apiService2: ApiService2(),
-    serviceDataFetcher: ServiceDataFetcher(),
-    firestore: FirebaseFirestore.instance,
-  );
-}
-
-// Método corregido _refreshHistorial
-Future<void> _refreshHistorial() async {
-  setState(() {
-    isLoading = true;
-    availableServiceCount = 0;
-    offerServiceCount = 0;
-    inProgressServiceCount = 0;
-    completedServiceCount = 0;
-    cancelledServiceCount = 0;
-  });
-
-  try {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("Usuario no autenticado.");
-      return;
-    }
-    final userId = user.uid;
-    final token = await user.getIdToken();
-
-    // Crear todas las llamadas en paralelo
-    final futures = [
-      _serviceRepository.fetchServicesByStatus(
-        'available',
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token ?? '',
-        [],
-      ),
-      _offerRepository.fetchOffersForUser(
-        'offer',           // type: String
-        'status',          // column: String (nombre de columna para filtrar)
-        userId,            // userId: String
-        ServiceRequest(   // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
-      id: '',
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWelcomeDialog();
+    });
+    serviceRequest = ServiceRequest(
       serviceDateTime: '',
+      id: '',
       description: '',
       images: [],
       location: {},
       offeredPrice: 0.0,
-      serviceType: ServiceType(
-        id: '',
-        name: '',
-        selectedDate: '',
-        selectedTime: '',
-      ),
-      userId: userId,  // Se utiliza el userId real
+      serviceType:
+          ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
+      userId: '',
       workerId: '',
       isFavorite: false,
+      selectedDate: null,
+      selectedTime: null,
       acceptedTerms: false,
       expertises: [],
-      status: Status(id: 'offer', name: 'Ofertado'),
+      status: Status(id: '', name: ''),
       hasOffer: false,
       offers: [],
       devicesId: '',
       subcategoryName: '',
-    ),
-    deviceId, 
-      ),
-      _serviceRepository2.fetchServicesByInProgress(
-        'in_progress',           // type: String
-        'status',          // column: String (nombre de columna para filtrar)
-        userId,            // userId: String
-        token ?? '',       // token: String
-        
-    
-      ),
-      _serviceRepository.fetchServicesByStatus(
-        'completed',
-        'completed',
-        userId,
-        token ?? '',
-        [],
-      ),
-      _serviceRepository.fetchServicesByStatus(
-        'cancelled',
-        'cancelled',
-        userId,
-        token ?? '',
-        [],
-      ),
-    ];
-
-    // Ejecutar todas las llamadas en paralelo
-    final results = await Future.wait(futures);
-
-    // Extraer resultados
-    final availableServices = results[0] as List<ServiceRequest>;
-    final offerServices = results[1] as List<ServiceRequest>;
-    final inProgressServices = results[2] as List<ServiceRequest>;
-    final completedServices = results[3] as List<ServiceRequest>;
-    final cancelledServices = results[4] as List<ServiceRequest>;
-
-    // Calcular total de ofertas
-    final totalOffers = offerServices.fold<int>(
-      0,
-      (sum, service) => sum + service.offers.length,
+    );
+    registrationData = RegistrationData(
+      userId: '',
+      displayName: '',
+      phoneNumber: '',
+      paymentType: '',
+      selectedCountryCode: '',
+      location: {},
+      email: '',
+      devicesId: '',
+      fcmToken: '',
+      idCardNumber: '',
+      imagePath: '',
+      imagePathList: [],
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      criminalRecordImagePath: '',
+      certificateImagePaths: '',
+      expertises: [],
+      expLevel: [], referralCode: '', points: 0, codeReferral: '', verificationStatus: '',
     );
 
-    // Actualizar estado
+    userData = UserData(
+      displayName: '',
+      email: '',
+      phoneNumber: '',
+      userId: '',
+      location: {},
+      paymentType: '',
+      selectedCountryCode: '',
+      registrationData: registrationData,
+      getToken: '',
+      imagePath: '',
+      idCardNumber: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: '', referralCode: '', referrerWorkerId: '', points: 0, verificationStatus: '',
+    );
+
+    // Configurar el controlador de pestañas
+    _tabController = TabController(length: 5, vsync: this);
+
+    _offerRepository = OfferRepository(
+      apiService2: ApiService2(),
+      serviceDataFetcher: ServiceDataFetcher(),
+      firestore: FirebaseFirestore.instance,
+    );
+  }
+
+// Método corregido _refreshHistorial
+  Future<void> _refreshHistorial() async {
     setState(() {
-      availableServiceCount = availableServices.length;
-      offerServiceCount = totalOffers;
-      inProgressServiceCount = inProgressServices.length;
-      completedServiceCount = completedServices.length;
-      cancelledServiceCount = cancelledServices.length;
-      serviceRequests = [
-        ...availableServices,
-        ...offerServices,
-        ...inProgressServices,
-        ...completedServices,
-        ...cancelledServices,
-      ];
-      isLoading = false;
+      isLoading = true;
+      availableServiceCount = 0;
+      offerServiceCount = 0;
+      inProgressServiceCount = 0;
+      completedServiceCount = 0;
+      cancelledServiceCount = 0;
     });
 
-    // Navegar a ofertas si hay nuevas
-    if (totalOffers > 0) {
-      _tabController.animateTo(1);
-    }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print("Usuario no autenticado.");
+        return;
+      }
+      final userId = user.uid;
+      final token = await user.getIdToken();
 
-  } catch (e) {
-    print("Error al actualizar el historial: $e");
-    setState(() => isLoading = false);
+      // Crear todas las llamadas en paralelo
+      final futures = [
+        _serviceRepository.fetchServicesByStatus(
+          'available',
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token ?? '',
+          [],
+        ),
+        _offerRepository.fetchOffersForUser(
+          'offer', // type: String
+          'status', // column: String (nombre de columna para filtrar)
+          userId, // userId: String
+          ServiceRequest(
+            // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
+            id: '',
+            serviceDateTime: '',
+            description: '',
+            images: [],
+            location: {},
+            offeredPrice: 0.0,
+            serviceType: ServiceType(
+              id: '',
+              name: '',
+              selectedDate: '',
+              selectedTime: '',
+            ),
+            userId: userId, // Se utiliza el userId real
+            workerId: '',
+            isFavorite: false,
+            acceptedTerms: false,
+            expertises: [],
+            status: Status(id: 'offer', name: 'Ofertado'),
+            hasOffer: false,
+            offers: [],
+            devicesId: '',
+            subcategoryName: '',
+          ),
+          deviceId,
+        ),
+        _serviceRepository2.fetchServicesByInProgress(
+          'in_progress', // type: String
+          'status', // column: String (nombre de columna para filtrar)
+          userId, // userId: String
+          token ?? '', // token: String
+        ),
+        _serviceRepository.fetchServicesByStatus(
+          'completed',
+          'completed',
+          userId,
+          token ?? '',
+          [],
+        ),
+        _serviceRepository.fetchServicesByStatus(
+          'cancelled',
+          'cancelled',
+          userId,
+          token ?? '',
+          [],
+        ),
+      ];
+
+      // Ejecutar todas las llamadas en paralelo
+      final results = await Future.wait(futures);
+
+      // Extraer resultados
+      final availableServices = results[0] as List<ServiceRequest>;
+      final offerServices = results[1] as List<ServiceRequest>;
+      final inProgressServices = results[2] as List<ServiceRequest>;
+      final completedServices = results[3] as List<ServiceRequest>;
+      final cancelledServices = results[4] as List<ServiceRequest>;
+
+      // Calcular total de ofertas
+      final totalOffers = offerServices.fold<int>(
+        0,
+        (sum, service) => sum + service.offers.length,
+      );
+
+      // Actualizar estado
+      setState(() {
+        availableServiceCount = availableServices.length;
+        offerServiceCount = totalOffers;
+        inProgressServiceCount = inProgressServices.length;
+        completedServiceCount = completedServices.length;
+        cancelledServiceCount = cancelledServices.length;
+        serviceRequests = [
+          ...availableServices,
+          ...offerServices,
+          ...inProgressServices,
+          ...completedServices,
+          ...cancelledServices,
+        ];
+        isLoading = false;
+      });
+
+      // Navegar a ofertas si hay nuevas
+      if (totalOffers > 0) {
+        _tabController.animateTo(1);
+      }
+    } catch (e) {
+      print("Error al actualizar el historial: $e");
+      setState(() => isLoading = false);
+    }
   }
-}
+
+  void _showWelcomeDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15.0),
+          ),
+          title: Text(
+            '¡Bienvenido a ManitosXpress!',
+            style: MyTextStyles.welcomeTotheJungle1,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Gracias por unirte a ManitosXpress. Aquí podrás ofrecer tus habilidades y conectarte con clientes que necesitan tu ayuda.',
+                style: MyTextStyles.formServiceTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 20),
+              Icon(
+                Icons.build_rounded,
+                size: 60,
+                color: Color(0xFF84090D),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
+                style: MyTextStyles.formServiceTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                '"Queremos recordarte que este mes los servicios serán libres de comisión, a partir del próximo mes se cobrará el 10% de comisión por cada servicio realizado"',
+                style: MyTextStyles.inputTextStyle6,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Color(0xFF84090D),
+                backgroundColor: const Color(0xFFE8E8E8),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                side: BorderSide(
+                  color: const Color(0xFFE8E8E8),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                "Comenzar",
+                style: MyTextStyles.linkTextStyle,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -320,7 +390,7 @@ Future<void> _refreshHistorial() async {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(50.0),
+          preferredSize: Size.fromHeight(18.0),
           child: Container(
             color: Colors.white,
             child: TabBar(
@@ -358,7 +428,7 @@ Future<void> _refreshHistorial() async {
                               child: Container(
                                 padding: const EdgeInsets.all(5),
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
+                                  color: const Color(0xFF84090D),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 constraints: BoxConstraints(
@@ -380,7 +450,6 @@ Future<void> _refreshHistorial() async {
                       SizedBox(height: 4.0),
                       Text(
                         'Ofertados',
-                        style: TextStyle(fontSize: 12.0),
                       ),
                     ],
                   ),
@@ -422,9 +491,9 @@ Future<void> _refreshHistorial() async {
                   'Historial',
                   style: MyTextStyles.buttonTextStyle3,
                 ),
-                const Spacer(),
+                Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.refresh, color: Color(0xFF1A819A)),
+                  icon: Icon(Icons.refresh, color: Color(0xFF84090D)),
                   onPressed: _refreshHistorial,
                 ),
               ],
@@ -502,105 +571,113 @@ Future<void> _refreshHistorial() async {
 
     switch (statusIds) {
       case 'available':
-      future = _serviceRepository.fetchServicesByStatus(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
+        future = _serviceRepository.fetchServicesByStatus(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
       case 'offer':
-  future = offerRepository.fetchOffersForUser(
-    'offer',          // type: Por ejemplo, el estado o tipo que identifica la oferta
-    userId,           // workerId: el ID del trabajador autenticado
-    token,            // token: el token de autorización
-    ServiceRequest(   // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
-      id: '',
-      serviceDateTime: '',
-      description: '',
-      images: [],
-      location: {},
-      offeredPrice: 0.0,
-      serviceType: ServiceType(
-        id: '',
-        name: '',
-        selectedDate: '',
-        selectedTime: '',
-      ),
-      userId: userId,  // Se utiliza el userId real
-      workerId: '',
-      isFavorite: false,
-      acceptedTerms: false,
-      expertises: [],
-      status: Status(id: 'offer', name: 'Ofertado'),
-      hasOffer: false,
-      offers: [],
-      devicesId: '',
-      subcategoryName: '',
-    ),
-    deviceId,         // deviceId: se debe pasar el ID del dispositivo (no el userId)
-  );
-  break;
-    case 'in_progress':
-    future = Future.wait([
-      _serviceRepository2.fetchServicesByInProgress(
-        'in_progress',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener in_progress: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-      _serviceRepository2.fetchServicesByInProgress(
-        'pending_confirmation',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener pending_confirmation: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-      _serviceRepository2.fetchServicesByInProgress(
-        'pending_confirmation2',
-        userId,
-        'status',
-        token,
-      ).catchError((e) {
-        print("Error al obtener pending_confirmation2: $e");
-        return <ServiceRequest>[]; // Retornar lista vacía en caso de error
-      }),
-    ]).then((results) {
-      final servicesInProgress = results[0];
-      final pendingConfirmationServices = results[1];
-      final pendingConfirmationServices2 = results[2];
-      return [...servicesInProgress, ...pendingConfirmationServices, ...pendingConfirmationServices2];
-    });
-    break;
+        future = offerRepository.fetchOffersForUser(
+          'offer', // type: Por ejemplo, el estado o tipo que identifica la oferta
+          userId, // workerId: el ID del trabajador autenticado
+          token, // token: el token de autorización
+          ServiceRequest(
+            // service: un objeto dummy de ServiceRequest (los datos reales se obtendrán desde la API)
+            id: '',
+            serviceDateTime: '',
+            description: '',
+            images: [],
+            location: {},
+            offeredPrice: 0.0,
+            serviceType: ServiceType(
+              id: '',
+              name: '',
+              selectedDate: '',
+              selectedTime: '',
+            ),
+            userId: userId, // Se utiliza el userId real
+            workerId: '',
+            isFavorite: false,
+            acceptedTerms: false,
+            expertises: [],
+            status: Status(id: 'offer', name: 'Ofertado'),
+            hasOffer: false,
+            offers: [],
+            devicesId: '',
+            subcategoryName: '',
+          ),
+          deviceId, // deviceId: se debe pasar el ID del dispositivo (no el userId)
+        );
+        break;
+      case 'in_progress':
+        future = Future.wait([
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'in_progress',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener in_progress: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'pending_confirmation',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener pending_confirmation: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+          _serviceRepository2
+              .fetchServicesByInProgress(
+            'pending_confirmation2',
+            userId,
+            'status',
+            token,
+          )
+              .catchError((e) {
+            print("Error al obtener pending_confirmation2: $e");
+            return <ServiceRequest>[]; // Retornar lista vacía en caso de error
+          }),
+        ]).then((results) {
+          final servicesInProgress = results[0];
+          final pendingConfirmationServices = results[1];
+          final pendingConfirmationServices2 = results[2];
+          return [
+            ...servicesInProgress,
+            ...pendingConfirmationServices,
+            ...pendingConfirmationServices2
+          ];
+        });
+        break;
 
+      case 'completed':
+        future = _serviceRepository3.fetchServicesByComplete(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
 
-
-  case 'completed':
-      future = _serviceRepository3.fetchServicesByComplete(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
-
-
-  case 'cancelled':
-      future = _serviceRepository4.fetchServicesByCancelled(
-        statusIds,
-        'status',  // Corregido de 'available' a 'status'
-        userId,
-        token,
-        [],
-      );
-      break;
+      case 'cancelled':
+        future = _serviceRepository4.fetchServicesByCancelled(
+          statusIds,
+          'status', // Corregido de 'available' a 'status'
+          userId,
+          token,
+          [],
+        );
+        break;
 
       default:
         return Center(child: Text("Estado no válido."));
@@ -614,7 +691,7 @@ Future<void> _refreshHistorial() async {
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text("Error al cargar servicios."));
+          return Center(child: Text("No hay servicios."));
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -630,28 +707,28 @@ Future<void> _refreshHistorial() async {
         }
 
         if (statusIds == 'offer') {
-            final services = snapshot.data!;
-            // Extrae todas las ofertas de los servicios
-            final offers = services.expand((s) => s.offers).toList();
-            
-            return ServiceListBuilder.buildOfferList(
-              services, // Servicio asociado
-              offers,
-              screenWidth,
-              screenHeight,
-              userId,
-              userData,
-            );
-          }
+          final services = snapshot.data!;
+          // Extrae todas las ofertas de los servicios
+          final offers = services.expand((s) => s.offers).toList();
+
+          return ServiceListBuilder.buildOfferList(
+            services, // Servicio asociado
+            offers,
+            screenWidth,
+            screenHeight,
+            userId,
+            userData,
+          );
+        }
         if (statusIds == 'in_progress') {
           final services = snapshot.data!;
           final offers = services.expand((s) => s.offers).toList();
-          return ServiceListBuilder.buildServiceList(
-              services,offers, screenWidth, screenHeight, userId, userData);
+          return ServiceListBuilder.in_progressList(
+              services, offers, screenWidth, screenHeight, userId, userData);
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
-       
+
           return ServiceListBuilder.buildServiceListComplete(
               services, screenWidth, screenHeight, userId, userData);
         }
@@ -663,7 +740,7 @@ Future<void> _refreshHistorial() async {
 
         final offers = services.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceList(
-            services,offers, screenWidth, screenHeight, userId, userData);
+            services, offers, screenWidth, screenHeight, userId, userData);
       },
     );
   }

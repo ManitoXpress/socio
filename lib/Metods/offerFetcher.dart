@@ -10,6 +10,7 @@ import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/Utils/workerDetails.dart';
+
 class OfferRepository {
   final ApiService2 apiService2;
   final ServiceDataFetcher serviceDataFetcher;

@@ -12,6 +12,7 @@ import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
 
+
 class ServiceRepositoryCancelled {
   final ApiService apiService;
   final FirebaseFirestore firestore;

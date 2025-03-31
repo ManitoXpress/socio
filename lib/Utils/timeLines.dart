@@ -1,26 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:io'; // Para manejar archivos locales
+import 'package:image_picker/image_picker.dart';
 
 import 'package:socio/Metods/imagePreview.dart';
 import 'package:socio/Metods/jobComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
-
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/ServiceResponse/requestWorker.dart';
 import 'package:socio/Utils/fullMap.dart';
 import 'package:socio/Utils/proposal.dart';
-
 import 'package:socio/Utils/styles.dart';
-import 'dart:io'; // Para manejar archivos locales
-import 'package:image_picker/image_picker.dart';
-
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
+
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
   final String initialStatus;
@@ -31,7 +28,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final WorkerDetails? workerDetails;
   final List<Offer> offers;
 
-  final List<String> images; // Parámetro images
+  final List<String> images; // Parámetro images
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
@@ -40,7 +37,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.onStatusChanged,
     required this.userData,
     required this.workerId,
-    required this.images, // Asegurarse de que el parámetro esté presente
+    required this.images, // Asegurarse de que el parámetro esté presente
     required this.workerDetails,
     required this.offers,
   });
@@ -116,14 +113,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-
-
   void _initializeMap() {
-    // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
+    // Si los datos de ubicación están presentes en la solicitud de servicio, los usa; si no, se usa una ubicación predeterminada.
     double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
     double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-    // Inicializa la posición usando los valores de latitud y longitud obtenidos.
+    // Inicializa la posición usando los valores de latitud y longitud obtenidos.
     _initialPosition = LatLng(latitude, longitude);
   }
 
@@ -140,7 +135,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       widget.onComplete('blocked');
       Navigator.of(context).pop();
     } catch (e) {
-      print('Error al bloquear la participación del usuario: $e');
+      print('Error al bloquear la participación del usuario: $e');
     }
   }
 
@@ -149,22 +144,62 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('No Participar en el Trabajo'),
+          title: Text(
+            'No Participar en el Trabajo',
+            style: MyTextStyles.linkTextStyle,
+          ),
           content: Text(
-              '¿Estás seguro de que no quieres participar en este trabajo?'),
+            '¿Estás seguro de que no quieres participar en este trabajo?',
+            style: MyTextStyles.ButtonTextStyle,
+          ),
           actions: [
-            TextButton(
+            ElevatedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Cancelar'),
+              icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+              label: Text(
+                "Cancelar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _blockUserParticipation,
-              child: Text('Confirmar No Participar'),
+              icon: Icon(Icons.check_circle, color: Color(0xFF84090D)),
+              label: Text(
+                "Confirmar No Participar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
+                    color: Color(0xFF84090D),
+                  ),
+                ),
+              ),
             ),
           ],
-          
         );
       },
     );
@@ -184,7 +219,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       setState(() {
         _fetchedOfferedPrice = offeredPrice;
         _priceController.text =
-        offeredPrice != null ? offeredPrice.toString() : '';
+            offeredPrice != null ? offeredPrice.toString() : '';
       });
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');
@@ -217,11 +252,23 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Enviar Propuesta'),
+          title: Text(
+            'Enviar Propuesta',
+            style: MyTextStyles.linkTextStyle,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment
+                .start, // Alinea todo el contenido a la izquierda
             children: [
-              Text('Ingrese el precio que va ofertar:'),
+              Align(
+                alignment:
+                    Alignment.centerLeft, // Alinea específicamente este texto
+                child: Text(
+                  'Ingrese el precio que va a ofertar:',
+                  style: MyTextStyles.ButtonTextStyle,
+                ),
+              ),
               SizedBox(height: 8.0),
               TextField(
                 controller: _priceController,
@@ -244,10 +291,19 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             ],
           ),
           actions: [
-            ElevatedButton(
-              onPressed:  () {
+            ElevatedButton.icon(
+              onPressed: () {
                 Navigator.of(context).pop();
               },
+              icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+              label: Text(
+                "Cancelar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 backgroundColor: Colors.white,
@@ -256,17 +312,20 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   side: BorderSide(
                     color: Color(0xFF84090D),
                   ),
-                ),
-              ),
-              child: Text(
-                "Cancelar",
-                style: TextStyle(
-                  color: Color(0xFF84090D),
                 ),
               ),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: _sendProposal,
+              icon: Icon(Icons.check_circle, color: Color(0xFF84090D)),
+              label: Text(
+                "Enviar Propuesta",
+                style: GoogleFonts.karla(
+                  color: Color(0xFF84090D),
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 backgroundColor: Colors.white,
@@ -275,12 +334,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                   side: BorderSide(
                     color: Color(0xFF84090D),
                   ),
-                ),
-              ),
-              child: Text(
-                "Aceptar",
-                style: TextStyle(
-                  color: Color(0xFF84090D),
                 ),
               ),
             ),
@@ -289,46 +342,44 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       },
     );
   }
+
   void _sendProposal() async {
-  // Obtén el precio ofertado desde el controlador.
-  double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
+    // Obtén el precio ofertado desde el controlador.
+    double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
 
-  // Define los gastos informáticos adicionales.
-  double extraCosts = 3.0;
+    // Define los gastos informáticos adicionales.
+    double extraCosts = 3.0;
 
-  // Obtén el workerId del usuario autenticado
-  String? workerId = await getCurrentWorkerId();
+    // Obtén el workerId del usuario autenticado
+    String? workerId = await getCurrentWorkerId();
 
-  // Verifica que el workerId no sea null
-  if (workerId == null || workerId.isEmpty) {
-    print('No se pudo obtener el workerId');
-    return;
+    // Verifica que el workerId no sea null
+    if (workerId == null || workerId.isEmpty) {
+      print('No se pudo obtener el workerId');
+      return;
+    }
+
+    // Crea una instancia del servicio para enviar la propuesta
+    ProposalService proposalService = ProposalService(
+      context: context,
+      serviceRequest: widget.serviceRequest,
+      workerId: workerId, // Ahora pasa el workerId obtenido
+      userData: widget.userData,
+    );
+
+    // Llama al método sendProposal con el nuevo parámetro
+    await proposalService.sendProposal(
+      offeredPrice: offeredPrice,
+      extraCosts: extraCosts, // Envía los gastos informáticos como parámetro
+      onStatusChanged: widget.onStatusChanged,
+      priceController: _priceController,
+      setFetchedOfferedPrice: (double price) {
+        setState(() {
+          _fetchedOfferedPrice = price; // Actualiza el precio ofertado mostrado
+        });
+      },
+    );
   }
-
-  // Crea una instancia del servicio para enviar la propuesta
-  ProposalService proposalService = ProposalService(
-    context: context,
-    serviceRequest: widget.serviceRequest,
-    workerId: workerId,  // Ahora pasa el workerId obtenido
-    userData: widget.userData,
-  );
-
-  // Llama al método sendProposal con el nuevo parámetro
-  await proposalService.sendProposal(
-    offeredPrice: offeredPrice,
-    extraCosts: extraCosts, // Envía los gastos informáticos como parámetro
-    onStatusChanged: widget.onStatusChanged,
-    priceController: _priceController,
-    setFetchedOfferedPrice: (double price) {
-      setState(() {
-        _fetchedOfferedPrice = price; // Actualiza el precio ofertado mostrado
-      });
-    },
-  );
-}
-
-
-
 
   void _showPendingConfirmation2Dialog(BuildContext context) async {
     final querySnapshot = await FirebaseFirestore.instance
@@ -338,18 +389,17 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .get();
 
     if (querySnapshot.docs.isNotEmpty) {
-    
       var offeredPrice = _workerOfferedPrice;
 
-      // Verifica el tipo de dato y realiza la conversión si es necesario.
+      // Verifica el tipo de dato y realiza la conversión si es necesario.
       if (offeredPrice is String) {
         offeredPrice = double.tryParse(offeredPrice.toString()) ?? 0.0;
       } else if (offeredPrice is! double) {
         offeredPrice = 0.0;
       }
 
-      // Define la comisión y los gastos informáticos.
-      double commission = offeredPrice * 0.10; // Comisión del 10%.
+      // Define la comisión y los gastos informáticos.
+      double commission = offeredPrice * 0.10; // Comisión del 10%.
       double extraCosts = 3.0;
       double totalPrice = offeredPrice + extraCosts; // Precio total.
 
@@ -359,16 +409,15 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Confirmación de la Oferta'),
+            title: Text('Confirmación de la Oferta'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Oferta del servicio:'),
                 Text('Precio ofertado: Bs ${_workerOfferedPrice}'),
                 SizedBox(height: 16.0),
-
                 SizedBox(height: 16.0),
-                Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
+                Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
                 SizedBox(height: 16.0),
                 Text('Nuevo precio total: Bs ${totalPrice.toStringAsFixed(2)}'),
               ],
@@ -382,7 +431,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  _handleAcceptButton(querySnapshot, offeredPrice!, commission, extraCosts, totalPrice, paymentStatus);
+                  _handleAcceptButton(querySnapshot, offeredPrice!, commission,
+                      extraCosts, totalPrice, paymentStatus);
                 },
                 child: Text('Aceptar'),
               ),
@@ -391,7 +441,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         },
       );
     } else {
-      print('No se encontró una oferta para el serviceId proporcionado');
+      print('No se encontró una oferta para el serviceId proporcionado');
     }
   }
 
@@ -426,9 +476,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             'paymentStatus': 'debe', // Nuevo campo
           });
 
-          // Actualiza el precio ofertado, costos extras, comisión, estado y estado de pago en 'services'
+          // Actualiza el precio ofertado, costos extras, comisión, estado y estado de pago en 'services'
           transaction.update(serviceRef, {
-          
             'commission': commission,
             'extraCosts': extraCost,
             'totalPrice': totalPrice,
@@ -436,7 +485,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             'paymentStatus': 'debe', // Nuevo campo
           });
         } else {
-          throw Exception('No se encontró el documento de la oferta o del servicio');
+          throw Exception(
+              'No se encontró el documento de la oferta o del servicio');
         }
       });
 
@@ -457,11 +507,6 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-
-
-
-
-
   void _showCompleteJobDialog(BuildContext context) {
     if (widget.serviceRequest.status == 'pending_confirmation2') {
       _showPendingConfirmation2Dialog(context);
@@ -474,269 +519,293 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     }
   }
 
-
-
   @override
-Widget build(BuildContext context) {
-  return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-    stream: _serviceRequestStream,
-    builder: (context, snapshot) {
-      if (snapshot.hasError) {
-        return Center(child: Text('Error al cargar los datos del servicio'));
-      }
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: _serviceRequestStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error al cargar los datos del servicio'));
+        }
 
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return Center(child: CircularProgressIndicator());
-      }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-      final serviceData = snapshot.data?.data();
-      if (serviceData == null) {
-        return Center(child: Text('No se encontraron datos del servicio'));
-      }
+        final serviceData = snapshot.data?.data();
+        if (serviceData == null) {
+          return Center(child: Text('No se encontraron datos del servicio'));
+        }
 
-      _currentStatus = serviceData['status'] ?? 'available';
-      final List<String> images = List<String>.from(serviceData['images'] ?? []);
-      double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
-      double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
+        _currentStatus = serviceData['status'] ?? 'available';
+        final List<String> images =
+            List<String>.from(serviceData['images'] ?? []);
+        double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
+        double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
 
-      _initialPosition = LatLng(latitude, longitude);
+        _initialPosition = LatLng(latitude, longitude);
 
-      return Scaffold(
-        appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.white),
-          title: Text(
-            'Detalles del Servicio',
-            style: MyTextStyles.buttonTextStyle,
+        return Scaffold(
+          appBar: AppBar(
+            iconTheme: IconThemeData(color: Colors.white),
+            title: Text(
+              'Detalles del Servicio',
+              style: MyTextStyles.buttonTextStyle,
+            ),
           ),
-        ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Container(
+          body: SingleChildScrollView(
+            child: Padding(
               padding: EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Color(0xFF84090D), width: 2.0),
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Estado del servicio
-                  Text(
-                    'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
-
-                  // Descripción del servicio
-                  Text.rich(
-                    TextSpan(
-                      text: 'Descripción: ',
-                      style: MyTextStyles.formServiceTextStyle,
-                      children: [
-                        TextSpan(
-                          text: serviceData['description'] ?? '',
-                          style: MyTextStyles.inputTextStyle,
-                        ),
-                      ],
+              child: Container(
+                padding: EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Color(0xFF84090D), width: 2.0),
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Estado del servicio
+                    Text(
+                      'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
+                      style: MyTextStyles.inputTextStyle6,
                     ),
-                  ),
-                  SizedBox(height: 16.0),
+                    SizedBox(height: 16.0),
 
-                  // Ubicación del servicio
-                  Text(
-                    'Ubicación:',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  GestureDetector(
-                    onTap: () => _openFullMap(context),
-                    child: Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8.0),
-                        border: Border.all(color: Colors.blueAccent),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8.0),
-                        child: GoogleMap(
-                          initialCameraPosition: CameraPosition(
-                            target: _initialPosition,
-                            zoom: 14.0,
+                    // Descripción del servicio
+                    Text.rich(
+                      TextSpan(
+                        text: 'Descripción: ',
+                        style: MyTextStyles.inputTextStyle6,
+                        children: [
+                          TextSpan(
+                            text: serviceData['description'] ?? '',
+                            style: MyTextStyles.inputTextStyle1,
                           ),
-                          markers: {
-                            Marker(
-                              markerId: const MarkerId('serviceLocation'),
-                              position: _initialPosition,
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 16.0),
+
+                    // Ubicación del servicio
+                    Text(
+                      'Ubicación:',
+                      style: MyTextStyles.inputTextStyle6,
+                    ),
+                    GestureDetector(
+                      onTap: () => _openFullMap(context),
+                      child: Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8.0),
+                          border: Border.all(color: Colors.blueAccent),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: GoogleMap(
+                            initialCameraPosition: CameraPosition(
+                              target: _initialPosition,
+                              zoom: 14.0,
                             ),
-                          },
-                          zoomControlsEnabled: false,
-                          scrollGesturesEnabled: false,
-                          tiltGesturesEnabled: false,
-                          rotateGesturesEnabled: false,
-                          onTap: (_) => _openFullMap(context),
+                            markers: {
+                              Marker(
+                                markerId: MarkerId('serviceLocation'),
+                                position: _initialPosition,
+                              ),
+                            },
+                            zoomControlsEnabled: false,
+                            scrollGesturesEnabled: false,
+                            tiltGesturesEnabled: false,
+                            rotateGesturesEnabled: false,
+                            onTap: (_) => _openFullMap(context),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 16.0),
+                    SizedBox(height: 16.0),
 
-                  // Imágenes del servicio
-                  Text(
-                    'Imágenes:',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  if (images.isNotEmpty)
-                    CarouselSlider(
-                      options: CarouselOptions(
-                        height: 200.0,
-                        enlargeCenterPage: true,
-                        autoPlay: true,
-                        aspectRatio: 16 / 9,
-                        autoPlayCurve: Curves.fastOutSlowIn,
-                        enableInfiniteScroll: true,
-                        autoPlayAnimationDuration: Duration(milliseconds: 800),
-                        viewportFraction: 0.8,
-                      ),
-                      items: images.map((url) {
-                        return Builder(
-                          builder: (BuildContext context) {
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageViewer(imageUrl: url),
-                                  ),
-                                );
-                              },
-                              child: Hero(
-                                tag: url,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12.0),
-                                  child: CachedNetworkImage(
-                                    imageUrl: url,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => Icon(Icons.error),
+                    // Imágenes del servicio
+                    Text(
+                      'Imágenes:',
+                      style: MyTextStyles.inputTextStyle6,
+                    ),
+                    if (images.isNotEmpty)
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          height: 200.0,
+                          enlargeCenterPage: true,
+                          autoPlay: true,
+                          aspectRatio: 16 / 9,
+                          autoPlayCurve: Curves.fastOutSlowIn,
+                          enableInfiniteScroll: true,
+                          autoPlayAnimationDuration:
+                              Duration(milliseconds: 800),
+                          viewportFraction: 0.8,
+                        ),
+                        items: images.map((url) {
+                          return Builder(
+                            builder: (BuildContext context) {
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ImageViewer(imageUrl: url),
+                                    ),
+                                  );
+                                },
+                                child: Hero(
+                                  tag: url,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    child: CachedNetworkImage(
+                                      imageUrl: url,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) =>
+                                          CircularProgressIndicator(),
+                                      errorWidget: (context, url, error) =>
+                                          Icon(Icons.error),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      }).toList(),
+                              );
+                            },
+                          );
+                        }).toList(),
+                      ),
+
+                    SizedBox(height: 16.0),
+
+                    // Precio ofertado
+                    Text(
+                      'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
+                      style: MyTextStyles.inputTextStyle6,
                     ),
+                    SizedBox(height: 16.0),
 
-                  SizedBox(height: 16.0),
-
-                  // Precio ofertado
-                  Text(
-                    'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
-                    style: MyTextStyles.formServiceTextStyle,
-                  ),
-                  SizedBox(height: 16.0),
-
-                  // Botones dependiendo del estado
-                  Wrap(
-                    spacing: 10.0,
-                    runSpacing: 10.0,
-                    alignment: WrapAlignment.center,
-                    children: [_buildActionButtons()],
-                  ),
-                ],
+                    // Botones dependiendo del estado
+                    Wrap(
+                      spacing: 10.0,
+                      runSpacing: 10.0,
+                      alignment: WrapAlignment.center,
+                      children: [_buildActionButtons()],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
-// Método para construir los botones de acción según el estado
+// Método para construir los botones de acción según el estado
   Widget _buildActionButtons() {
-  switch (_currentStatus) {
-    case 'available':
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton.icon(
-            onPressed: () => _showProposalDialog(context),
-            icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
-            label: Text(
-              "Enviar Propuesta",
-              style: GoogleFonts.karla(
-                color: Color(0xFFB00020),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+    switch (_currentStatus) {
+      case 'available':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showProposalDialog(context),
+              icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
+              label: Text(
+                "Enviar Propuesta",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(color: Color(0xFFB00020)),
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: Color(0xFFB00020)),
+            ElevatedButton.icon(
+              onPressed: () => _showNoParticipationDialog(context),
+              icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
+              label: Text(
+                "No Participar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(color: Color(0xFFB00020)),
+                ),
               ),
             ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => _showNoParticipationDialog(context),
-            icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
-            label: Text(
-              "No Participar",
-              style: GoogleFonts.karla(
-                color: Color(0xFFB00020),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+          ],
+        );
+      case 'offer':
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _showNoParticipationDialog(context),
+              icon: Icon(Icons.dangerous, color: Colors.white),
+              label: Text(
+                "No Participar",
+                style: GoogleFonts.karla(
+                  color: Color(0xFFB00020),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFB00020),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-                side: BorderSide(color: Color(0xFFB00020)),
-              ),
-            ),
-          ),
-        ],
-      );
-    case 'offer':
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton.icon(
-            onPressed: () => _showNoParticipationDialog(context),
-            icon: Icon(Icons.dangerous, color: Colors.white),
-            label: Text(
-              "No Participar",
-              style: GoogleFonts.karla(
-                color: Color(0xFFB00020),
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFB00020),
-              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-            ),
-          ),
-        ],
-      );
-    case 'in_progress':
-    case 'pending_confirmation2':
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              if (_currentStatus == 'pending_confirmation2')
+          ],
+        );
+      case 'in_progress':
+      case 'pending_confirmation2':
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (_currentStatus == 'pending_confirmation2')
+                  ElevatedButton.icon(
+                    onPressed: () => _showPendingConfirmation2Dialog(context),
+                    icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
+                    label: Text(
+                      "Pago Aceptado",
+                      style: GoogleFonts.karla(
+                        color: Color(0xFFB00020),
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        side: BorderSide(color: Color(0xFFB00020)),
+                      ),
+                    ),
+                  ),
                 ElevatedButton.icon(
-                  onPressed: () => _showPendingConfirmation2Dialog(context),
-                  icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
+                  onPressed: () => _showNoParticipationDialog(context),
+                  icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
                   label: Text(
-                    "Pago Aceptado",
+                    "No Participar",
                     style: GoogleFonts.karla(
                       color: Color(0xFFB00020),
                       fontSize: 12,
@@ -752,83 +821,62 @@ Widget build(BuildContext context) {
                     ),
                   ),
                 ),
-              ElevatedButton.icon(
-                onPressed: () => _showNoParticipationDialog(context),
-                icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
-                label: Text(
-                  "No Participar",
-                  style: GoogleFonts.karla(
-                    color: Color(0xFFB00020),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                ElevatedButton.icon(
+                  onPressed: () => _showCompleteJobDialog(context),
+                  icon:
+                      Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
+                  label: Text(
+                    "Completar trabajo",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFFB00020),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFFB00020)),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Color(0xFFB00020)),
-                  ),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () => _showCompleteJobDialog(context),
-                icon: Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
-                label: Text(
-                  "Completar trabajo",
-                  style: GoogleFonts.karla(
-                    color: Color(0xFFB00020),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Color(0xFFB00020)),
-                  ),
+              ],
+            ),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  _openChat(widget.workerId, widget.serviceRequest.userId),
+              icon: Icon(Icons.chat, color: Colors.white),
+              label: Text(
+                "Chat",
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
-          ),
-          ElevatedButton.icon(
-            onPressed: () => _openChat(widget.workerId, widget.serviceRequest.userId),
-            icon: Icon(Icons.chat, color: Colors.white),
-            label: Text(
-              "Chat",
-              style: GoogleFonts.karla(
-                color: Colors.white,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
               ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10.0),
-              ),
-            ),
-          ),
-        ],
-      );
-    case 'pending_confirmation':
-      return Text('Esperando la confirmación del cliente...');
-    case 'completed':
-      return Text('Este trabajo ha sido completado.');
-    case 'cancelled':
-      return Text('Este trabajo ha sido cancelado.');
-    case 'blocked':
-      return Text('No participarás en este trabajo.');
-    default:
-      return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
+          ],
+        );
+      case 'pending_confirmation':
+        return Text('Esperando la confirmación del cliente...');
+      case 'completed':
+        return Text('Este trabajo ha sido completado.');
+      case 'cancelled':
+        return Text('Este trabajo ha sido cancelado.');
+      case 'blocked':
+        return Text('No participarás en este trabajo.');
+      default:
+        return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
+    }
   }
-}
-
-
-
 
   void _openChat(String workerId, String userId) async {
     final chatId = _generateChatId(workerId, userId);
@@ -840,7 +888,7 @@ Widget build(BuildContext context) {
     final chatSnapshot = await chatDoc.get();
 
     if (!chatSnapshot.exists) {
-      // Si el chat no existe, lo crea con información inicial
+      // Si el chat no existe, lo crea con información inicial
       await chatDoc.set({
         'chatId': chatId,
         'participants': [userId, workerId],
@@ -862,7 +910,7 @@ Widget build(BuildContext context) {
   }
 
   String _generateChatId(String workerId, String userId) {
-    // Generar un ID único basado en los IDs de los participantes
+    // Generar un ID único basado en los IDs de los participantes
     return workerId.hashCode <= userId.hashCode
         ? '$workerId\_$userId'
         : '$userId\_$workerId';

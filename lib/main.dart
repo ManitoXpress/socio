@@ -7,9 +7,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/fcmToken.dart';
-import 'package:socio/Utils/remoteNotification.dart';
+
 import 'firebase_options.dart';
 import 'menu/Loading.dart';
 import 'menu/login.dart';
@@ -17,15 +20,15 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Inicializar Firebase si no está inicializado
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  }
+  // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   print("Handling a background message: ${message.messageId}");
-  // Aquí puedes manejar la notificación en segundo plano con NotificationService
+
+  // Manejar la notificación en segundo plano con NotificationService
+  // Aquí puedes agregar la lógica para mostrar la notificación
 }
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializar Firebase
@@ -60,9 +63,14 @@ Future<void> main() async {
 Future<String> obtenerDeviceId() async {
   try {
     final deviceInfo = DeviceInfoPlugin();
-    if (Platform.isIOS) {
+    if (Platform.isAndroid) {
+      final androidInfo = await deviceInfo.androidInfo;
+      final id = androidInfo.id?.toString() ?? 'Unknown Device ID';
+      return id;
+    } else if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
-      return iosInfo.identifierForVendor ?? 'Unknown Device ID';
+      final id = iosInfo.identifierForVendor?.toString() ?? 'Unknown Device ID';
+      return id;
     } else {
       return 'Unsupported Platform';
     }
@@ -82,14 +90,41 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  User? currentUser;
   bool isLoading = true;
+  bool isLoggedIn = false;
+  UserData? userData;
+  RegistrationData? registrationData;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _startLoading();
+
+    isLoading = true;
+    _checkLoginStatus(); // Llama directamente a la función
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (loggedIn) {
+      // Obtén el usuario actual
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // Obtén los datos del usuario y de registro
+        userData = await fetchUserData(user.uid);
+        registrationData = userData?.registrationData;
+      }
+    }
+
+    // Simular tiempo de carga si es necesario
+    await Future.delayed(const Duration(seconds: 5));
+
+    setState(() {
+      isLoggedIn = loggedIn;
+      isLoading = false;
+    });
   }
 
   @override
@@ -102,58 +137,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // La aplicación ha vuelto a primer plano
-      _checkUser();
-    }
-  }
-
-  // Inicia el proceso de carga con un retraso mínimo de 5 segundos
-  Future<void> _startLoading() async {
-    try {
-      await Future.wait([
-        Future.delayed(const Duration(seconds: 5)), // Retraso mínimo de 5 segundos
-        _checkUser(), // Verificar autenticación
-      ]);
-    } catch (e) {
-      print("Error durante la carga: $e");
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  // Verificar si el usuario está autenticado y existe en Firestore
-  Future<void> _checkUser() async {
-    FirebaseAuth auth = FirebaseAuth.instance;
-    currentUser = auth.currentUser;
-
-    if (currentUser != null) {
-      // Consultar Firestore para verificar si el usuario existe
-      final userDoc = await FirebaseFirestore.instance
-          .collection('workers')
-          .doc(currentUser!.uid)
-          .get();
-
-      if (!userDoc.exists) {
-        // Manejar el caso en que el usuario no existe en Firestore
-        print('Usuario no encontrado en Firestore');
-      }
+      print('App is in foreground');
+    } else if (state == AppLifecycleState.paused) {
+      print('App is in background');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-    );
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Manitos Xpress',
+      title: 'Manitos Xpress Socio',
       theme: ThemeData(
         primarySwatch: MaterialColor(
-          0xFF84090D,
+          0xFF1A819A,
           <int, Color>{
             50: Color(0xFF84090D),
             100: Color(0xFF84090D),
@@ -164,7 +161,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             600: Color(0xFF84090D),
             700: Color(0xFF84090D),
             800: Color(0xFF84090D),
-            900: Color.fromRGBO(26, 129, 154, 1),
+            900: Color(0xFF84090D),
           },
         ),
         colorScheme: ColorScheme.fromSwatch().copyWith(
@@ -176,7 +173,63 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           backgroundColor: Color(0xFF84090D),
         ),
       ),
-      home: isLoading ? LoadingScreen() : LoginScreen(deviceId: widget.deviceId),
+      home: isLoading
+          ? LoadingScreen()
+          : isLoggedIn
+          ? HomeScreen(userData: userData!, registrationData: registrationData!)
+          : LoginScreen(deviceId: widget.deviceId),
     );
   }
+}
+
+// Ejemplo de función para obtener los datos del usuario
+Future<UserData> fetchUserData(String userId) async {
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
+  return UserData(
+    userId: userId,
+    displayName: '',
+    idCardNumber: '',
+    phoneNumber: '',
+    getToken: null,
+    imagePath: '',
+    pdfPathController: '',
+    criminalRecordImagePath: '',
+    idDocumentImagePath: '',
+    idDocumentImagePath2: '',
+    selectedCountryCode: '',
+    expertises: [],
+    expLevel: [],
+    certificateImagePaths: '',
+    location: null,
+    paymentType: '',
+    email: '',
+    registrationData: RegistrationData(
+      userId: userId,
+      devicesId: '',
+      fcmToken: '',
+      displayName: '',
+      idCardNumber: '',
+      phoneNumber: '',
+      paymentType: '',
+      expertises: [],
+      expLevel: [],
+      selectedCountryCode: '',
+      imagePath: '',
+      location: null,
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      email: '',
+      imagePathList: [],
+      criminalRecordImagePath: '',
+      certificateImagePaths: '',
+      referralCode: '',
+      points: 0,
+      codeReferral: '', verificationStatus: '',
+    ),
+    referrerWorkerId: '',
+    referralCode: '',
+    points: 0, verificationStatus: '',
+  );
 }

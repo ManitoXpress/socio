@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
-
+import 'package:socio/ServiceResponse/requestUserData.dart';
 class ServiceRequest extends StatefulWidget {
   final String buttonText;
 
@@ -67,14 +69,90 @@ class _ServiceRequestState extends State<ServiceRequest> {
     );
   }
 
-  void _navigateToHomeService(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(),
+  void _navigateToHomeService(BuildContext context) async {
+    try {
+      // Obtén el usuario actual
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Obtén los datos del usuario y de registro
+        UserData userData = await fetchUserData(user.uid);
+        RegistrationData registrationData = userData.registrationData;
+
+        // Navega a HomeScreen con los datos obtenidos
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              userData: userData,
+              registrationData: registrationData,
+            ),
+          ),
+        );
+      } else {
+        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error de autenticación. Intente nuevamente.')));
+      }
+    } catch (error) {
+      print('Error al navegar a HomeScreen: $error');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error al cargar la pantalla principal. Intente nuevamente.')));
+    }
+  }
+
+// Ejemplo de función para obtener los datos del usuario
+  Future<UserData> fetchUserData(String userId) async {
+    // Aquí debes implementar la lógica para obtener los datos del usuario
+    // Por ejemplo, desde una base de datos o un servicio web
+    // Este es solo un ejemplo de retorno
+    return UserData(
+      userId: userId,
+      displayName: '',
+      idCardNumber: '',
+      phoneNumber: '',
+      getToken: null,
+      imagePath: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      selectedCountryCode: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: '',
+      location: null,
+      paymentType: '',
+      email: '',
+      registrationData: RegistrationData(
+        userId: userId,
+        devicesId: '',
+        fcmToken: '',
+        displayName: '',
+        idCardNumber: '',
+        phoneNumber: '',
+        paymentType: '',
+        expertises: [],
+        expLevel: [],
+        selectedCountryCode: '',
+        imagePath: '',
+        location: null,
+        idDocumentImagePath: '',
+        idDocumentImagePath2: '',
+        email: '',
+        imagePathList: [],
+        criminalRecordImagePath: '',
+        certificateImagePaths: '',
+        referralCode: '',
+        points: 0,
+        codeReferral: '', verificationStatus: '',
       ),
+      referrerWorkerId: '',
+      referralCode: '',
+      points: 0, verificationStatus: '',
     );
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:socio/Metods/RegisController.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 
@@ -123,7 +122,7 @@ class _PhotoStepState extends State<PhotoStep> {
             onPressed:
                 _isCameraReady && !_isCapturing ? _captureAndShowImage : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFFC3543),
+              backgroundColor: Color(0xFF830A09),
             ),
             child: Text(
               "Capturar Imagen",
@@ -138,7 +137,7 @@ class _PhotoStepState extends State<PhotoStep> {
                   ? _showDeleteImageConfirmation
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFFC3543),
+                backgroundColor: Color(0xFF830A09),
               ),
               child: Text(
                 "Eliminar Imagen Seleccionada",
@@ -214,10 +213,10 @@ class _PhotoStepState extends State<PhotoStep> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
-                  focusColor: Color(0xffb04863),
+                  focusColor: Color(0xFF830A09),
                   focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(
-                      color: Color(0xffb04863),
+                      color: Color(0xFF830A09),
                     ),
                     borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
@@ -302,7 +301,8 @@ class _PhotoStepState extends State<PhotoStep> {
         idDocumentImagePath: image.path,
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths: '', criminalRecordImagePath: '',
+        certificateImagePaths: '',
+        criminalRecordImagePath: '', referralCode: '',
       );
     } catch (e) {
       print("Error al tomar la foto: $e");

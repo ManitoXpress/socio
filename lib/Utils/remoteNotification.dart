@@ -2,11 +2,15 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:socio/Screens/Home.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/Screens/Home.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 class NotificationService {
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
@@ -87,11 +91,89 @@ class NotificationService {
     );
   }
 
-  void _navigateToHomeScreen(BuildContext context, String serviceId) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => HomeScreen()), // Cambia el índice según la lógica que desees
+  void _navigateToHomeScreen(BuildContext context, String serviceId) async {
+    try {
+      // Obtén el usuario actual
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Obtén los datos del usuario y de registro
+        UserData userData = await fetchUserData(user.uid);
+        RegistrationData registrationData = userData.registrationData;
+
+        // Navega a HomeScreen con los datos obtenidos
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              userData: userData,
+              registrationData: registrationData,
+            ),
+          ),
+        );
+      } else {
+        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error de autenticación. Intente nuevamente.')));
+      }
+    } catch (error) {
+      print('Error al navegar a HomeScreen: $error');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error al cargar la pantalla principal. Intente nuevamente.')));
+    }
+  }
+
+// Ejemplo de función para obtener los datos del usuario
+  Future<UserData> fetchUserData(String userId) async {
+    // Aquí debes implementar la lógica para obtener los datos del usuario
+    // Por ejemplo, desde una base de datos o un servicio web
+    // Este es solo un ejemplo de retorno
+    return UserData(
+      userId: userId,
+      displayName: '',
+      idCardNumber: '',
+      phoneNumber: '',
+      getToken: null,
+      imagePath: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      selectedCountryCode: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: '',
+      location: null,
+      paymentType: '',
+      email: '',
+      registrationData: RegistrationData(
+        userId: userId,
+        devicesId: '',
+        fcmToken: '',
+        displayName: '',
+        idCardNumber: '',
+        phoneNumber: '',
+        paymentType: '',
+        expertises: [],
+        expLevel: [],
+        selectedCountryCode: '',
+        imagePath: '',
+        location: null,
+        idDocumentImagePath: '',
+        idDocumentImagePath2: '',
+        email: '',
+        imagePathList: [],
+        criminalRecordImagePath: '',
+        certificateImagePaths: '',
+        referralCode: '',
+        points: 0,
+        codeReferral: '', verificationStatus: '',
+      ),
+      referrerWorkerId: '',
+      referralCode: '',
+      points: 0, verificationStatus: '',
     );
   }
+
 
   static Future<void> firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {

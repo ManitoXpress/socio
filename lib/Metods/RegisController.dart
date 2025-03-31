@@ -2,14 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_wizard/flutter_wizard.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/wizards/Certificates.dart';
-import 'package:socio/wizards/CriminalRecords.dart';
-import 'package:socio/wizards/DocumentB.dart';
-import 'package:socio/wizards/IdDocument.dart';
-import 'package:socio/wizards/ProfileImage.dart';
-
 class RegistrationController {
   RegistrationData registrationData = RegistrationData(
     userId: '',
@@ -29,7 +22,7 @@ class RegistrationController {
     expLevel: [],
     selectedCountryCode: '',
     devicesId: '',
-    fcmToken: '',);
+    fcmToken: '', referralCode: '', points: 0, codeReferral: '', verificationStatus: '',);
   TextEditingController displayNameController = TextEditingController();
   TextEditingController idDocumentController = TextEditingController();
   TextEditingController phoneNumberController = TextEditingController();
@@ -67,7 +60,7 @@ class RegistrationController {
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
     required String certificateImagePaths,
-    required String criminalRecordImagePath,
+    required String criminalRecordImagePath, required String referralCode,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
     if (idCardNumber != null) registrationData.idCardNumber = idCardNumber;
@@ -88,7 +81,7 @@ class RegistrationController {
     }
   }
 }
-  class RegistrationData {
+class RegistrationData {
   String devicesId;
   String fcmToken;
   String userId;
@@ -102,11 +95,15 @@ class RegistrationController {
   String idDocumentImagePath2;
   String criminalRecordImagePath;
   String certificateImagePaths;
-  List<Expertise> expertises; // Cambiado a lista de Expertise
+  List<Expertise> expertises; // Lista de Expertise
   List<String> expLevel;
   String imagePath;
   Map<String, double?>? location;
   String email;
+  String referralCode; // Código de referido
+  int points; // Puntos
+  String codeReferral; // Código generado
+  String verificationStatus; // Nuevo campo añadido
 
   RegistrationData.fromForm({
     required String devicesId,
@@ -122,12 +119,17 @@ class RegistrationController {
     required String idDocumentImagePath2,
     required String criminalRecordImagePath,
     required String certificateImagePaths,
-    required List<Expertise> expertises, // Cambiado a lista de Expertise
+    required List<Expertise> expertises,
     required List<String> expLevel,
     required String imagePath,
     required Map<String, double?>? location,
     required String email,
-  })  : userId = userId,
+    required String referralCode,
+    required int points,
+    required String codeReferral,
+    required String verificationStatus, // Añadido aquí
+  }) : verificationStatus = verificationStatus, // Asegúrate de incluirlo en el constructor
+        userId = userId,
         fcmToken = fcmToken,
         devicesId = devicesId,
         displayName = displayName,
@@ -136,7 +138,7 @@ class RegistrationController {
         imagePathList = imagePathList,
         imagePath = imagePath,
         paymentType = paymentType,
-        expertises = expertises, // Cambiado a lista de Expertise
+        expertises = expertises,
         selectedCountryCode = selectedCountryCode,
         expLevel = expLevel,
         idDocumentImagePath = idDocumentImagePath,
@@ -144,7 +146,10 @@ class RegistrationController {
         criminalRecordImagePath = criminalRecordImagePath,
         certificateImagePaths = certificateImagePaths,
         email = email,
-        location = location;
+        location = location,
+        referralCode = referralCode,
+        points = points,
+        codeReferral = '${displayName.split(' ').first}_${idCardNumber.length >= 4 ? idCardNumber.substring(idCardNumber.length - 4) : idCardNumber}';
 
   RegistrationData({
     required this.devicesId,
@@ -161,13 +166,13 @@ class RegistrationController {
     required this.idDocumentImagePath2,
     required this.criminalRecordImagePath,
     required this.certificateImagePaths,
-    required this.expertises, // Cambiado a lista de Expertise
+    required this.expertises,
     required this.expLevel,
     required this.email,
     required this.location,
+    required this.referralCode,
+    required this.points,
+    required this.codeReferral,
+    required this.verificationStatus, // Asegúrate de incluir este campo también
   });
-
-  void setImages(List<String> newImagePaths) {
-    imagePath = newImagePaths.join(","); // Un ejemplo de cómo podrías unir las rutas
-  }
 }

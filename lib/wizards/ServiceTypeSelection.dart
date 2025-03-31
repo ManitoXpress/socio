@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:socio/Metods/RegisController.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/styles.dart';
@@ -8,10 +7,12 @@ import 'package:socio/Utils/styles.dart';
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
-  final void Function(List<Expertise> expertises, String? selectedExperienceLevel) onServiceTypesSelected;
+  final void Function(
+          List<Expertise> expertises, String? selectedExperienceLevel)
+      onServiceTypesSelected;
 
-
-  final Future<List<Category>> Function() fetchExpertises; // Solo fetchExpertises
+  final Future<List<Category>> Function()
+      fetchExpertises; // Solo fetchExpertises
 
   ServiceTypeSelection({
     required this.registrationController,
@@ -59,7 +60,6 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
     });
   }
 
-
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -72,7 +72,8 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         ),
         // Primer grupo de botones (arriba)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0), // Espacio en los lados
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16.0), // Espacio en los lados
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -98,27 +99,28 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
 
         // Segundo grupo de botones (abajo)
         Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0), // Espacio en los lados
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  if (fetchCategories != null)
-                    ...fetchCategories!
-                        .skip((fetchCategories!.length / 2).ceil())
-                        .map((category) {
-                      return Expanded(
-                        child: buildCategoryButton(
-                          category.name,
-                          const Color(0xFF830A09),
-                        ),
-                      );
-                    }).toList(),
-                  if (fetchCategories == null)
-                    Center(
-                      child: CircularProgressIndicator(),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16.0), // Espacio en los lados
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (fetchCategories != null)
+                ...fetchCategories!
+                    .skip((fetchCategories!.length / 2).ceil())
+                    .map((category) {
+                  return Expanded(
+                    child: buildCategoryButton(
+                      category.name,
+                      const Color(0xFF830A09),
                     ),
-                ],
-            ),
+                  );
+                }).toList(),
+              if (fetchCategories == null)
+                Center(
+                  child: CircularProgressIndicator(),
+                ),
+            ],
+          ),
         ),
         SizedBox(height: 10),
         if (selectedCategories.isNotEmpty)
@@ -145,7 +147,8 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
             });
           },
           style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), backgroundColor: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
               side: BorderSide(
@@ -153,7 +156,8 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
               ),
             ),
           ),
-          child: Text("No encuentro mi profesión",
+          child: Text(
+            "No encuentro mi profesión",
             style: TextStyle(
               color: Color(0xFF84090D),
             ),
@@ -172,14 +176,14 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
                   ),
                 ),
               ),
-
               SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
                   // Aquí va la lógica de lo que deseas hacer al presionar el botón
                 },
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), backgroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
                     side: BorderSide(
@@ -187,7 +191,8 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
                     ),
                   ),
                 ),
-                child: Text("Aceptar",
+                child: Text(
+                  "Aceptar",
                   style: TextStyle(
                     color: Color(0xFF84090D),
                   ),
@@ -206,7 +211,6 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
               SizedBox(height: 10),
             ],
           ),
-
 
         SizedBox(height: 20),
         Text(
@@ -237,27 +241,26 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         setState(() {
           if (selectedCategories.contains(category)) {
             selectedCategories.remove(category);
-            selectedSubcategories.removeWhere((subcategory) =>
-                fetchCategories!
-                    .firstWhere((cat) => cat.name == category)
-                    .expertises
-                    .map((expertise) => expertise.name)
-                    .contains(subcategory));
+            selectedSubcategories.removeWhere((subcategory) => fetchCategories!
+                .firstWhere((cat) => cat.name == category)
+                .expertises
+                .map((expertise) => expertise.name)
+                .contains(subcategory));
           } else {
             selectedCategories.add(category);
           }
         });
       },
       style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          backgroundColor: Color.fromARGB(255, 255, 255, 255),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-            side: BorderSide(
-              color: Color(0xFF84090D),
-            ),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        backgroundColor: Color.fromARGB(255, 255, 255, 255),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          side: BorderSide(
+            color: Color(0xFF84090D),
           ),
-          ),
+        ),
+      ),
       child: Text(
         category,
         style: TextStyle(
@@ -267,52 +270,51 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
     );
   }
 
-
   Widget buildSubcategoryDropdown() {
-  Set<Expertise> uniqueSubcategories = {};
+    Set<Expertise> uniqueSubcategories = {};
 
-  // Obtener las subcategorías de las categorías seleccionadas
-  selectedCategories.forEach((categoryName) {
-    final category = fetchCategories!.firstWhere(
-      (cat) => cat.name == categoryName,
-      orElse: () => Category(id: '', name: '', expertises: []),
-    );
-    uniqueSubcategories.addAll(category.expertises);
-  });
-
-  List<Expertise> allSubcategories = uniqueSubcategories.toList();
-  allSubcategories.sort((a, b) => a.name.compareTo(b.name));
-
-  return Wrap(
-    spacing: 8.0, // Espaciado horizontal entre chips
-    runSpacing: 4.0, // Espaciado vertical entre chips
-    children: allSubcategories.map((expertise) {
-      final isSelected = selectedSubcategories.contains(expertise);
-      return ChoiceChip(
-        label: Text(expertise.name),
-        selected: isSelected,
-        selectedColor: Color(0xFF830A09),
-        backgroundColor: Colors.grey[200],
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black,
-        ),
-        onSelected: (selected) {
-          setState(() {
-            if (selected) {
-              selectedSubcategories.add(expertise);
-            } else {
-              selectedSubcategories.remove(expertise);
-            }
-          });
-
-          // Actualizar la selección en el callback
-          widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
-        },
+    // Obtener las subcategorías de las categorías seleccionadas
+    selectedCategories.forEach((categoryName) {
+      final category = fetchCategories!.firstWhere(
+        (cat) => cat.name == categoryName,
+        orElse: () => Category(id: '', name: '', expertises: []),
       );
-    }).toList(),
-  );
-}
+      uniqueSubcategories.addAll(category.expertises);
+    });
 
+    List<Expertise> allSubcategories = uniqueSubcategories.toList();
+    allSubcategories.sort((a, b) => a.name.compareTo(b.name));
+
+    return Wrap(
+      spacing: 8.0, // Espaciado horizontal entre chips
+      runSpacing: 4.0, // Espaciado vertical entre chips
+      children: allSubcategories.map((expertise) {
+        final isSelected = selectedSubcategories.contains(expertise);
+        return ChoiceChip(
+          label: Text(expertise.name),
+          selected: isSelected,
+          selectedColor: Color(0xFF830A09),
+          backgroundColor: Colors.grey[200],
+          labelStyle: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+          ),
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                selectedSubcategories.add(expertise);
+              } else {
+                selectedSubcategories.remove(expertise);
+              }
+            });
+
+            // Actualizar la selección en el callback
+            widget.onServiceTypesSelected(
+                selectedSubcategories, selectedExperienceLevel);
+          },
+        );
+      }).toList(),
+    );
+  }
 
   Widget buildExperienceLevelDropdown() {
     return DropdownButton<String>(
@@ -323,18 +325,20 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         });
 
         // Obtener los ids de los expertises seleccionados
-        List<String> expertiseIds = selectedSubcategories.map((expertise) => expertise.id).toList();
+        List<String> expertiseIds =
+            selectedSubcategories.map((expertise) => expertise.id).toList();
 
         // Llamar a onServiceTypesSelected con los ids de expertises
-        widget.onServiceTypesSelected(selectedSubcategories, selectedExperienceLevel);
+        widget.onServiceTypesSelected(
+            selectedSubcategories, selectedExperienceLevel);
 
         selectedSubcategories.sort((a, b) => a.name.compareTo(b.name));
       },
       items: expLevel
           .map((level) => DropdownMenuItem<String>(
-        value: level,
-        child: Text(level),
-      ))
+                value: level,
+                child: Text(level),
+              ))
           .toList(),
     );
   }

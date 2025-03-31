@@ -15,6 +15,37 @@ class ApiService2 {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
 
+  Future<void> updateWorkerPoints(String workerId,String token) async {
+    final url = Uri.parse('$baseUrl/workers/$workerId');
+
+
+
+    print('Token usado para la autenticación: $token');
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'successfulReferrals': 1,
+          'points': 10,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Puntos actualizados correctamente en el backend.');
+      } else {
+        print('Error al actualizar puntos en el backend: ${response.body}');
+      }
+    } catch (e) {
+      print('Error en la solicitud PATCH: $e');
+    }
+  }
+
+
   Future<List<Map<String, dynamic>>> getWorkerExpertises() async {
   try {
     final user = FirebaseAuth.instance.currentUser;
@@ -54,6 +85,7 @@ class ApiService2 {
     rethrow;
   }
 }
+
 
   Future<List<ServiceResponse>> fetchServicesFromBackend(String token) async {
     try {
@@ -229,21 +261,19 @@ class ApiService2 {
     }
   }
 
-  Future<UserData> fetchUserData(String userId, String getIdToken) async {
+  Future<UserData> fetchUserData(String userId, String token) async {
     try {
       // Construir el header con el token
       Map<String, String> headers = {
-        'Authorization': 'Bearer $getIdToken',
-        'Content-Type': 'application/json', // Ajusta esto según tus necesidades
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
       };
 
       final response = await http.get(
         Uri.parse('$baseUrl/workers/$userId'),
         headers: headers,
       );
-
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
+      print('Respuesta de la API: ${response.body}');
 
       if (response.statusCode == 200) {
         final dynamic responseData = json.decode(response.body);
@@ -261,6 +291,37 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
+  Future<UserData> fetchUserDataRef(String userId, String token) async {
+    try {
+      // Construir el header con el token
+      Map<String, String> headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      };
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/workers?userId=$userId'),
+        headers: headers,
+      );
+      print('Respuesta de la API: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final dynamic responseData = json.decode(response.body);
+
+        if (responseData is Map<String, dynamic>) {
+          return UserData.fromJson(responseData);
+        } else {
+          throw Exception('El formato de la respuesta no es válido');
+        }
+      } else {
+        throw Exception('Solicitud HTTP fallida: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error en la solicitud HTTP: $e');
+      throw Exception('Error al obtener datos del backend');
+    }
+  }
+
 
   Future<List<Category>> fetchExpertises() async {
     final response =

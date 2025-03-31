@@ -7,11 +7,11 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:path/path.dart' as path;
-import 'package:http/http.dart' as http;
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:path/path.dart' as path;
+import 'package:http/http.dart' as http;
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
@@ -50,6 +50,25 @@ class ApiService {
     } catch (e) {
       print('Error al enviar token al servidor: $e');
       throw Exception('Error al enviar token al servidor: $e');
+    }
+  }
+
+  Future<void> uploadImageToBackend(String imagePath, String serviceId, String token) async {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/media/upload/$serviceId'));
+    request.files.add(await http.MultipartFile.fromPath('file', imagePath));
+    request.headers.addAll({
+      'Authorization': 'Bearer $token',
+    });
+
+    try {
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        print('Imagen subida exitosamente');
+      } else {
+        print('Error al subir la imagen: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      print('Error al subir la imagen: $e');
     }
   }
 
@@ -113,35 +132,40 @@ class ApiService {
 
 
 
-  Future<void> updateServiceStatus(String serviceRequestId, String newStatus, String token) async {
-    try {
-
-      final String? refreshedToken = await FirebaseAuth.instance.currentUser?.getIdToken(true);
-      final response = await http.patch(
-        Uri.parse('$baseUrl/services/$serviceRequestId'), // URL del servicio específico
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${refreshedToken ?? token}',
-        },
-        body: jsonEncode({'status': newStatus}), // Campo que deseas actualizar
-
-      );
-
-      if (response.statusCode == 200) {
-        print('Estado actualizado con éxito en el backend');
-      } else {
-        print('Error al actualizar el estado en el backend. Código de estado: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error al realizar la solicitud HTTP de actualización: $e');
-      throw Exception('Error al actualizar el estado en el backend');
-    }
+  Future<http.Response> updateOfferStatus(String serviceId, String status, String token) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/offers/$serviceId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': status}),
+    );
+    return response;
   }
+
+  // Método para actualizar un servicio
+  Future<http.Response> updateServiceStatus(String serviceId, String status, String token) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/services/$serviceId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': status}),
+    );
+    return response;
+  }
+
 
   Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
     try {
-      // Verificamos que el campo imagePath contenga la URL de Firebase sin modificaciones
-      String imagePath = registrationData.imagePath; // Confirmamos que la URL no esté anidada
+
+      String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.idCardNumber.length >= 4
+          ? registrationData.idCardNumber.substring(registrationData.idCardNumber.length - 4)
+          : registrationData.idCardNumber}';
+
+
 
       // Mapea cada expertise a un mapa con nombre e ID
       List<Map<String, String>> expertises = (registrationData.expertises ?? [])
@@ -168,6 +192,9 @@ class ApiService {
         'expertises': expertises,
         'expLevel': registrationData.expLevel,
         'verificationStatus': 'No verificado',
+        'points': registrationData.points,
+        'successfulReferrals': 0,
+        'codeReferral': codeReferral,
       };
 
       print('Request Body: $requestBody');
@@ -269,7 +296,7 @@ class ApiService {
       final String extension = image.path.split('.').last;
 
       // Crear un nombre único para la imagen usando la fecha actual
-      final String imageName = 'IdentificactionNumber_A_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String imageName = 'IdentificactionNumber_B_${DateTime.now().millisecondsSinceEpoch}.$extension';
 
       // Crear la ruta de la carpeta del usuario
       final String userFolderPath = '$userId/';
@@ -315,7 +342,7 @@ class ApiService {
 
       String extension = image.path.split('.').last;
       String imageName =
-          'criminalRecord_${DateTime.now().millisecondsSinceEpoch}.$extension';
+          'certificate_${DateTime.now().millisecondsSinceEpoch}.$extension';
       String userFolderPath = '$userId/';
       String imagePath = '$userFolderPath$imageName';
 
@@ -339,10 +366,10 @@ class ApiService {
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
       }
     }
-  Future<List<String>> uploadImageToFirebaseStorage5(
-      List<File> images, String userId) async {
+  Future<String> uploadImageToFirebaseStorage5(
+      File image, String userId) async {
     try {
-      print('Comenzando la carga de las imágenes a Firebase Storage');
+      print('Comenzando la carga de la imagen a Firebase Storage');
 
       final FirebaseAuth auth = FirebaseAuth.instance;
       final User? user = auth.currentUser;
@@ -353,40 +380,37 @@ class ApiService {
       }
 
       final FirebaseStorage storage = FirebaseStorage.instance;
+
+      String extension = image.path
+          .split('.')
+          .last;
+      String imageName =
+          'criminalRecord_${DateTime
+          .now()
+          .millisecondsSinceEpoch}.$extension';
       String userFolderPath = '$userId/';
-      List<String> imageUrls = [];
+      String imagePath = '$userFolderPath$imageName';
 
-      for (int i = 0; i < images.length; i++) {
-        File image = images[i];
-        String extension = image.path.split('.').last;
-        String imageName =
-            'Certificate_${i + 1}_${DateTime.now().millisecondsSinceEpoch}.$extension';
-        String imagePath = '$userFolderPath$imageName';
+      if (await image.exists()) {
+        Reference ref = storage.ref().child(imagePath);
+        UploadTask uploadTask = ref.putFile(image);
 
-        if (await image.exists()) {
-          Reference ref = storage.ref().child(imagePath);
-          UploadTask uploadTask = ref.putFile(image);
+        await uploadTask.whenComplete(() {
+          print('Imagen cargada con éxito en Firebase Storage');
+        });
 
-          await uploadTask.whenComplete(() {
-            print('Imagen ${i + 1} cargada con éxito en Firebase Storage');
-          });
-
-          final imageUrl = await ref.getDownloadURL();
-          print('URL de la imagen ${i + 1} en Firebase Storage: $imageUrl');
-          imageUrls.add(imageUrl);
-        } else {
-          print('Error: El archivo de imagen no existe.');
-          throw Exception('El archivo de imagen no existe');
-        }
+        final imageUrl = await ref.getDownloadURL();
+        print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
+      } else {
+        print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
       }
-
-      print('Todas las imágenes cargadas con éxito en Firebase Storage');
-      return imageUrls;
     } catch (e) {
-      print('Error al cargar las imágenes en Firebase Storage: $e');
-      throw Exception('Error al cargar las imágenes en Firebase Storage: $e');
-      }
+      print('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
+  }
 }
 
 class FormData {

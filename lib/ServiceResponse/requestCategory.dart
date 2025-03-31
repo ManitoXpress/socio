@@ -1,6 +1,5 @@
 
 
-
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 
 class Category {

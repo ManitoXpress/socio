@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
-
 class UserData {
   String userId;
   String displayName;
@@ -21,6 +20,10 @@ class UserData {
   String paymentType;
   String email;
   RegistrationData registrationData;
+  String referrerWorkerId; // ID del trabajador que refirió
+  String referralCode; // Código de referido ingresado por el usuario
+  String verificationStatus;
+  int points; // Cambiado a int
 
   UserData({
     required this.userId,
@@ -41,6 +44,10 @@ class UserData {
     required this.paymentType,
     required this.email,
     required this.registrationData,
+    required this.referrerWorkerId,
+    required this.referralCode, // Agregamos el campo referralCode
+    required this.verificationStatus,
+    required this.points, // Agregamos el campo points
   });
 
   factory UserData.fromJson(Map<String, dynamic> json) {
@@ -57,13 +64,15 @@ class UserData {
       selectedCountryCode: json['selectedCountryCode'] ?? '',
       expertises: _convertToExpertisesList(json['expertises']),
       expLevel: _convertToList(json['expLevel']),
-      certificateImagePaths: json['criminalRecordImagePath'] ?? '',
+      certificateImagePaths: json['certificateImagePaths'] ?? '',
       idCardNumber: json['idCardNumber'] ?? '',
       location: json['location'] != null
           ? Map<String, double?>.from(json['location'])
           : null,
       idDocumentImagePath: json['idDocumentImagePath'] ?? '',
       idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
+      referrerWorkerId: json['referrerWorkerId'] ?? '', // ID del que refirió
+      referralCode: json['referralCode'] ?? '', // Código de referido ingresado
       registrationData: RegistrationData(
         userId: json['id'] ?? '',
         devicesId: json['devicesId'] ?? '',
@@ -81,9 +90,40 @@ class UserData {
             : null,
         idDocumentImagePath: json['idDocumentImagePath'] ?? '',
         idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
-        email: json['email'] ?? '', imagePathList: [], criminalRecordImagePath: '', certificateImagePaths: '',
+        email: json['email'] ?? '',
+        imagePathList: [],
+        criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
+        certificateImagePaths: json['certificateImagePaths'] ?? '',
+        referralCode: json['referralCode'] ?? '',
+        points: json['points'] is int ? json['points'] : int.tryParse(json['points'].toString()) ?? 0, codeReferral: json['codeReferral']?? '', verificationStatus: json['verificationStatus']?? '', // Convierte a int
       ),
+      points: json['points'] is int ? json['points'] : int.tryParse(json['points'].toString()) ?? 0, verificationStatus: json['verificationStatus']?? '', // Convierte a int
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': userId,
+      'displayName': displayName,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'imagePath': imagePath,
+      'getToken': getToken,
+      'pdfPathController': pdfPathController,
+      'criminalRecordImagePath': criminalRecordImagePath,
+      'paymentType': paymentType,
+      'selectedCountryCode': selectedCountryCode,
+      'expertises': expertises.map((e) => e.toMap()).toList(),
+      'expLevel': expLevel,
+      'certificateImagePaths': certificateImagePaths,
+      'idCardNumber': idCardNumber,
+      'location': location,
+      'idDocumentImagePath': idDocumentImagePath,
+      'idDocumentImagePath2': idDocumentImagePath2,
+      'referrerWorkerId': referrerWorkerId,
+      'referralCode': referralCode,
+      'points': points, // Asegúrate de incluir points
+    };
   }
 
   static List<String> _convertToList(dynamic value) {
@@ -106,5 +146,5 @@ Future<String?> getCurrentWorkerId() async {
     return user.uid; // El workerId es el UID del usuario autenticado
   } else {
     return null; // El usuario no está autenticado
-  }
+    }
 }

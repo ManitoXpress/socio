@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
+import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
-import 'package:socio/Metods/RegisController.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/styles.dart';
 
 import 'package:image/image.dart' as img;
 import 'dart:io';
@@ -18,6 +15,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image/image.dart' as img;
+
+import '../Utils/styles.dart';
 
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
@@ -48,59 +47,58 @@ class _ProfileImageState extends State<ProfileImage> {
   final ImagePicker _imagePicker = ImagePicker();
 
   // Función para manejar la selección de imagen
- Future<void> _pickImage() async {
-  try {
-    // Mostrar cuadro de diálogo para tomar una foto
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Tome una foto de perfil'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context); // Cierra el cuadro de diálogo
-                  try {
-                    // Intentar capturar una imagen desde la cámara
-                    final XFile? image = await _imagePicker.pickImage(
-                      source: ImageSource.camera,
-                    );
-                    if (image != null) {
-                      print('Imagen capturada: ${image.path}');
-                      _processImage(image); // Procesa la imagen capturada
-                    } else {
-                      print('No se capturó ninguna imagen.');
-                    }
-                  } catch (e) {
-                    print('Error al acceder a la cámara: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'No se pudo acceder a la cámara. Por favor, verifique los permisos en la configuración del dispositivo.',
+  Future<void> _pickImage() async {
+    try {
+      // Mostrar cuadro de diálogo para tomar una foto
+      await showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Tome una foto de perfil'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(context); // Cierra el cuadro de diálogo
+                    try {
+                      // Intentar capturar una imagen desde la cámara
+                      final XFile? image = await _imagePicker.pickImage(
+                        source: ImageSource.camera,
+                      );
+                      if (image != null) {
+                        print('Imagen capturada: ${image.path}');
+                        _processImage(image); // Procesa la imagen capturada
+                      } else {
+                        print('No se capturó ninguna imagen.');
+                      }
+                    } catch (e) {
+                      print('Error al acceder a la cámara: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'No se pudo acceder a la cámara. Por favor, verifique los permisos en la configuración del dispositivo.',
+                          ),
                         ),
-                      ),
-                    );
-                  }
-                },
-                child: const Text('Tomar Foto'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  } catch (e) {
-    print('Error al manejar la cámara: $e');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Ocurrió un error: $e'),
-      ),
-    );
+                      );
+                    }
+                  },
+                  child: const Text('Tomar Foto'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error al manejar la cámara: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ocurrió un error: $e'),
+        ),
+      );
+    }
   }
-}
-
 
   // Procesa la imagen seleccionada
   Future<void> _processImage(XFile? image) async {
@@ -111,7 +109,8 @@ class _ProfileImageState extends State<ProfileImage> {
       if (originalImage != null) {
         // Corrige la orientación de la imagen
         final correctedImage = img.bakeOrientation(originalImage);
-        final correctedFile = await originalFile.writeAsBytes(img.encodeJpg(correctedImage));
+        final correctedFile =
+            await originalFile.writeAsBytes(img.encodeJpg(correctedImage));
 
         setState(() {
           _image = correctedFile; // Asigna la imagen corregida
@@ -133,7 +132,7 @@ class _ProfileImageState extends State<ProfileImage> {
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
             "Paso 3: Saque una foto de perfil sin gafas ni gorra",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
         GestureDetector(

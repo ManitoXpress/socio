@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Metods/RegisController.dart';
-import 'package:socio/Screens/Validations.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/Utils/styles.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../Metods/RegisController.dart';
+import '../Screens/Validations.dart';
+import '../ServiceResponse/get.dart';
+import '../Utils/styles.dart';
 
 class FirstTimeLoginScreen extends StatelessWidget {
   final RegistrationController registrationController;
@@ -37,7 +38,7 @@ class FirstTimeLoginScreen extends StatelessWidget {
             ),
           ],
         ),
-        iconTheme: const IconThemeData(color: Colors.black), // Íconos negros
+        iconTheme: const IconThemeData(color: Colors.black), 
       ),
       body: Container(
         color: Colors.white, // Fondo blanco de la pantalla
@@ -47,10 +48,10 @@ class FirstTimeLoginScreen extends StatelessWidget {
             children: <Widget>[
               // Imagen
               Image.asset(
-                'assets/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
-                width: 300, // Ajusta el ancho de la imagen según sea necesario
+                'assets/images/manito.png', 
+                width: 300, 
               ),
-              const SizedBox(height: 20), // Espacio entre la imagen y el texto
+              const SizedBox(height: 20), 
               const Text(
                 '¡Bienvenido!',
                 style: MyTextStyles.welcomeTotheJungle2,

@@ -519,10 +519,10 @@ class ServiceListBuilder {
               children: [
                 SizedBox(height: 30),
                 Text('Categoría:', style: MyTextStyles.drawerButtonTextStyle),
-                Text(category, style: MyTextStyles.drawerButtonTextStyle5),
+                Text(category, style: MyTextStyles.drawerButtonTextStyle8),
                 SizedBox(height: screenHeight * 0.01),
                 Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle),
-                Text(expertise, style: MyTextStyles.drawerButtonTextStyle5),
+                Text(expertise, style: MyTextStyles.drawerButtonTextStyle8),
                 SizedBox(height: screenHeight * 0.01),
                 Text('Precio Ofertado: \$${price.toStringAsFixed(2)}',
                     style: MyTextStyles.drawerButtonTextStyle),

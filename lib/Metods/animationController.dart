@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
+
 
 import 'package:rive/rive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 
 class EstrellaController {
   static void handsOnTheEyes(SMIBool? isHandsUp) {
@@ -14,8 +17,7 @@ class EstrellaController {
       SMIBool? isHandsUp, SMIBool? isChecking, SMINumber? numLook) {
     isHandsUp?.change(false);
     isChecking?.change(false);
-    numLook?.change(
-        0); // Ajusta este valor según cómo quieras que Teddy mire al campo de texto.
+    numLook?.change(0);
   }
 
   static void moveEyeBalls(SMINumber? numLook, String val) {
@@ -27,16 +29,11 @@ class EstrellaController {
     isHandsUp?.change(false);
     isChecking?.change(true);
 
-    // Obten la posición actual del cursor en el campo de texto
     final cursorPosition = textEditingController?.selection.base.offset ?? 0;
-
-    // Calcula la posición relativa en la que Teddy debe mirar
-    // Por ejemplo, puedes dividir el ancho del campo de texto en zonas iguales y mirar a la zona correspondiente al toque.
-    const totalZones = 4; // Divide el campo de texto en 4 zonas iguales
+    const totalZones = 4;
     final zoneWidth = textEditingController!.text.length / totalZones;
     final targetZone = (cursorPosition / zoneWidth).ceil();
 
-    // Ajusta numLook para que Teddy mire a la zona correcta
     numLook?.change(targetZone.toDouble());
   }
 
@@ -48,50 +45,44 @@ class EstrellaController {
     SMITrigger? failTrigger;
 
     try {
-      // Coloca aquí tu lógica para el inicio de sesión con correo y contraseña
-      // ...
+      final email = emailController.text;
+      final password = passwordController.text;
 
-      UserCredential? userCredential;
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-      if (userCredential != null) {
-        // Obtiene el token de ID y lo imprime
-        String? token = await _auth.currentUser?.getIdToken(true);
-        print("Token de ID: $token");
+      if (userCredential.user != null) {
+        final user = userCredential.user!;
+        if (user.emailVerified) {
+          final userData = await fetchUserData(user.uid); // Obtén los datos del usuario
+          final registrationData = userData.registrationData;
 
-        // TODO: Enviar el token a tu servidor
-        // Puedes usar el paquete `http` en Flutter para hacer una solicitud HTTP a tu servidor.
-        // Por ejemplo:
-        //
-        // final response = await http.post(
-        //   Uri.parse('https://tu-servidor.com/verificar-token'),
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: jsonEncode({'token': token}),
-        // );
-        //
-        // Si el servidor responde con un error, puedes manejarlo aquí.
-
-        _navigateToHomePage(context);
+          _navigateToHomePage(context, userData, registrationData);
+        } else {
+          failTrigger?.fire();
+          _showFailedLoginDialog(context, "Por favor, verifica tu correo electrónico.");
+          await _auth.signOut();
+        }
       } else {
         failTrigger?.fire();
-        _showFailedLoginDialog(context);
+        _showFailedLoginDialog(context, "Email o contraseña incorrectos.");
       }
     } catch (e) {
       failTrigger?.fire();
       print("Error al iniciar sesión: $e");
-      _showFailedLoginDialog(context);
+      _showFailedLoginDialog(context, "Error al iniciar sesión. Inténtalo de nuevo.");
     }
   }
 
-  static void _showFailedLoginDialog(BuildContext context) {
+  static void _showFailedLoginDialog(BuildContext context, String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Inicio de sesión fallido"),
-          content:
-              const Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
+          content: Text(message),
           actions: [
             TextButton(
               child: const Text("Aceptar"),
@@ -105,12 +96,67 @@ class EstrellaController {
     );
   }
 
-  static void _navigateToHomePage(BuildContext context) {
+  static Future<void> _navigateToHomePage(BuildContext context, UserData userData, RegistrationData registrationData) async {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) =>
-              HomeScreen()), // Asegúrate de tener una clase HomePage definida
+        builder: (context) => HomeScreen(
+          userData: userData,
+          registrationData: registrationData,
+        ),
+      ),
     );
   }
+}
+
+// Ejemplo de función para obtener los datos del usuario
+Future<UserData> fetchUserData(String userId) async {
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
+  return UserData(
+    userId: userId,
+    displayName: 'John Doe',
+    idCardNumber: '123456789',
+    phoneNumber: '555-1234',
+    getToken: null,
+    imagePath: '',
+    pdfPathController: '',
+    criminalRecordImagePath: '',
+    idDocumentImagePath: '',
+    idDocumentImagePath2: '',
+    selectedCountryCode: '',
+    expertises: [],
+    expLevel: [],
+    certificateImagePaths: '',
+    location: null,
+    paymentType: '',
+    email: 'john.doe@example.com',
+    registrationData: RegistrationData(
+      userId: userId,
+      devicesId: '',
+      fcmToken: '',
+      displayName: 'John Doe',
+      idCardNumber: '123456789',
+      phoneNumber: '555-1234',
+      paymentType: '',
+      expertises: [],
+      expLevel: [],
+      selectedCountryCode: '',
+      imagePath: '',
+      location: null,
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      email: 'john.doe@example.com',
+      imagePathList: [],
+      criminalRecordImagePath: '',
+      certificateImagePaths: '',
+      referralCode: '',
+      points: 0,
+      codeReferral: '', verificationStatus: '',
+    ),
+    referrerWorkerId: '',
+    referralCode: '',
+    points: 0, verificationStatus: '',
+  );
 }

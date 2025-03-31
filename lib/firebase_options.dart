@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -32,12 +29,12 @@ class DefaultFirebaseOptions {
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+              'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -46,37 +43,47 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBmW_mMfTHXEXxOxaFZm_3xR_C_LRo8k8M',
-    appId: '1:933474056744:android:2febccf49d107ab2f8131d',
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDpVVMrsN7Uitt9MNTxdZdMgWSr2O36CnQ',
+    appId: '1:933474056744:web:eca78d8837c445e6f8131d',
     messagingSenderId: '933474056744',
     projectId: 'manitoxpress-cf855',
+    authDomain: 'manitoxpress-cf855.firebaseapp.com',
     databaseURL: 'https://manitoxpress-cf855-default-rtdb.firebaseio.com',
     storageBucket: 'manitoxpress-cf855.appspot.com',
+    measurementId: 'G-V0M15KGXTR',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyClDKoO7XH88zCg8HIj0_zbPbvC_oNB8tU',
-    appId: '1:933474056744:ios:a7f5f13e727b5020f8131d',
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc',
+    appId: '1:933474056744:android:b583a1e55ec53854f8131d',
     messagingSenderId: '933474056744',
     projectId: 'manitoxpress-cf855',
     databaseURL: 'https://manitoxpress-cf855-default-rtdb.firebaseio.com',
     storageBucket: 'manitoxpress-cf855.appspot.com',
-    androidClientId: '933474056744-5m32u4i8ltf1r975qbghcfe7slh6fmop.apps.googleusercontent.com',
-    iosClientId: '933474056744-3cvqejt96s2mpdoijcg6g7ifiocu7kr7.apps.googleusercontent.com',
-    iosBundleId: 'com.example.socio',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc',
-    appId: '1:933474056744:ios:a4f52d1b000b05bcf8131d',
+    appId: '1:933474056744:ios:a11f644ba60ff592f8131d',
     messagingSenderId: '933474056744',
     projectId: 'manitoxpress-cf855',
     databaseURL: 'https://manitoxpress-cf855-default-rtdb.firebaseio.com',
     storageBucket: 'manitoxpress-cf855.appspot.com',
     androidClientId: '933474056744-5m32u4i8ltf1r975qbghcfe7slh6fmop.apps.googleusercontent.com',
-    iosClientId: '933474056744-dd50i7ubuoto1krkvavre1fjse1fe4v3.apps.googleusercontent.com',
-    iosBundleId: 'com.xpress.manitosocio',
+    iosClientId: '933474056744-5t2nnrvq4a45jtv2pv2fpbkt8ko9a02i.apps.googleusercontent.com',
+    iosBundleId: 'com.example.manitoCliente',
   );
 
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc',
+    appId: '1:933474056744:ios:bd98d572bd4a6005f8131d',
+    messagingSenderId: '933474056744',
+    projectId: 'manitoxpress-cf855',
+    databaseURL: 'https://manitoxpress-cf855-default-rtdb.firebaseio.com',
+    storageBucket: 'manitoxpress-cf855.appspot.com',
+    androidClientId: '933474056744-5m32u4i8ltf1r975qbghcfe7slh6fmop.apps.googleusercontent.com',
+    iosClientId: '933474056744-1n2pn1bfsubeiekccbc6und5b8nmcfnl.apps.googleusercontent.com',
+    iosBundleId: 'com.example.manitoCliente.RunnerTests',
+  );
 }

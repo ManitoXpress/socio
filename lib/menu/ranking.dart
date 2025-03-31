@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Utils/styles.dart';
+
+import '../Utils/styles.dart';
 
 class RankingScreen extends StatelessWidget {
   @override

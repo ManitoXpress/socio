@@ -1,7 +1,4 @@
 
-
-
-
 class ServiceType {
   String id;
   String name;
