@@ -8,8 +8,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
+import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/fcmToken.dart';
 
@@ -88,12 +88,12 @@ class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
 }
-
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
   UserData? userData;
   RegistrationData? registrationData;
+
 
   @override
   void initState() {
@@ -146,40 +146,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Manitos Xpress Socio',
-      theme: ThemeData(
-        primarySwatch: MaterialColor(
-          0xFF1A819A,
-          <int, Color>{
-            50: Color(0xFF84090D),
-            100: Color(0xFF84090D),
-            200: Color(0xFF84090D),
-            300: Color(0xFF84090D),
-            400: Color(0xFF84090D),
-            500: Color(0xFF84090D),
-            600: Color(0xFF84090D),
-            700: Color(0xFF84090D),
-            800: Color(0xFF84090D),
-            900: Color(0xFF84090D),
-          },
+        debugShowCheckedModeBanner: false,
+        title: 'Manitos Xpress Socio',
+        theme: ThemeData(
+          primarySwatch: MaterialColor(
+            0xFF1A819A,
+            <int, Color>{
+              50: Color(0xFF84090D),
+              100: Color(0xFF84090D),
+              200: Color(0xFF84090D),
+              300: Color(0xFF84090D),
+              400: Color(0xFF84090D),
+              500: Color(0xFF84090D),
+              600: Color(0xFF84090D),
+              700: Color(0xFF84090D),
+              800: Color(0xFF84090D),
+              900: Color(0xFF84090D),
+            },
+          ),
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            secondary: Colors.grey,
+            background: Colors.white,
+            onBackground: Colors.grey,
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF84090D),
+          ),
         ),
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: Colors.grey,
-          background: Colors.white,
-          onBackground: Colors.grey,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF84090D),
-        ),
-      ),
-      home: isLoading
-          ? LoadingScreen()
-          : isLoggedIn
-          ? HomeScreen(userData: userData!, registrationData: registrationData!)
-          : LoginScreen(deviceId: widget.deviceId),
-    );
-  }
+        home: isLoading
+            ? LoadingScreen()
+            : isLoggedIn
+            ? HomeScreen(userData: userData!, registrationData: registrationData!)
+            : LoginScreen(deviceId: widget.deviceId),
+        );
+    }
 }
 
 // Ejemplo de función para obtener los datos del usuario

@@ -338,44 +338,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
   // 2. Función para registrar el referido en la colección "referrals"
   Future<void> _registerReferralInFirestore(String userId, String referralCode) async {
-    User? user = FirebaseAuth.instance.currentUser;
     try {
-      if (referralCode.isEmpty) {
-        print('No hay código de referido para registrar.');
-        return;
-      }
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || referralCode.isEmpty) return;
 
-      final workersCollection = FirebaseFirestore.instance.collection('workers');
-      final querySnapshot = await workersCollection.where('codeReferral', isEqualTo: referralCode).limit(1).get();
+      final workersRef = FirebaseFirestore.instance.collection('workers');
+      final query = await workersRef
+          .where('codeReferral', isEqualTo: referralCode)
+          .limit(1)
+          .get();
 
-      if (querySnapshot.docs.isEmpty) {
-        print('No se encontró un trabajador con este código de referido.');
-        return;
-      }
-      String? token = await user?.getIdToken();
+      if (query.docs.isEmpty) return;
 
-      final referrerDoc = querySnapshot.docs.first;
-      final referrerId = referrerDoc.id;
+      final referrer = query.docs.first;
+      final referrerId = referrer.id;
 
-      // Guardar la relación de referido en Firestore
-      final referralsCollection = FirebaseFirestore.instance.collection('referrals');
-      await referralsCollection.add({
+      // 1. Crear documento en referrals
+      await FirebaseFirestore.instance.collection('referrals').add({
         'referrerId': referrerId,
+        'referredUserId': user.uid,
         'referrerCodeReferral': referralCode,
-        'referredUserId': userId,
         'timestamp': FieldValue.serverTimestamp(),
-        'processed': false
       });
 
-      // Llamar al backend para actualizar los puntos
-      final apiService = ApiService2();
-      await apiService.updateWorkerPoints(referrerId,token!);
+      // 2. Actualización atómica con transacción
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final doc = await transaction.get(referrer.reference);
+        final currentData = doc.data()!;
+
+        transaction.update(referrer.reference, {
+          'successfulReferrals': currentData['successfulReferrals'] + 1,
+          'points': currentData['points'] + 10
+        });
+      });
 
     } catch (e) {
-      print('Error al registrar el referido: $e');
+      print('Error: $e');
     }
   }
-
 
 
   Future<void> _completeRegistration() async {
@@ -502,9 +502,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
         String? devicesId = await AuthUtils.getDeviceId();
         String? fcmToken = await FirebaseMessaging.instance.getToken();
-        // Obtener los últimos 4 dígitos del idCardNumber como codeReferral
-
-
 
         registrationData = RegistrationData.fromForm(
           userId: user.uid,
@@ -525,8 +522,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           certificateImagePaths: registrationData.certificateImagePaths,
           devicesId: devicesId ?? '',
           fcmToken: fcmToken ?? '',
-          referralCode: userData.referralCode, points: 0, codeReferral: registrationData.codeReferral, verificationStatus: registrationData.verificationStatus,
-
+          referralCode: userData.referralCode,
+          points: 0,
+          codeReferral: registrationData.codeReferral, verificationStatus: registrationData.verificationStatus,
         );
 
         print('Después de RegistrationData.fromForm:');
@@ -557,7 +555,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           print('Usuario actualizado con éxito');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen(
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(
                 userData: userData,
                 registrationData: registrationData,
               ),
@@ -591,6 +590,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       });
     }
   }
+
 
 
 

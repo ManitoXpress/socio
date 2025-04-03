@@ -136,6 +136,17 @@ class _LoginFormState extends State<LoginScreen> {
       );
     });
   }
+  Future<void> _signInAsGuest() async {
+    try {
+      // Aquí puedes manejar la lógica de inicio de sesión como invitado
+      print("Usuario ingresó como invitado");
+      // Navegar a la pantalla de inicio
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      print('Error al iniciar como invitado: $e');
+    }
+  }
+
 
   Future<void> login() async {
     isChecking?.change(false);
@@ -379,6 +390,41 @@ class _LoginFormState extends State<LoginScreen> {
                             ),
                     ),
                     SizedBox(width: 10.w), // Espacio entre los botones
+                   // Botón de Invitado
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey, // Color neutral para el botón de invitado
+                        shape: CircleBorder(),
+                        padding: EdgeInsets.all(3.w),
+                      ),
+                      onPressed: _signInAsGuest, // Llama a la función de inicio como invitado
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white,
+                        radius: 40.r,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_outline,
+                              color: Colors.black,
+                              size: 30.r, // Tamaño ajustado del icono
+                            ),
+                            SizedBox(height: 4.h), // Espacio entre icono y texto
+                            Text(
+                              'Invitado',
+                              style: GoogleFonts.lato(
+                                color: Colors.black,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+      
+                  SizedBox(width: 10.w),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF841813),
@@ -405,7 +451,7 @@ class _LoginFormState extends State<LoginScreen> {
                                         color: Color(0xFF841813),
                                       ),
                                       Text(
-                                        'Inicio',
+                                        'Apple',
                                         style: MyTextStyles.linkTextStyle,
                                       ),
                                     ],
