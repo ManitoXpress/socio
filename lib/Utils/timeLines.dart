@@ -419,68 +419,80 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
 
 
   void _showPendingConfirmation2Dialog(BuildContext context) async {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('offers')
-        .where('serviceId', isEqualTo: widget.serviceRequest.id)
-        .limit(1)
-        .get();
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection('offers')
+      .where('serviceId', isEqualTo: widget.serviceRequest.id)
+      .limit(1)
+      .get();
 
-    if (querySnapshot.docs.isNotEmpty) {
-      var offeredPrice = _workerOfferedPrice;
+  if (querySnapshot.docs.isNotEmpty) {
+    var offerData = querySnapshot.docs.first.data();
+    var offeredPrice = offerData['offeredPrice'];
+    var clientNIT = offerData['clientNIT'] ?? 'NIT no disponible'; // Obtener el NIT de la oferta
 
-      // Verifica el tipo de dato y realiza la conversión si es necesario.
-      if (offeredPrice is String) {
-        offeredPrice = double.tryParse(offeredPrice.toString()) ?? 0.0;
-      } else if (offeredPrice is! double) {
-        offeredPrice = 0.0;
-      }
-
-      // Define la comisión y los gastos informáticos.
-      double commission = offeredPrice * 0.10; // Comisión del 10%.
-      double extraCosts = 3.0;
-      double totalPrice = offeredPrice + extraCosts; // Precio total.
-
-      String paymentStatus = 'pagado';
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Confirmación de la Oferta'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Oferta del servicio:'),
-                Text('Precio ofertado: Bs ${_workerOfferedPrice}'),
-                SizedBox(height: 16.0),
-                SizedBox(height: 16.0),
-                Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
-                SizedBox(height: 16.0),
-                Text('Nuevo precio total: Bs ${totalPrice.toStringAsFixed(2)}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _handleAcceptButton(querySnapshot, offeredPrice!, commission,
-                      extraCosts, totalPrice, paymentStatus);
-                },
-                child: Text('Aceptar'),
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      print('No se encontró una oferta para el serviceId proporcionado');
+    // Verifica el tipo de dato y realiza la conversión si es necesario.
+    if (offeredPrice is String) {
+      offeredPrice = double.tryParse(offeredPrice.toString()) ?? 0.0;
+    } else if (offeredPrice is! double) {
+      offeredPrice = 0.0;
     }
+
+    // Define la comisión y los gastos informáticos.
+    double commission = offeredPrice * 0.10; // Comisión del 10%.
+    double extraCosts = 3.0;
+    double totalPrice = offeredPrice + extraCosts; // Precio total.
+
+    String paymentStatus = 'pagado';
+
+    // Muestra el diálogo con el NIT obtenido
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirmación de la Oferta'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Oferta del servicio:'),
+              Text('Precio ofertado: Bs ${offeredPrice}'),
+              SizedBox(height: 16.0),
+              Text('NIT del cliente: $clientNIT'), // Mostrar el NIT
+              SizedBox(height: 16.0),
+              Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
+              SizedBox(height: 16.0),
+              Text('Nuevo precio total: Bs ${totalPrice.toStringAsFixed(2)}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Llamar a la función para manejar la aceptación
+                _handleAcceptButton(
+                  querySnapshot,
+                  offeredPrice,
+                  commission,
+                  extraCosts,
+                  totalPrice,
+                  paymentStatus,
+                  clientNIT, // Pasar el NIT a la función
+                );
+              },
+              child: Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    );
+  } else {
+    print('No se encontró una oferta para el serviceId proporcionado');
   }
+}
 
   void _handleAcceptButton(
       QuerySnapshot querySnapshot,
@@ -488,7 +500,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       double commission,
       double extraCost,
       double totalPrice,
-      String paymentStatus) async {
+      String paymentStatus,
+      String clientNIT, // Recibir el NIT como parámetro
+      ) async {
     try {
       final offerRef = FirebaseFirestore.instance
           .collection('offers')
@@ -510,6 +524,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             'extraCosts': extraCost,
             'totalPrice': totalPrice,
             'status': 'completed',
+            'clientNIT': clientNIT, // Guardar el NIT
             'paymentStatus': 'debe', // Nuevo campo
           });
 
@@ -519,6 +534,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
             'extraCosts': extraCost,
             'totalPrice': totalPrice,
             'status': 'completed',
+            'clientNIT': clientNIT, // Guardar el NIT
             'paymentStatus': 'debe', // Nuevo campo
           });
         } else {
