@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 class UserData {
   String userId;
   String displayName;
@@ -20,10 +22,11 @@ class UserData {
   String paymentType;
   String email;
   RegistrationData registrationData;
-  String referrerWorkerId; // ID del trabajador que refirió
-  String referralCode; // Código de referido ingresado por el usuario
+  String referrerWorkerId;
+  String referralCode;
   String verificationStatus;
-  int points; // Cambiado a int
+  int points;
+  String? requiresInvoice; // Nuevo campo agregado
 
   UserData({
     required this.userId,
@@ -45,10 +48,39 @@ class UserData {
     required this.email,
     required this.registrationData,
     required this.referrerWorkerId,
-    required this.referralCode, // Agregamos el campo referralCode
+    required this.referralCode,
     required this.verificationStatus,
-    required this.points, // Agregamos el campo points
+    required this.points,
+    this.requiresInvoice, // Incluido en el constructor
   });
+
+  /// Constructor para invitados
+  factory UserData.guest() {
+    return UserData(
+      userId: '',
+      displayName: 'Invitado',
+      idCardNumber: '',
+      phoneNumber: '',
+      getToken: null,
+      imagePath: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      selectedCountryCode: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: '',
+      location: null,
+      paymentType: '',
+      email: '',
+      registrationData: RegistrationData.guest(), // asegúrate de tener esto en tu clase RegistrationData
+      referrerWorkerId: '',
+      referralCode: '',
+      verificationStatus: 'Invitado',
+      points: 0,
+    );
+  }
 
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
@@ -71,8 +103,13 @@ class UserData {
           : null,
       idDocumentImagePath: json['idDocumentImagePath'] ?? '',
       idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
-      referrerWorkerId: json['referrerWorkerId'] ?? '', // ID del que refirió
-      referralCode: json['referralCode'] ?? '', // Código de referido ingresado
+      referrerWorkerId: json['referrerWorkerId'] ?? '',
+      referralCode: json['referralCode'] ?? '',
+      verificationStatus: json['verificationStatus'] ?? '',
+      requiresInvoice: json['requiresInvoice'], // Incluido en fromJson
+      points: json['points'] is int
+          ? json['points']
+          : int.tryParse(json['points'].toString()) ?? 0,
       registrationData: RegistrationData(
         userId: json['id'] ?? '',
         devicesId: json['devicesId'] ?? '',
@@ -92,12 +129,16 @@ class UserData {
         idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
         email: json['email'] ?? '',
         imagePathList: [],
+        
         criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
         certificateImagePaths: json['certificateImagePaths'] ?? '',
         referralCode: json['referralCode'] ?? '',
-        points: json['points'] is int ? json['points'] : int.tryParse(json['points'].toString()) ?? 0, codeReferral: json['codeReferral']?? '', verificationStatus: json['verificationStatus']?? '', // Convierte a int
+        codeReferral: json['codeReferral'] ?? '',
+        verificationStatus: json['verificationStatus'] ?? '',
+        points: json['points'] is int
+            ? json['points']
+            : int.tryParse(json['points'].toString()) ?? 0,
       ),
-      points: json['points'] is int ? json['points'] : int.tryParse(json['points'].toString()) ?? 0, verificationStatus: json['verificationStatus']?? '', // Convierte a int
     );
   }
 
@@ -122,7 +163,9 @@ class UserData {
       'idDocumentImagePath2': idDocumentImagePath2,
       'referrerWorkerId': referrerWorkerId,
       'referralCode': referralCode,
-      'points': points, // Asegúrate de incluir points
+      'verificationStatus': verificationStatus,
+      'points': points,
+      'requiresInvoice': requiresInvoice, // Incluido en toJson
     };
   }
 
@@ -140,11 +183,13 @@ class UserData {
     return [];
   }
 }
+
+// Función extra que ya tenías:
 Future<String?> getCurrentWorkerId() async {
   User? user = FirebaseAuth.instance.currentUser;
   if (user != null) {
-    return user.uid; // El workerId es el UID del usuario autenticado
+    return user.uid;
   } else {
-    return null; // El usuario no está autenticado
-    }
+    return null;
+  }
 }

@@ -73,6 +73,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         fcmToken = value;
       });
     });
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentDisplayName = currentUser?.displayName ?? '';
 
     restoreFormState();
     restoreFormCompletedState();
@@ -80,7 +82,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     setState(() {
       registrationData = RegistrationData(
         userId: '',
-        displayName: '',
+        displayName: currentDisplayName,
         idCardNumber: '',
         phoneNumber: '',
         imagePath: '',
@@ -101,7 +103,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       userData = UserData(
         userId: '',
-        displayName: '',
+        displayName: currentDisplayName,
         idCardNumber: '',
         phoneNumber: '',
         location: null,

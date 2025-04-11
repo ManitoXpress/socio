@@ -70,16 +70,16 @@ class ServiceRepository {
     }
   }
 
-  // Método privado para obtener los servicios por estado
- Future<List<ServiceRequest>> _fetchServicesByStatus(
-    String type,
-    String column,
-    String userId,
-    String token,
-    List<Offer> offers,
+// Método privado para obtener los servicios por estado
+Future<List<ServiceRequest>> _fetchServicesByStatus(
+  String type,
+  String column,
+  String workerId, // Ahora se asume que es el workerId
+  String token,
+  List<Offer> offers,
 ) async {
   try {
-    final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
+    final cachedRequest = await LocalCacheService.getCachedServiceRequest(workerId);
     if (cachedRequest != null) {
       if (cachedRequest.status.id == 'available') {
         print('Datos del caché encontrados y filtrados por available...');
@@ -93,7 +93,7 @@ class ServiceRepository {
 
       print('Parámetro type: $type');
       print('Parámetro column: $column');
-      print('Parámetro userId: $userId');
+      print('Parámetro workerId: $workerId');
       print('Parámetro deviceId: $deviceId');
 
       // 1. Obtener especialidades del trabajador
@@ -122,7 +122,10 @@ class ServiceRepository {
                 .where((service) =>
                     service.status.id == 'available' &&
                     expertiseNames.contains(
-                        service.subcategoryName.toLowerCase().trim()))
+                        service.subcategoryName.toLowerCase().trim()) &&
+                    // Se descartan aquellos servicios en los que ya exista una oferta para este worker
+                    !offers.any((offer) => offer.serviceId == service.id && offer.workerId == workerId)
+                )
                 .toList();
 
             // 4. Cachear resultados
@@ -147,6 +150,7 @@ class ServiceRepository {
     return [];
   }
 }
+
 
 // Función auxiliar para mapear los datos del servicio
 ServiceRequest _mapToServiceRequest(Map<String, dynamic> item) {

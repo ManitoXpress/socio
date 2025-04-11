@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
+
 class ServiceDataWizard extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
@@ -33,7 +34,7 @@ class ServiceDataWizard extends StatefulWidget {
 }
 
 class _Step1FormState extends State<ServiceDataWizard> {
-  final TextEditingController fullNameController = TextEditingController();
+  TextEditingController fullNameController = TextEditingController();
   final TextEditingController idCardController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController referralCodeController = TextEditingController();
@@ -45,6 +46,8 @@ class _Step1FormState extends State<ServiceDataWizard> {
   void initState() {
     super.initState();
     widget.selectedCountryCode = '+591';
+    fullNameController =
+        TextEditingController(text: widget.userData.displayName);
   }
 
   bool isStep1Valid() {
@@ -52,7 +55,6 @@ class _Step1FormState extends State<ServiceDataWizard> {
         idCardController.text.isNotEmpty &&
         phoneController.text.isNotEmpty;
   }
-
 
   Future<void> _verifyReferralCode(String referralCode) async {
     try {
@@ -66,10 +68,14 @@ class _Step1FormState extends State<ServiceDataWizard> {
         return;
       }
 
-      final workersCollection = FirebaseFirestore.instance.collection('workers');
+      final workersCollection =
+          FirebaseFirestore.instance.collection('workers');
 
       // Buscar si existe un trabajador con ese idCardNumber
-      final querySnapshot = await workersCollection.where('codeReferral', isEqualTo: referralCode).limit(1).get();
+      final querySnapshot = await workersCollection
+          .where('codeReferral', isEqualTo: referralCode)
+          .limit(1)
+          .get();
 
       if (querySnapshot.docs.isNotEmpty) {
         print('Código de referido válido.');
@@ -85,8 +91,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
               idDocumentImagePath: '',
               idDocumentImagePath2: '',
               certificateImagePaths: '',
-              criminalRecordImagePath: ''
-          );
+              criminalRecordImagePath: '');
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,8 +125,6 @@ class _Step1FormState extends State<ServiceDataWizard> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +205,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                   style: MyTextStyles.inputTextStyle,
                   cursorColor: const Color(0xFF830A09),
                   decoration: InputDecoration(
-                    hintText: "Documento de Identidad",
+                    hintText: "Documento de Identidad (NIT, CI, etc.)",
                     filled: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -275,12 +278,12 @@ class _Step1FormState extends State<ServiceDataWizard> {
                             // Actualiza los datos de registro con el código de referido
                             widget.registrationController
                                 .updateRegistrationData(
-                                referralCode: value,
-                                workerType: '',
-                                idDocumentImagePath: '',
-                                idDocumentImagePath2: '',
-                                certificateImagePaths: '',
-                                criminalRecordImagePath: '');
+                                    referralCode: value,
+                                    workerType: '',
+                                    idDocumentImagePath: '',
+                                    idDocumentImagePath2: '',
+                                    certificateImagePaths: '',
+                                    criminalRecordImagePath: '');
                             widget.userData.referrerWorkerId = value;
                           });
                         },
@@ -343,7 +346,7 @@ class _Step1FormState extends State<ServiceDataWizard> {
                           ),
                           child: Padding(
                             padding:
-                            const EdgeInsets.symmetric(horizontal: 10.0),
+                                const EdgeInsets.symmetric(horizontal: 10.0),
                             child: DropdownButton<String>(
                               value: widget.selectedWorkerType,
                               onChanged: (value) {
@@ -351,13 +354,68 @@ class _Step1FormState extends State<ServiceDataWizard> {
                                   widget.selectedWorkerType = value!;
                                   widget.registrationController
                                       .updateRegistrationData(
-                                      workerType: value,
-                                      idDocumentImagePath: '',
-                                      idDocumentImagePath2: '',
-                                      certificateImagePaths: '',
-                                      criminalRecordImagePath: '',
-                                      referralCode: '');
+                                          workerType: value,
+                                          idDocumentImagePath: '',
+                                          idDocumentImagePath2: '',
+                                          certificateImagePaths: '',
+                                          criminalRecordImagePath: '',
+                                          referralCode: '');
                                   widget.userData.paymentType = value;
+                                });
+                              },
+                              items: ['Marque aqui', 'SI', 'NO']
+                                  .map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(value),
+                                );
+                              }).toList(),
+                              style: MyTextStyles.inputTextStyle,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Emite factura?',
+                        style: MyTextStyles.inputTextStyle.copyWith(
+                          color: const Color(0xFF830A09),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 60,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            border: Border.all(
+                                color: const Color.fromARGB(255, 0, 0, 0)),
+                          ),
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 10.0),
+                            child: DropdownButton<String>(
+                              value: widget.userData.requiresInvoice ??
+                                  'Marque aqui',
+                              onChanged: (value) {
+                                setState(() {
+                                  widget.userData.requiresInvoice = value!;
+                                  widget.registrationController
+                                      .updateRegistrationData(
+                                          requiresInvoice: value,
+                                          workerType: '',
+                                          idDocumentImagePath: '',
+                                          idDocumentImagePath2: '',
+                                          certificateImagePaths: '',
+                                          criminalRecordImagePath: '',
+                                          referralCode: '');
                                 });
                               },
                               items: ['Marque aqui', 'SI', 'NO']

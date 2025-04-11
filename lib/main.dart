@@ -42,6 +42,9 @@ void main() async {
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
+  if (Platform.isIOS) {
+    await requestTrackingPermission(); // Solo en iOS
+  }
 
   // Inicializar el servicio de notificaciones
   await FCMService().init();
@@ -58,6 +61,15 @@ void main() async {
       builder: (context, child) => MyApp(deviceId: deviceId),
     ),
   );
+}
+Future<void> requestTrackingPermission() async {
+  if (Platform.isIOS) {
+    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+    if (status == TrackingStatus.notDetermined) {
+      final result = await AppTrackingTransparency.requestTrackingAuthorization();
+      print("Estado de ATT: \$result");
+    }
+  }
 }
 
 Future<String> obtenerDeviceId() async {
@@ -173,11 +185,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             backgroundColor: Color(0xFF84090D),
           ),
         ),
-        home: isLoading
-            ? LoadingScreen()
-            : isLoggedIn
-            ? HomeScreen(userData: userData!, registrationData: registrationData!)
-            : LoginScreen(deviceId: widget.deviceId),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => isLoading ? LoadingScreen() : (isLoggedIn ? HomeScreen(userData: userData!, registrationData: registrationData!) : LoginScreen(deviceId: widget.deviceId)),
+          '/home': (context) => HomeScreen(userData: userData!, registrationData: registrationData!),  // Ruta definida para 'HomeScreen'
+        },
         );
     }
 }

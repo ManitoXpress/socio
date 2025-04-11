@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:socio/Screens/customtickets.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
@@ -7,7 +9,6 @@ import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/Utils/timeLines.dart';
 import 'package:socio/Utils/workerDetails.dart';
-
 class ServiceListBuilder {
   static Widget buildOfferList(
       List<ServiceRequest> services,
@@ -15,7 +16,8 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      final UserData userData) {
+
+      final UserData userData, final ApiService apiService,final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -76,6 +78,7 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
+                        apiService: apiService, apiService2: apiService2,
                       ),
                     ),
                   );
@@ -98,7 +101,7 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      final UserData userData) {
+      final UserData userData, final ApiService apiService, final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -159,6 +162,7 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
+                        apiService: apiService, apiService2: apiService2,
                       ),
                     ),
                   );
@@ -179,7 +183,8 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData) {
+
+      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -232,6 +237,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
+                      apiService: apiService,apiService2: apiService2,
                     ),
                   ),
                 );
@@ -251,7 +257,7 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData) {
+      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -259,6 +265,7 @@ class ServiceListBuilder {
         itemCount: services.length,
         itemBuilder: (context, index) {
           final service = services[index];
+          final offer = null; // Define offer as null
           return GestureDetector(
             onTap: () async {
               try {
@@ -304,6 +311,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
+                      apiService: apiService, apiService2: apiService2,
                     ),
                   ),
                 );
@@ -323,7 +331,7 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData) {
+      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -331,6 +339,7 @@ class ServiceListBuilder {
         itemCount: services.length,
         itemBuilder: (context, index) {
           final service = services[index];
+          final offer = null; // Define offer as null
           return GestureDetector(
             onTap: () async {
               try {
@@ -376,6 +385,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
+                      apiService: apiService, apiService2: apiService2,
                     ),
                   ),
                 );
@@ -396,7 +406,7 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData) {
+      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -456,6 +466,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
+                      apiService: apiService, apiService2: apiService2,
                     ),
                   ),
                 );

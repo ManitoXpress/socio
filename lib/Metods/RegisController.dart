@@ -56,6 +56,7 @@ class RegistrationController {
     String? phoneNumber,
     String? imagePath,
     LatLng? location,
+    String? requiresInvoice, // Nuevo campo agregado
     required String workerType,
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
@@ -104,6 +105,7 @@ class RegistrationData {
   int points; // Puntos
   String codeReferral; // Código generado
   String verificationStatus; // Nuevo campo añadido
+  String? requiresInvoice;
 
   RegistrationData.fromForm({
     required String devicesId,
@@ -127,29 +129,30 @@ class RegistrationData {
     required String referralCode,
     required int points,
     required String codeReferral,
-    required String verificationStatus, // Añadido aquí
-  }) : verificationStatus = verificationStatus, // Asegúrate de incluirlo en el constructor
-        userId = userId,
-        fcmToken = fcmToken,
-        devicesId = devicesId,
-        displayName = displayName,
-        idCardNumber = idCardNumber,
-        phoneNumber = phoneNumber,
-        imagePathList = imagePathList,
-        imagePath = imagePath,
-        paymentType = paymentType,
-        expertises = expertises,
-        selectedCountryCode = selectedCountryCode,
-        expLevel = expLevel,
-        idDocumentImagePath = idDocumentImagePath,
-        idDocumentImagePath2 = idDocumentImagePath2,
-        criminalRecordImagePath = criminalRecordImagePath,
-        certificateImagePaths = certificateImagePaths,
-        email = email,
-        location = location,
-        referralCode = referralCode,
-        points = points,
-        codeReferral = '${displayName.split(' ').first}_${idCardNumber.length >= 4 ? idCardNumber.substring(idCardNumber.length - 4) : idCardNumber}';
+    required String verificationStatus,
+    this.requiresInvoice, // Incluido en el constructor
+  }) : verificationStatus = verificationStatus,
+       userId = userId,
+       fcmToken = fcmToken,
+       devicesId = devicesId,
+       displayName = displayName,
+       idCardNumber = idCardNumber,
+       phoneNumber = phoneNumber,
+       imagePathList = imagePathList,
+       imagePath = imagePath,
+       paymentType = paymentType,
+       expertises = expertises,
+       selectedCountryCode = selectedCountryCode,
+       expLevel = expLevel,
+       idDocumentImagePath = idDocumentImagePath,
+       idDocumentImagePath2 = idDocumentImagePath2,
+       criminalRecordImagePath = criminalRecordImagePath,
+       certificateImagePaths = certificateImagePaths,
+       email = email,
+       location = location,
+       referralCode = referralCode,
+       points = points,
+       codeReferral = '${displayName.split(' ').first}_${idCardNumber.length >= 4 ? idCardNumber.substring(idCardNumber.length - 4) : idCardNumber}';
 
   RegistrationData({
     required this.devicesId,
@@ -173,6 +176,35 @@ class RegistrationData {
     required this.referralCode,
     required this.points,
     required this.codeReferral,
-    required this.verificationStatus, // Asegúrate de incluir este campo también
+    required this.verificationStatus,
   });
+
+  /// Constructor factory para el modo invitado
+  factory RegistrationData.guest() {
+    return RegistrationData(
+      devicesId: '',
+      fcmToken: '',
+      userId: 'guest',
+      displayName: 'Invitado',
+      idCardNumber: '',
+      phoneNumber: '',
+      imagePath: 'assets/images/guest_placeholder.png', // Imagen por defecto para invitados
+      imagePathList: [],
+      paymentType: '',
+      selectedCountryCode: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      criminalRecordImagePath: '',
+      certificateImagePaths: '',
+      expertises: [],
+      expLevel: [],
+      email: '',
+      location: null,
+      referralCode: '',
+      points: 0,
+      codeReferral: 'Invitado', // O puedes dejarlo vacío o generar otro código
+      verificationStatus: 'Invitado',
+      
+    );
+  }
 }

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/ServiceResponse/requestWorker.dart';
-
 class Offer {
   final String id;
   final String serviceId;
@@ -247,4 +247,3 @@ class ServiceRequest {
     return 0.0;
   }
 }
-

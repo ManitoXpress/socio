@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:socio/Metods/RegisController.dart';
 import 'package:socio/Metods/loginController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:google_fonts/google_fonts.dart';
@@ -137,83 +139,32 @@ class _LoginFormState extends State<LoginScreen> {
     });
   }
   Future<void> _signInAsGuest() async {
-    try {
-      // Aquí puedes manejar la lógica de inicio de sesión como invitado
-      print("Usuario ingresó como invitado");
-      // Navegar a la pantalla de inicio
-      Navigator.pushReplacementNamed(context, '/home');
-    } catch (e) {
-      print('Error al iniciar como invitado: $e');
+  try {
+    print("Usuario ingresó como invitado");
+    // Navegar a la pantalla de inicio pasando el flag isGuest y datos dummy
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+          userData: UserData.guest(), // Implementa un constructor o método factory para invitados
+          registrationData: RegistrationData.guest(),
+          isGuest: true,
+        ),
+      ),
+    );
+  } catch (e) {
+    print('Error al iniciar como invitado: $e');
+  }
+}
+
+  void _launchDeleteAccountURL() async {
+    const url = 'https://manitosxpress.com/#/DeleteAccount';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
     }
   }
-
-
-  Future<void> login() async {
-    isChecking?.change(false);
-    isHandsUp?.change(false);
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      final userDoc = await _firestore
-          .collection('workers')
-          .doc(userCredential.user?.uid)
-          .get();
-
-      if (userDoc.exists) {
-        successTrigger?.fire();
-        LoginScreenController.signInWithGoogle(context);
-      } else {
-        failTrigger?.fire();
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Usuario no encontrado"),
-              content: Text("El usuario no existe en la colección de workers."),
-              actions: [
-                TextButton(
-                  child: Text(
-                    "Aceptar",
-                    style: MyTextStyles.linkTextStyle,
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      failTrigger?.fire();
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Inicio de sesión fallido"),
-            content:
-                Text("Email o contraseña incorrectos. Inténtalo de nuevo."),
-            actions: [
-              TextButton(
-                child: Text(
-                  "Aceptar",
-                  style: MyTextStyles.linkTextStyle,
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
   Future<void> signInWithGoogle() async {
     setState(() => isLoadingGoogle = true);
     try {
@@ -462,6 +413,45 @@ class _LoginFormState extends State<LoginScreen> {
                     ),
                     // Botón de Apple
                   ],
+                ),
+                 SizedBox(height: 20.h), 
+                // Botón de Eliminar Cuenta
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF1A819A), // Color rojo para el botón de eliminar
+                    shape: CircleBorder(),
+                    padding: EdgeInsets.all(3.w),
+                  ),
+                  onPressed: _launchDeleteAccountURL,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 40.r,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      radius: 37.r,
+                      child: CircleAvatar(
+                        radius: 35.r,
+                        backgroundColor: Colors.white,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                            ),
+                            Text(
+                              'Eliminar',
+                              style: GoogleFonts.lato(
+                                color: Colors.red,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

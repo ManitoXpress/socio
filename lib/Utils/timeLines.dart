@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:socio/Metods/imagePreview.dart';
 import 'package:socio/Metods/jobComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/ServiceResponse/requestWorker.dart';
@@ -20,6 +22,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
+
   final String initialStatus;
   final ValueChanged<String> onComplete;
   final Function(String) onStatusChanged;
@@ -27,11 +30,14 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final String workerId;
   final WorkerDetails? workerDetails;
   final List<Offer> offers;
+  final ApiService apiService;
+  final ApiService2 apiService2;
 
   final List<String> images; // Parámetro images
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
+
     required this.initialStatus,
     required this.onComplete,
     required this.onStatusChanged,
@@ -40,6 +46,8 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.images, // Asegurarse de que el parámetro esté presente
     required this.workerDetails,
     required this.offers,
+    required this.apiService,
+    required this.apiService2,
   });
 
   @override
@@ -58,6 +66,8 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   final ImagePicker _picker = ImagePicker();
   String? _selectedImageUrl;
   double? _workerOfferedPrice;
+  bool _isSendingProposal = false;
+  bool _isCompletingJob = false;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -251,135 +261,162 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Enviar Propuesta',
-            style: MyTextStyles.linkTextStyle,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment
-                .start, // Alinea todo el contenido a la izquierda
-            children: [
-              Align(
-                alignment:
-                    Alignment.centerLeft, // Alinea específicamente este texto
-                child: Text(
-                  'Ingrese el precio que va a ofertar:',
-                  style: MyTextStyles.ButtonTextStyle,
-                ),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setStateDialog) {
+            return AlertDialog(
+              title: Text(
+                'Enviar Propuesta',
+                style: MyTextStyles.linkTextStyle,
               ),
-              SizedBox(height: 8.0),
-              TextField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: "Precio Ofertado",
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  focusColor: Color(0xFF830A09),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Color(0xFF830A09),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Ingrese el precio que va a ofertar:',
+                      style: MyTextStyles.ButtonTextStyle,
                     ),
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  SizedBox(height: 8.0),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: "Precio Ofertado",
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      focusColor: Color(0xFF830A09),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF830A09),
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton.icon(
+                  onPressed: _isSendingProposal
+                      ? null
+                      : () {
+                    Navigator.of(context).pop();
+                  },
+                  icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+                  label: Text(
+                    "Cancelar",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFF84090D)),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
-              label: Text(
-                "Cancelar",
-                style: GoogleFonts.karla(
-                  color: Color(0xFF84090D),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF84090D),
+                ElevatedButton.icon(
+                  onPressed: _isSendingProposal
+                      ? null
+                      : () async {
+                    setStateDialog(() {
+                      _isSendingProposal = true;
+                    });
+
+                    await _sendProposal();
+
+                    setStateDialog(() {
+                      _isSendingProposal = false;
+                    });
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: _isSendingProposal
+                      ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF84090D),
+                      ),
+                    ),
+                  )
+                      : Icon(Icons.check_circle, color: Color(0xFF84090D)),
+                  label: Text(
+                    _isSendingProposal ? "Enviando..." : "Enviar Propuesta",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFF84090D)),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: _sendProposal,
-              icon: Icon(Icons.check_circle, color: Color(0xFF84090D)),
-              label: Text(
-                "Enviar Propuesta",
-                style: GoogleFonts.karla(
-                  color: Color(0xFF84090D),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF84090D),
-                  ),
-                ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  void _sendProposal() async {
-    // Obtén el precio ofertado desde el controlador.
+
+
+  Future<void> _sendProposal() async {
     double offeredPrice = double.tryParse(_priceController.text) ?? 0.0;
-
-    // Define los gastos informáticos adicionales.
     double extraCosts = 3.0;
-
-    // Obtén el workerId del usuario autenticado
     String? workerId = await getCurrentWorkerId();
 
-    // Verifica que el workerId no sea null
     if (workerId == null || workerId.isEmpty) {
       print('No se pudo obtener el workerId');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo obtener el ID del trabajador')),
+      );
       return;
     }
 
-    // Crea una instancia del servicio para enviar la propuesta
     ProposalService proposalService = ProposalService(
       context: context,
       serviceRequest: widget.serviceRequest,
-      workerId: workerId, // Ahora pasa el workerId obtenido
+      workerId: workerId,
       userData: widget.userData,
     );
 
-    // Llama al método sendProposal con el nuevo parámetro
     await proposalService.sendProposal(
       offeredPrice: offeredPrice,
-      extraCosts: extraCosts, // Envía los gastos informáticos como parámetro
+      extraCosts: extraCosts,
       onStatusChanged: widget.onStatusChanged,
       priceController: _priceController,
       setFetchedOfferedPrice: (double price) {
         setState(() {
-          _fetchedOfferedPrice = price; // Actualiza el precio ofertado mostrado
+          _fetchedOfferedPrice = price;
         });
       },
     );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Propuesta enviada exitosamente')),
+    );
   }
+
 
   void _showPendingConfirmation2Dialog(BuildContext context) async {
     final querySnapshot = await FirebaseFirestore.instance
@@ -508,16 +545,22 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   }
 
   void _showCompleteJobDialog(BuildContext context) {
+    final offer = widget.offers.isNotEmpty ? widget.offers.first : null; // Usa la primera oferta si está disponible, de lo contrario, null
+
     if (widget.serviceRequest.status == 'pending_confirmation2') {
       _showPendingConfirmation2Dialog(context);
     } else {
       CompleteJobDialog(
         context: context,
         serviceRequest: widget.serviceRequest,
+        offer: offer, // Pasa la oferta aquí
         onStatusChanged: widget.onStatusChanged,
+        apiService: widget.apiService,
+        apiService2: widget.apiService2,
       ).show();
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -773,6 +816,77 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           ],
         );
       case 'in_progress':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _showCompleteJobDialog(context),
+                  icon: Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
+                  label: Text(
+                    "Completar trabajo",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFFB00020),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFFB00020)),
+                    ),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => _showNoParticipationDialog(context),
+                  icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
+                  label: Text(
+                    "No Participar",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFFB00020),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFFB00020)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10), // Espacio entre los botones
+            ElevatedButton.icon(
+              onPressed: () =>
+                  _openChat(widget.workerId, widget.serviceRequest.userId),
+              icon: Icon(Icons.chat, color: Colors.white),
+              label: Text(
+                "Chat",
+                style: GoogleFonts.karla(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB00020),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+            ),
+          ],
+        );
+
       case 'pending_confirmation2':
         return Column(
           children: [
@@ -821,27 +935,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
                     ),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => _showCompleteJobDialog(context),
-                  icon:
-                      Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
-                  label: Text(
-                    "Completar trabajo",
-                    style: GoogleFonts.karla(
-                      color: Color(0xFFB00020),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(color: Color(0xFFB00020)),
-                    ),
-                  ),
-                ),
+
               ],
             ),
             ElevatedButton.icon(

@@ -19,12 +19,15 @@ import '../ServiceResponse/requestUserData.dart';
 class HomeScreen extends StatefulWidget {
   final RegistrationData registrationData;
   final UserData userData;
-  
+  final int initialPageIndex;
+  final bool isGuest;
 
   const HomeScreen({
     Key? key,
     required this.registrationData,
     required this.userData,
+    this.initialPageIndex = 0,
+    this.isGuest = false,
   }) : super(key: key);
 
   @override
@@ -32,9 +35,10 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Nota: Para evitar reasignaciones de variables final, declara _pageController como "late"
   final userId = FirebaseAuth.instance.currentUser?.uid;
   int _currentIndex = 0;
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   final customColor = const MaterialColor(0xFF841813, {
     50: Color(0xFF841813),
     100: Color(0xFF841813),
@@ -54,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialPageIndex;
+    _pageController = PageController(initialPage: widget.initialPageIndex);
     _verificationFuture = _verification(widget.registrationData);
     _checkVerificationStatus();
   }
@@ -85,14 +91,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: MyTextStyles.linkTextStyle,
                   ),
                   style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     backgroundColor: Colors.white,
-                    foregroundColor: Color(
-                        0xFF841813), // Color del texto, el mismo que el borde
+                    foregroundColor: const Color(0xFF841813),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(
-                        color: Color(0xFF841813), // Color del borde
+                      side: const BorderSide(
+                        color: Color(0xFF841813),
                       ),
                     ),
                   ),
@@ -122,14 +127,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Función auxiliar para obtener un valor seguro, con un valor predeterminado
       String getString(String key, {String defaultValue = ''}) {
-        return userDoc[key] is String ? userDoc[key] : defaultValue;
+        return userDoc.data()?[key] is String ? userDoc.data()![key] : defaultValue;
       }
 
       // Función auxiliar para obtener una lista de strings
       List<String> getListOfStrings(String key) {
-        if (userDoc[key] is List) {
-          return List<String>.from(
-              userDoc[key].where((item) => item is String));
+        if (userDoc.data()?[key] is List) {
+          return List<String>.from(userDoc.data()?[key].where((item) => item is String));
         }
         return [];
       }
@@ -139,15 +143,13 @@ class _HomeScreenState extends State<HomeScreen> {
         email: getString('email'),
         phoneNumber: getString('phoneNumber'),
         paymentType: getString('paymentType'),
-        verificationStatus: userDoc['verificationStatus'] is String
-            ? userDoc['verificationStatus']
-            : '',
+        verificationStatus: userDoc.data()?['verificationStatus'],
         expertises: getListOfStrings('expertises'),
         expLevel: getListOfStrings('expLevel'),
         imagePath: getString('imagePath'),
         userData: widget.userData,
         registrationData: registrationData,
-        points: userDoc['points'] is int ? userDoc['points'] : 0,
+        points: userDoc.data()?['points'] is int ? (userDoc.data()!['points'] as int) : 0,
       );
     } catch (e) {
       print('Error en verificación: $e');
@@ -226,14 +228,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: MyTextStyles.linkTextStyle,
               ),
               style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 backgroundColor: Colors.white,
-                foregroundColor:
-                Color(0xFF841813), // Color del texto, el mismo que el borde
+                foregroundColor: const Color(0xFF841813),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
-                  side: BorderSide(
-                    color: Color(0xFF841813), // Color del borde
+                  side: const BorderSide(
+                    color: Color(0xFF841813),
                   ),
                 ),
               ),
@@ -270,14 +271,21 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildDrawerButton(
               icon: Icons.person,
               text: "Perfil",
-              color: Color(0xFF84090D), // Establece el color aquí
+              color: const Color(0xFF84090D),
               onPressed: () async {
+                // Bloquear funcionalidad si es invitado
+                if (widget.isGuest) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("Función no disponible para invitados")),
+                  );
+                  return;
+                }
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null) {
                   try {
                     final token = await user.getIdToken();
-                    final userData =
-                    await ApiService2().fetchUserData(user.uid, token!);
+                    final userData = await ApiService2().fetchUserData(user.uid, token!);
 
                     Navigator.push(
                       context,
@@ -288,9 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           phoneNumber: userData.phoneNumber,
                           paymentType: userData.paymentType,
                           expertises: userData.expertises,
-                          imagePath: userData.imagePath.isNotEmpty
-                              ? userData.imagePath[0]
-                              : '',
+                          imagePath: userData.imagePath.isNotEmpty ? userData.imagePath[0] : '',
                           userData: widget.userData,
                           registrationData: widget.registrationData,
                         ),
@@ -305,21 +311,27 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildDrawerButton(
               icon: Icons.share,
               text: "Referidos",
-              color: Color(0xFF84090D), // Establece el color aquí
+              color: const Color(0xFF84090D),
               onPressed: () async {
+                // Bloquear funcionalidad si es invitado
+                if (widget.isGuest) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("Función no disponible para invitados")),
+                  );
+                  return;
+                }
                 final codeReferral = await getCodeReferral();
                 if (codeReferral == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("No se encontró código de referido")),
+                    const SnackBar(content: Text("No se encontró código de referido")),
                   );
                   return;
                 }
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        ReferralScreen(codeReferral: codeReferral),
+                    builder: (context) => ReferralScreen(codeReferral: codeReferral),
                   ),
                 );
               },
@@ -327,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildDrawerButton(
               icon: Icons.help,
               text: "Ayuda",
-              color: Color(0xFF84090D), // Establece el color aquí
+              color: const Color(0xFF84090D),
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => HelpScreen()),
@@ -336,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildDrawerButton(
               icon: Icons.support_agent,
               text: "Soporte Técnico",
-              color: Color(0xFF84090D), // Establece el color aquí
+              color: const Color(0xFF84090D),
               onPressed: _openWhatsApp,
             ),
             SizedBox(height: 18.h),
@@ -345,8 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildSocialButton(
                   icon: Icons.facebook,
-                  url:
-                  'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress',
+                  url: 'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress',
                   fallbackUrl: 'https://www.facebook.com/ManitosXpress',
                 ),
                 SizedBox(width: 18.w),
@@ -377,22 +388,22 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.symmetric(vertical: 5.h),
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white, // Fondo blanco
-          foregroundColor: const Color(0xFF830A09), // Color del icono (rojo)
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF830A09),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
         ),
         icon: Icon(
           icon,
-          size: 24.w, // Tamaño del icono
-          color: const Color(0xFF830A09), // Establecer color rojo para el icono
+          size: 24.w,
+          color: const Color(0xFF830A09),
         ),
         label: Align(
           alignment: Alignment.centerLeft,
           child: Text(
             text,
-            style: MyTextStyles.linkTextStyle, // Usar tu estilo predefinido
+            style: MyTextStyles.linkTextStyle,
           ),
         ),
         onPressed: onPressed,
@@ -400,13 +411,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSocialButton(
-      {required IconData icon, required String url, String? fallbackUrl}) {
+  Widget _buildSocialButton({required IconData icon, required String url, String? fallbackUrl}) {
     return IconButton(
       icon: Icon(
         icon,
         size: 45.w,
-        color: Colors.white, // Establecer el color del icono a blanco
+        color: Colors.white,
       ),
       onPressed: () => _abrirEnlace(url),
     );

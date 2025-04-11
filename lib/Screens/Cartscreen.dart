@@ -23,7 +23,6 @@ import '../ServiceResponse/get.dart';
 import '../ServiceResponse/request.dart';
 
 import '../Utils/styles.dart';
-
 class Historial extends StatefulWidget {
   final VoidCallback? onTabTapped;
 
@@ -45,6 +44,7 @@ class _HistorialState extends State<Historial>
   late final RegistrationData registrationData;
   late TabController _tabController;
   final ApiService apiService = ApiService();
+  final ApiService2 apiService2 = ApiService2();
   late NotificationService notificationService;
   late final ServiceDataFetcher serviceDataFetcher;
   late OfferRepository _offerRepository;
@@ -157,7 +157,7 @@ class _HistorialState extends State<Historial>
       idDocumentImagePath2: '',
       expertises: [],
       expLevel: [],
-      certificateImagePaths: '', referralCode: '', referrerWorkerId: '', points: 0, verificationStatus: '',
+      certificateImagePaths: '', referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '',
     );
 
     // Configurar el controlador de pestañas
@@ -256,11 +256,11 @@ class _HistorialState extends State<Historial>
       final results = await Future.wait(futures);
 
       // Extraer resultados
-      final availableServices = results[0] as List<ServiceRequest>;
-      final offerServices = results[1] as List<ServiceRequest>;
-      final inProgressServices = results[2] as List<ServiceRequest>;
-      final completedServices = results[3] as List<ServiceRequest>;
-      final cancelledServices = results[4] as List<ServiceRequest>;
+      final availableServices = results[0];
+      final offerServices = results[1];
+      final inProgressServices = results[2];
+      final completedServices = results[3];
+      final cancelledServices = results[4];
 
       // Calcular total de ofertas
       final totalOffers = offerServices.fold<int>(
@@ -323,13 +323,8 @@ class _HistorialState extends State<Historial>
               ),
               SizedBox(height: 20),
               Text(
-                'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
+                '🚀 ¡La app Manito Xpress arranca el 19 de abril! Prepárate para recibir servicios. 💪',
                 style: MyTextStyles.formServiceTextStyle,
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                '"Queremos recordarte que este mes los servicios serán libres de comisión, a partir del próximo mes se cobrará el 10% de comisión por cada servicio realizado"',
-                style: MyTextStyles.inputTextStyle6,
                 textAlign: TextAlign.center,
               ),
             ],
@@ -669,15 +664,16 @@ class _HistorialState extends State<Historial>
         );
         break;
 
-      case 'cancelled':
-        future = _serviceRepository4.fetchServicesByCancelled(
-          statusIds,
-          'status', // Corregido de 'available' a 'status'
-          userId,
-          token,
-          [],
-        );
-        break;
+
+  case 'cancelled':
+      future = _serviceRepository4.fetchServicesByCancelled(
+        statusIds,
+        'status',  // Corregido de 'available' a 'status'
+        userId,
+        token,
+        [],
+      );
+      break;
 
       default:
         return Center(child: Text("Estado no válido."));
@@ -702,8 +698,9 @@ class _HistorialState extends State<Historial>
         final services = snapshot.data!;
         if (statusIds == 'available') {
           final services = snapshot.data!;
+          final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.buildServiceListAvailable(
-              services, screenWidth, screenHeight, userId, userData);
+              services, screenWidth, screenHeight, userId, userData, apiService, apiService2);
         }
 
         if (statusIds == 'offer') {
@@ -712,35 +709,29 @@ class _HistorialState extends State<Historial>
           final offers = services.expand((s) => s.offers).toList();
 
           return ServiceListBuilder.buildOfferList(
-            services, // Servicio asociado
-            offers,
-            screenWidth,
-            screenHeight,
-            userId,
-            userData,
-          );
+            services, offers, screenWidth, screenHeight, userId, userData, apiService, apiService2);
         }
         if (statusIds == 'in_progress') {
           final services = snapshot.data!;
           final offers = services.expand((s) => s.offers).toList();
           return ServiceListBuilder.in_progressList(
-              services, offers, screenWidth, screenHeight, userId, userData);
+              services, offers, screenWidth, screenHeight, userId, userData,apiService, apiService2);
         }
         if (statusIds == 'completed') {
           final services = snapshot.data!;
 
           return ServiceListBuilder.buildServiceListComplete(
-              services, screenWidth, screenHeight, userId, userData);
+              services, screenWidth, screenHeight, userId, userData,apiService, apiService2);
         }
         if (statusIds == 'cancelled') {
           final services = snapshot.data!;
           return ServiceListBuilder.buildServiceListCancelled(
-              services, screenWidth, screenHeight, userId, userData);
+              services, screenWidth, screenHeight, userId, userData, apiService, apiService2);
         }
 
         final offers = services.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceList(
-            services, offers, screenWidth, screenHeight, userId, userData);
+            services, offers, screenWidth, screenHeight, userId, userData, apiService, apiService2);
       },
     );
   }

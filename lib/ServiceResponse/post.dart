@@ -158,66 +158,65 @@ class ApiService {
   }
 
 
-  Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
-    try {
+Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
+  try {
+    String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.idCardNumber.length >= 4
+        ? registrationData.idCardNumber.substring(registrationData.idCardNumber.length - 4)
+        : registrationData.idCardNumber}';
 
-      String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.idCardNumber.length >= 4
-          ? registrationData.idCardNumber.substring(registrationData.idCardNumber.length - 4)
-          : registrationData.idCardNumber}';
+    // Mapea cada expertise a un mapa con nombre e ID
+    List<Map<String, String>> expertises = (registrationData.expertises ?? [])
+        .where((expertise) => expertise != null) // Filtra elementos nulos
+        .map((expertise) => {
+              'name': expertise!.name ?? '', // Usa ! porque ya filtramos los nulos
+              'id': expertise.id ?? '',
+            })
+        .toList();
 
+    // Cuerpo de la solicitud
+    Map<String, dynamic> requestBody = {
+      'displayName': registrationData.displayName,
+      'idCardNumber': registrationData.idCardNumber,
+      'phoneNumber': registrationData.phoneNumber,
+      'location': registrationData.location ?? {},
+      'paymentType': registrationData.paymentType,
+      'imagePath': registrationData.imagePath,
+      'idDocumentImagePath': registrationData.idDocumentImagePath,
+      'idDocumentImagePath2': registrationData.idDocumentImagePath2,
+      'criminalRecordImagePath': registrationData.criminalRecordImagePath,
+      'certificateImagePaths': registrationData.certificateImagePaths,
+      'deviceId': registrationData.devicesId,
+      'fcmToken': registrationData.fcmToken,
+      'expertises': expertises,
+      'expLevel': registrationData.expLevel,
+      'verificationStatus': 'No verificado',
+      'points': registrationData.points,
+      'successfulReferrals': 0,
+      'codeReferral': codeReferral,
+      'requiresInvoice': registrationData.requiresInvoice ?? 'NO', // Agregado el campo requiresInvoice
+    };
 
+    print('Request Body: $requestBody');
 
-      // Mapea cada expertise a un mapa con nombre e ID
-      List<Map<String, String>> expertises = (registrationData.expertises ?? [])
-    .where((expertise) => expertise != null) // Filtra elementos nulos
-    .map((expertise) => {
-          'name': expertise!.name ?? '', // Usa ! porque ya filtramos los nulos
-          'id': expertise.id ?? '',
-        })
-    .toList();
-      // Cuerpo de la solicitud
-      Map<String, dynamic> requestBody = {
-        'displayName': registrationData.displayName,
-        'idCardNumber': registrationData.idCardNumber,
-        'phoneNumber': registrationData.phoneNumber, // Ahora usamos el número de teléfono de registrationData
-        'location': registrationData.location ?? {},
-        'paymentType': registrationData.paymentType,
-        'imagePath': registrationData.imagePath, // Asignamos directamente la URL generada correctamente
-        'idDocumentImagePath': registrationData.idDocumentImagePath,
-        'idDocumentImagePath2': registrationData.idDocumentImagePath2,
-        'criminalRecordImagePath': registrationData.criminalRecordImagePath,
-        'certificateImagePaths': registrationData.certificateImagePaths,
-        'deviceId': registrationData.devicesId,
-        'fcmToken': registrationData.fcmToken,
-        'expertises': expertises,
-        'expLevel': registrationData.expLevel,
-        'verificationStatus': 'No verificado',
-        'points': registrationData.points,
-        'successfulReferrals': 0,
-        'codeReferral': codeReferral,
-      };
+    // Enviar solicitud PATCH
+    final response = await http.patch(
+      Uri.parse('$baseUrl/workers/$userId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(requestBody),
+    );
 
-      print('Request Body: $requestBody');
+    print('Response Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
 
-      // Enviar solicitud PATCH
-      final response = await http.patch(
-        Uri.parse('$baseUrl/workers/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(requestBody), // No modificar la URL aquí
-      );
-
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
-      return response;
-    } catch (e) {
-      print('Error al actualizar el usuario: $e');
-      throw Exception('Error al actualizar el usuario: $e');
-    }
+    return response;
+  } catch (e) {
+    print('Error al actualizar el usuario: $e');
+    throw Exception('Error al actualizar el usuario: $e');
   }
+}
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
