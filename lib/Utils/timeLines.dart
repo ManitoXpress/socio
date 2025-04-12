@@ -68,6 +68,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   double? _workerOfferedPrice;
   bool _isSendingProposal = false;
   bool _isCompletingJob = false;
+  bool _workerHasOffered = false;
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -88,6 +89,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .doc(widget.serviceRequest.id)
         .snapshots();
     _fetchWorkerOffer();
+    _checkWorkerOffer();
   }
 
   @override
@@ -96,6 +98,17 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
+  // Método para verificar si el worker actual ya tiene una oferta para este servicio
+Future<void> _checkWorkerOffer() async {
+  String? workerId = await getCurrentWorkerId();
+  
+  if (workerId != null && widget.serviceRequest.offers.isNotEmpty) {
+    setState(() {
+      // Comprueba si alguna oferta fue hecha por este worker
+      _workerHasOffered = widget.serviceRequest.offers.any((offer) => offer.workerId == workerId);
+    });
+  }
+}
 
   Future<void> _fetchWorkerOffer() async {
     try {
@@ -257,126 +270,135 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     return null;
   }
 
-  void _showProposalDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setStateDialog) {
-            return AlertDialog(
-              title: Text(
-                'Enviar Propuesta',
-                style: MyTextStyles.linkTextStyle,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Ingrese el precio que va a ofertar:',
-                      style: MyTextStyles.ButtonTextStyle,
-                    ),
-                  ),
-                  SizedBox(height: 8.0),
-                  TextField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: "Precio Ofertado",
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                      ),
-                      focusColor: Color(0xFF830A09),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF830A09),
-                        ),
-                        borderRadius: BorderRadius.all(Radius.circular(10)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                ElevatedButton.icon(
-                  onPressed: _isSendingProposal
-                      ? null
-                      : () {
-                    Navigator.of(context).pop();
-                  },
-                  icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
-                  label: Text(
-                    "Cancelar",
-                    style: GoogleFonts.karla(
-                      color: Color(0xFF84090D),
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(color: Color(0xFF84090D)),
-                    ),
+  // Modifica el método _showProposalDialog para usar esta condición
+void _showProposalDialog(BuildContext context) {
+  // Si el worker ya ha ofertado, muestra un mensaje y no abre el diálogo
+  if (_workerHasOffered) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Ya has enviado una propuesta para este servicio')),
+    );
+    return;
+  }
+  
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setStateDialog) {
+          return AlertDialog(
+            title: Text(
+              'Enviar Propuesta',
+              style: MyTextStyles.linkTextStyle,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Ingrese el precio que va a ofertar:',
+                    style: MyTextStyles.ButtonTextStyle,
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: _isSendingProposal
-                      ? null
-                      : () async {
-                    setStateDialog(() {
-                      _isSendingProposal = true;
-                    });
-
-                    await _sendProposal();
-
-                    setStateDialog(() {
-                      _isSendingProposal = false;
-                    });
-
-                    Navigator.of(context).pop();
-                  },
-                  icon: _isSendingProposal
-                      ? SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFF84090D),
+                SizedBox(height: 8.0),
+                TextField(
+                  controller: _priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    hintText: "Precio Ofertado",
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                    focusColor: Color(0xFF830A09),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: Color(0xFF830A09),
                       ),
-                    ),
-                  )
-                      : Icon(Icons.check_circle, color: Color(0xFF84090D)),
-                  label: Text(
-                    _isSendingProposal ? "Enviando..." : "Enviar Propuesta",
-                    style: GoogleFonts.karla(
-                      color: Color(0xFF84090D),
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: BorderSide(color: Color(0xFF84090D)),
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
                     ),
                   ),
                 ),
               ],
-            );
-          },
-        );
-      },
-    );
-  }
+            ),
+            actions: [
+              ElevatedButton.icon(
+                onPressed: _isSendingProposal
+                    ? null
+                    : () {
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+                label: Text(
+                  "Cancelar",
+                  style: GoogleFonts.karla(
+                    color: Color(0xFF84090D),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Color(0xFF84090D)),
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _isSendingProposal
+                    ? null
+                    : () async {
+                  setStateDialog(() {
+                    _isSendingProposal = true;
+                  });
+
+                  await _sendProposal();
+
+                  setStateDialog(() {
+                    _isSendingProposal = false;
+                  });
+
+                  Navigator.of(context).pop();
+                },
+                icon: _isSendingProposal
+                    ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF84090D),
+                    ),
+                  ),
+                )
+                    : Icon(Icons.check_circle, color: Color(0xFF84090D)),
+                label: Text(
+                  _isSendingProposal ? "Enviando..." : "Enviar Propuesta",
+                  style: GoogleFonts.karla(
+                    color: Color(0xFF84090D),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    side: BorderSide(color: Color(0xFF84090D)),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
 
 
 
@@ -418,81 +440,86 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   }
 
 
-  void _showPendingConfirmation2Dialog(BuildContext context) async {
-  final querySnapshot = await FirebaseFirestore.instance
-      .collection('offers')
-      .where('serviceId', isEqualTo: widget.serviceRequest.id)
-      .limit(1)
-      .get();
+void _showPendingConfirmation2Dialog(BuildContext context) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('offers')
+        .where('serviceId', isEqualTo: widget.serviceRequest.id)
+        .limit(1)
+        .get();
 
-  if (querySnapshot.docs.isNotEmpty) {
-    var offerData = querySnapshot.docs.first.data();
-    var offeredPrice = offerData['offeredPrice'];
-    var clientNIT = offerData['clientNIT'] ?? 'NIT no disponible'; // Obtener el NIT de la oferta
+    if (querySnapshot.docs.isNotEmpty) {
+      var offerData = querySnapshot.docs.first.data();
+      print('✅ Datos obtenidos de la oferta: $offerData');
 
-    // Verifica el tipo de dato y realiza la conversión si es necesario.
-    if (offeredPrice is String) {
-      offeredPrice = double.tryParse(offeredPrice.toString()) ?? 0.0;
-    } else if (offeredPrice is! double) {
-      offeredPrice = 0.0;
-    }
+      var offeredPrice = offerData['offeredPrice'];
+      print('📌 Valor original de offeredPrice: $offeredPrice (${offeredPrice.runtimeType})');
 
-    // Define la comisión y los gastos informáticos.
-    double commission = offeredPrice * 0.10; // Comisión del 10%.
-    double extraCosts = 3.0;
-    double totalPrice = offeredPrice + extraCosts; // Precio total.
+      // Conversión robusta del tipo de dato
+      if (offeredPrice is num) {
+        offeredPrice = offeredPrice.toDouble();
+      } else if (offeredPrice is String) {
+        offeredPrice = double.tryParse(offeredPrice) ?? 0.0;
+      } else {
+        offeredPrice = 0.0;
+      }
 
-    String paymentStatus = 'pagado';
+      print('✅ Valor convertido de offeredPrice: $offeredPrice');
 
-    // Muestra el diálogo con el NIT obtenido
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmación de la Oferta'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Oferta del servicio:'),
-              Text('Precio ofertado: Bs ${offeredPrice}'),
-              SizedBox(height: 16.0),
-              Text('NIT del cliente: $clientNIT'), // Mostrar el NIT
-              SizedBox(height: 16.0),
-              Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
-              SizedBox(height: 16.0),
-              Text('Nuevo precio total: Bs ${totalPrice.toStringAsFixed(2)}'),
+      var clientNIT = offerData['clientNIT'] ?? 'NIT no disponible';
+
+      double commission = offeredPrice * 0.10;
+      double extraCosts = 3.0;
+      double totalPrice = offeredPrice + extraCosts;
+      String paymentStatus = 'pagado';
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Confirmación de la Oferta'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Oferta del servicio:'),
+                Text('Precio ofertado: Bs ${offeredPrice.toStringAsFixed(2)}'),
+                SizedBox(height: 16.0),
+                Text('NIT del cliente: $clientNIT'),
+                SizedBox(height: 16.0),
+                Text('Se agregarán Bs $extraCosts en gastos informáticos.'),
+                SizedBox(height: 16.0),
+                Text('Nuevo precio total: Bs ${totalPrice.toStringAsFixed(2)}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _handleAcceptButton(
+                    querySnapshot,
+                    offeredPrice,
+                    commission,
+                    extraCosts,
+                    totalPrice,
+                    paymentStatus,
+                    clientNIT,
+                  );
+                },
+                child: Text('Aceptar'),
+              ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Llamar a la función para manejar la aceptación
-                _handleAcceptButton(
-                  querySnapshot,
-                  offeredPrice,
-                  commission,
-                  extraCosts,
-                  totalPrice,
-                  paymentStatus,
-                  clientNIT, // Pasar el NIT a la función
-                );
-              },
-              child: Text('Aceptar'),
-            ),
-          ],
-        );
-      },
-    );
-  } else {
-    print('No se encontró una oferta para el serviceId proporcionado');
+          );
+        },
+      );
+    } else {
+      print('⚠️ No se encontró una oferta para el serviceId proporcionado: ${widget.serviceRequest.id}');
+    }
   }
-}
+
 
   void _handleAcceptButton(
       QuerySnapshot querySnapshot,
@@ -553,9 +580,9 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-        ),
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+          ),
       );
     }
   }
@@ -768,10 +795,12 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: () => _showProposalDialog(context),
+              onPressed: _workerHasOffered 
+              ? null  // Deshabilita el botón si ya hay una oferta
+              : () => _showProposalDialog(context),
               icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
               label: Text(
-                "Enviar Propuesta",
+                _workerHasOffered ? "Ya has ofertado" : "Enviar Propuesta",
                 style: GoogleFonts.karla(
                   color: Color(0xFFB00020),
                   fontSize: 10,

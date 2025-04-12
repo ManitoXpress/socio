@@ -179,78 +179,92 @@ class ServiceListBuilder {
   }
 
   static Widget buildServiceListAvailable(
-      List<ServiceRequest> services,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-
-      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
-    final serviceDataFetcher = ServiceDataFetcher();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails = await serviceDataFetcher
-                    .fetchWorkerDetails(service.workerId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: service.location,
-                        offeredPrice: service.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
-                        workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
+  List<ServiceRequest> services,
+  double screenWidth,
+  double screenHeight,
+  String userId,
+  dynamic userData,
+  final ApiService apiService,
+  final ApiService2 apiService2
+) {
+  final serviceDataFetcher = ServiceDataFetcher();
+  
+  // Filter services to exclude those where the worker has already made an offer
+  final filteredServices = services.where((service) {
+    // Check if any offer in this service was created by the current worker (userId)
+    bool hasWorkerOffered = service.offers.any((offer) => offer.workerId == userId);
+    // Only include services where the worker hasn't offered yet
+    return !hasWorkerOffered;
+  }).toList();
+  
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: filteredServices.isEmpty
+        ? Center(child: Text("No hay servicios disponibles o ya has ofertado en todos los servicios."))
+        : ListView.builder(
+            itemCount: filteredServices.length,
+            itemBuilder: (context, index) {
+              final service = filteredServices[index];
+              return GestureDetector(
+                onTap: () async {
+                  try {
+                    final workerDetails = await serviceDataFetcher
+                        .fetchWorkerDetails(service.workerId);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServiceFormWithTimeline(
+                          serviceRequest: ServiceRequest(
+                            id: service.id,
+                            serviceDateTime: '',
+                            devicesId: '',
+                            description: '',
+                            images: [],
+                            location: service.location,
+                            offeredPrice: service.offeredPrice,
+                            serviceType: ServiceType(
+                                id: '',
+                                name: '',
+                                selectedDate: '',
+                                selectedTime: ''),
+                            workerId: service.workerId,
+                            isFavorite: false,
+                            acceptedTerms: false,
+                            expertises: service.expertises,
+                            status: Status(id: '', name: ''),
+                            subcategoryName: service.subcategoryName,
+                            hasOffer: false,
+                            offers: [],
+                            workerDetails: workerDetails,
+                            userId: '',
+                          ),
+                          initialStatus: service.status.id,
+                          onComplete: (status) {
+                            print('Estado completado: $status');
+                          },
+                          onStatusChanged: (newStatus) {
+                            print('Estado cambiado a: $newStatus');
+                          },
+                          userData: userData,
+                          workerId: service.workerId,
+                          workerDetails: workerDetails,
+                          offers: [],
+                          images: [],
+                          apiService: apiService,
+                          apiService2: apiService2,
+                        ),
                       ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
-                      apiService: apiService,apiService2: apiService2,
-                    ),
-                  ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
+                    );
+                  } catch (e) {
+                    print('Error al cargar los detalles del trabajador: $e');
+                  }
+                },
+                child: _buildServiceCard(service, screenWidth, screenHeight),
+              );
             },
-            child: _buildServiceCard(service, screenWidth, screenHeight),
-          );
-        },
-      ),
-    );
-  }
+          ),
+  );
+}
 
   static Widget buildServiceListComplete(
       List<ServiceRequest> services,
