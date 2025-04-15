@@ -17,7 +17,7 @@ class ProposalService {
     required this.userData,
   });
 
-  Future<void> sendProposal({
+  Future<bool> sendProposal({
     required double offeredPrice,
     required double extraCosts,
     required Function(String) onStatusChanged,
@@ -62,6 +62,8 @@ class ProposalService {
         SnackBar(content: Text('Error al enviar la propuesta: $e')),
       );
     }
+
+    return false; // Return a default value if no other return is reached
   }
 
 }

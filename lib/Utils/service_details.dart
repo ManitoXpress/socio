@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 class ServiceRequest extends StatefulWidget {

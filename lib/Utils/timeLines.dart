@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:io'; // Para manejar archivos locales
 import 'package:image_picker/image_picker.dart';
 
-import 'package:socio/Metods/imagePreview.dart';
-import 'package:socio/Metods/jobComplete.dart';
+import 'package:socio/Controller/imagePreview.dart';
+import 'package:socio/Controller/jobComplete.dart';
 import 'package:socio/Screens/Chatscreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
@@ -34,6 +35,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final ApiService2 apiService2;
 
   final List<String> images; // Parámetro images
+  final String userId;
 
   const ServiceFormWithTimeline({
     required this.serviceRequest,
@@ -48,6 +50,7 @@ class ServiceFormWithTimeline extends StatefulWidget {
     required this.offers,
     required this.apiService,
     required this.apiService2,
+    required this.userId,
   });
 
   @override
@@ -624,12 +627,28 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
         }
 
         _currentStatus = serviceData['status'] ?? 'available';
-        final List<String> images =
-            List<String>.from(serviceData['images'] ?? []);
+        final List<String> images = List<String>.from(serviceData['images'] ?? []);
         double latitude = widget.serviceRequest.location['lat'] ?? 0.0;
         double longitude = widget.serviceRequest.location['lng'] ?? 0.0;
-
         _initialPosition = LatLng(latitude, longitude);
+
+        // ✅ Fecha
+        String formattedDate = 'Fecha no disponible';
+        final dynamic rawDate = serviceData['serviceDateTime'];
+        DateTime? parsedDate;
+
+        if (rawDate is Timestamp) {
+          parsedDate = rawDate.toDate();
+        } else if (rawDate is String) {
+          parsedDate = DateTime.tryParse(rawDate);
+        }
+
+        if (parsedDate != null) {
+          formattedDate = '${parsedDate.day.toString().padLeft(2, '0')}/'
+              '${parsedDate.month.toString().padLeft(2, '0')}/'
+              '${parsedDate.year} ${parsedDate.hour.toString().padLeft(2, '0')}:'
+              '${parsedDate.minute.toString().padLeft(2, '0')}';
+        }
 
         return Scaffold(
           appBar: AppBar(
@@ -651,17 +670,23 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Estado del servicio
+                    /// 🔹 Fecha del servicio
+                    Text(
+                      'Fecha: $formattedDate',
+                      style: MyTextStyles.inputTextStyle6,
+                    ),
+
+                    /// 🔹 Estado del servicio
                     Text(
                       'Estado: ${statusNames[_currentStatus] ?? 'Desconocido'}',
                       style: MyTextStyles.inputTextStyle6,
                     ),
                     SizedBox(height: 16.0),
 
-                    // Descripción del servicio
+                    /// 🔹 Descripción
                     Text.rich(
                       TextSpan(
-                        text: 'Descripción: ',
+                        text: 'Descripción: ',
                         style: MyTextStyles.inputTextStyle6,
                         children: [
                           TextSpan(
@@ -673,9 +698,9 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                     ),
                     SizedBox(height: 16.0),
 
-                    // Ubicación del servicio
+                    /// 🔹 Ubicación
                     Text(
-                      'Ubicación:',
+                      'Ubicación:',
                       style: MyTextStyles.inputTextStyle6,
                     ),
                     GestureDetector(
@@ -710,9 +735,9 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                     ),
                     SizedBox(height: 16.0),
 
-                    // Imágenes del servicio
+                    /// 🔹 Imágenes
                     Text(
-                      'Imágenes:',
+                      'Imágenes:',
                       style: MyTextStyles.inputTextStyle6,
                     ),
                     if (images.isNotEmpty)
@@ -725,7 +750,7 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                           autoPlayCurve: Curves.fastOutSlowIn,
                           enableInfiniteScroll: true,
                           autoPlayAnimationDuration:
-                              Duration(milliseconds: 800),
+                          Duration(milliseconds: 800),
                           viewportFraction: 0.8,
                         ),
                         items: images.map((url) {
@@ -763,14 +788,14 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
 
                     SizedBox(height: 16.0),
 
-                    // Precio ofertado
+                    /// 🔹 Precio ofertado
                     Text(
                       'Precio Ofertado: ${_workerOfferedPrice != null ? '\$${_workerOfferedPrice!.toStringAsFixed(2)}' : 'No ofertado'}',
                       style: MyTextStyles.inputTextStyle6,
                     ),
                     SizedBox(height: 16.0),
 
-                    // Botones dependiendo del estado
+                    /// 🔹 Botones
                     Wrap(
                       spacing: 10.0,
                       runSpacing: 10.0,
@@ -787,6 +812,8 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
     );
   }
 
+
+
 // Método para construir los botones de acción según el estado
   Widget _buildActionButtons() {
     switch (_currentStatus) {
@@ -795,12 +822,10 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: _workerHasOffered 
-              ? null  // Deshabilita el botón si ya hay una oferta
-              : () => _showProposalDialog(context),
+              onPressed: () => _showProposalDialog(context),
               icon: Icon(Icons.add_business, color: Color(0xFFB00020)),
               label: Text(
-                _workerHasOffered ? "Ya has ofertado" : "Enviar Propuesta",
+                "Enviar Propuesta",
                 style: GoogleFonts.karla(
                   color: Color(0xFFB00020),
                   fontSize: 10,
@@ -838,6 +863,7 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
             ),
           ],
         );
+
       case 'offer':
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -860,6 +886,7 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
             ),
           ],
         );
+
       case 'in_progress':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -869,7 +896,8 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
               children: [
                 ElevatedButton.icon(
                   onPressed: () => _showCompleteJobDialog(context),
-                  icon: Icon(Icons.architecture_sharp, color: Color(0xFFB00020)),
+                  icon: Icon(
+                      Icons.architecture_sharp, color: Color(0xFFB00020)),
                   label: Text(
                     "Completar trabajo",
                     style: GoogleFonts.karla(
@@ -909,10 +937,22 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                 ),
               ],
             ),
-            const SizedBox(height: 10), // Espacio entre los botones
+            const SizedBox(height: 10),
             ElevatedButton.icon(
-              onPressed: () =>
-                  _openChat(widget.workerId, widget.serviceRequest.userId),
+              onPressed: () {
+                final userId = FirebaseAuth.instance.currentUser?.uid;
+
+                print("Botón de Chat presionado");
+                print("workerId: ${widget.workerId}");
+                print("userId (actual): $userId");
+
+                if (userId == null) {
+                  print("Error: userId es null, usuario no autenticado");
+                  return;
+                }
+
+                _openChat(widget.workerId, userId);
+              },
               icon: Icon(Icons.chat, color: Colors.white),
               label: Text(
                 "Chat",
@@ -923,7 +963,7 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFB00020),
+                backgroundColor: const Color(0xFF1A819A),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),
@@ -938,28 +978,26 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                if (_currentStatus == 'pending_confirmation2')
-                  ElevatedButton.icon(
-                    onPressed: () => _showPendingConfirmation2Dialog(context),
-                    icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
-                    label: Text(
-                      "Pago Aceptado",
-                      style: GoogleFonts.karla(
-                        color: Color(0xFFB00020),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        side: BorderSide(color: Color(0xFFB00020)),
-                      ),
+                ElevatedButton.icon(
+                  onPressed: () => _showPendingConfirmation2Dialog(context),
+                  icon: Icon(Icons.check_circle, color: Color(0xFFB00020)),
+                  label: Text(
+                    "Pago Aceptado",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFFB00020),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFFB00020)),
+                    ),
+                  ),
+                ),
                 ElevatedButton.icon(
                   onPressed: () => _showNoParticipationDialog(context),
                   icon: Icon(Icons.dangerous, color: Color(0xFFB00020)),
@@ -980,78 +1018,119 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
                     ),
                   ),
                 ),
-
               ],
             ),
             ElevatedButton.icon(
-              onPressed: () =>
-                  _openChat(widget.workerId, widget.serviceRequest.userId),
-              icon: Icon(Icons.chat, color: Colors.white),
-              label: Text(
-                "Chat",
-                style: GoogleFonts.karla(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
+                onPressed: () {
+
+                  print("workerId: ${widget.workerId}");
+                  print("userId: ${widget.userId}");
+
+                  print("Botón de Chat presionado");
+                  print("workerId: ${widget.workerId}");
+                  print("userId (actual): ${widget.userId}");
+
+                  if ({widget.userId} == null) {
+                    print("Error: userId es null, usuario no autenticado");
+                    return;
+                  }
+
+                  _openChat(widget.workerId, widget.userId);
+                },
+                icon: Icon(Icons.chat, color: Colors.white),
+                label: Text(
+                  "Chat",
+                  style: GoogleFonts.karla(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A819A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
                 ),
-              ),
             ),
           ],
         );
+
       case 'pending_confirmation':
-        return Text('Esperando la confirmación del cliente...');
+        return Text('Esperando la confirmación del cliente...');
       case 'completed':
         return Text('Este trabajo ha sido completado.');
       case 'cancelled':
         return Text('Este trabajo ha sido cancelado.');
       case 'blocked':
-        return Text('No participarás en este trabajo.');
+        return Text('No participarás en este trabajo.');
       default:
-        return Container(); // En caso de que no se cumpla ninguno de los casos anteriores
+        return Container();
     }
   }
 
   void _openChat(String workerId, String userId) async {
-    final chatId = _generateChatId(workerId, userId);
+    print("Abriendo chat...");
+    // Asegúrate de que el orden de los parámetros sea consistente con _generateChatId
+    final chatId = _generateChatId(userId, workerId);
+    print("Chat ID generado: $chatId");
 
-    // Referencia al documento del chat
-    final chatDoc = FirebaseFirestore.instance.collection('chats').doc(chatId);
+    try {
+      // Primero, buscar si existe un chat con estos participantes, independiente del ID
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('chats')
+          .where('participants', arrayContains: userId)
+          .get();
 
-    // Verifica si el chat ya existe
-    final chatSnapshot = await chatDoc.get();
+      // Buscar entre los resultados si hay un chat que contenga ambos participantes
+      bool chatExists = false;
+      String existingChatId = '';
 
-    if (!chatSnapshot.exists) {
-      // Si el chat no existe, lo crea con información inicial
-      await chatDoc.set({
-        'chatId': chatId,
-        'participants': [userId, workerId],
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    }
+      for (var doc in querySnapshot.docs) {
+        List<dynamic> participants = doc.data()['participants'] ?? [];
+        if (participants.contains(workerId) && participants.contains(userId)) {
+          chatExists = true;
+          existingChatId = doc.id;
+          print("Chat existente encontrado con ID: $existingChatId");
+          break;
+        }
+      }
 
-    // Navegar a la pantalla de chat (debes implementar esta pantalla)
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          chatId: chatId,
-          userId: userId,
-          workerId: workerId,
+      if (!chatExists) {
+        print("Creando nuevo documento de chat...");
+        await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
+          'chatId': chatId,
+          'participants': [userId, workerId],
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        print("Chat creado exitosamente");
+        existingChatId = chatId;
+      } else {
+        print("El chat ya existe, usando existingChatId: $existingChatId");
+      }
+
+      // Navegar a la pantalla de chat usando el ID encontrado o creado
+      print("Navegando a la pantalla de chat con ID: $existingChatId");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            chatId: existingChatId,
+            userId: userId,
+            workerId: workerId,
+            isUser: true,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print("Error al abrir el chat: $e");
+    }
   }
 
-  String _generateChatId(String workerId, String userId) {
-    // Generar un ID único basado en los IDs de los participantes
-    return workerId.hashCode <= userId.hashCode
-        ? '$workerId\_$userId'
-        : '$userId\_$workerId';
+  String _generateChatId(String userId, String workerId) {
+    // Generar un ID único basado en los IDs de los participantes
+    return userId.hashCode <= workerId.hashCode
+        ? '${userId}_${workerId}'
+        : '${workerId}_${userId}';
   }
 }

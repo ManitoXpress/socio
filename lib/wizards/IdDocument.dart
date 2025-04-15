@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 
 import '../Utils/styles.dart';

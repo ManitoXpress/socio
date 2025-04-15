@@ -7,7 +7,7 @@ import 'package:camera/camera.dart';
 import 'dart:io';
 import 'package:image/image.dart' as img;
 import 'package:socio/ServiceResponse/requestUserData.dart';
-import '../Metods/RegisController.dart';
+import '../Controller/RegisController.dart';
 
 import 'package:flutter/cupertino.dart';
 

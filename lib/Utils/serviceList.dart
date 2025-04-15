@@ -78,7 +78,7 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
-                        apiService: apiService, apiService2: apiService2,
+                        apiService: apiService, apiService2: apiService2, userId: service.userId,
                       ),
                     ),
                   );
@@ -162,7 +162,7 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
-                        apiService: apiService, apiService2: apiService2,
+                        apiService: apiService, apiService2: apiService2, userId: service.userId,
                       ),
                     ),
                   );
@@ -251,7 +251,7 @@ class ServiceListBuilder {
                           offers: [],
                           images: [],
                           apiService: apiService,
-                          apiService2: apiService2,
+                          apiService2: apiService2,userId: service.userId,
                         ),
                       ),
                     );
@@ -325,7 +325,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2,
+                      apiService: apiService, apiService2: apiService2, userId: service.userId,
                     ),
                   ),
                 );
@@ -399,7 +399,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2,
+                      apiService: apiService, apiService2: apiService2, userId: service.userId,
                     ),
                   ),
                 );
@@ -480,7 +480,7 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2,
+                      apiService: apiService, apiService2: apiService2, userId: service.userId,
                     ),
                   ),
                 );
@@ -551,6 +551,9 @@ class ServiceListBuilder {
                 SizedBox(height: screenHeight * 0.01),
                 Text('Precio Ofertado: \$${price.toStringAsFixed(2)}',
                     style: MyTextStyles.drawerButtonTextStyle),
+                SizedBox(height: screenHeight * 0.01),
+                
+                
               ],
             ),
           ),

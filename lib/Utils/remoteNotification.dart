@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:socio/Metods/RegisController.dart';
+import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 class NotificationService {

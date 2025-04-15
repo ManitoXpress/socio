@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../Metods/RegisController.dart';
+import '../Controller/RegisController.dart';
 import '../Screens/Validations.dart';
 import '../ServiceResponse/get.dart';
 import '../Utils/styles.dart';
