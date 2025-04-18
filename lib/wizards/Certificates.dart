@@ -6,7 +6,9 @@ import 'package:camera/camera.dart';
 
 import 'dart:io';
 import 'package:image/image.dart' as img;
+import 'package:provider/provider.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/provider/providerImage.dart';
 import '../Controller/RegisController.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -41,7 +43,6 @@ class CertificateImageStep extends StatefulWidget {
   @override
   _CertificateImageStepState createState() => _CertificateImageStepState();
 }
-
 class _CertificateImageStepState extends State<CertificateImageStep> {
   File? _image;
   final ImagePicker _imagePicker = ImagePicker();
@@ -86,7 +87,8 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
                   onPressed: () async {
                     Navigator.pop(context);
                     try {
-                      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+                      final FilePickerResult? result =
+                      await FilePicker.platform.pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['pdf'],
                       );
@@ -102,7 +104,8 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
                       print('Error al seleccionar el archivo PDF: $e');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ocurrió un error al seleccionar el archivo PDF: $e'),
+                          content: Text(
+                              'Ocurrió un error al seleccionar el archivo PDF: $e'),
                         ),
                       );
                     }
@@ -132,13 +135,24 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
 
       widget.onImageSelected(file.path);
 
+      // Actualizamos el estado en el RegistrationController
       widget.registrationController.updateRegistrationData(
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
         certificateImagePaths: file.path,
-        criminalRecordImagePath: '', referralCode: '',
+        criminalRecordImagePath: '',
+        referralCode: '',
       );
+
+      // Dependiendo del tipo de archivo, actualizamos el provider
+      final imageProvider =
+      Provider.of<ImageStateProvider>(context, listen: false);
+      if (file.path.toLowerCase().endsWith('.pdf')) {
+        imageProvider.setCertificatePdf(File(file.path));
+      } else {
+        imageProvider.setCertificateImage(File(file.path));
+      }
 
       print('Archivo seleccionado: ${file.path}');
     }
@@ -152,7 +166,7 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
             "Paso 8: Necesitamos una foto de sus certificados profesionales (no obligatorio)",
-            style: TextStyle(fontSize: 16),
+            style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
         GestureDetector(
@@ -172,7 +186,7 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
                 color: Color(0xA3C9D2D2),
               ),
             )
-                : _image!.path.endsWith('.pdf')
+                : _image!.path.toLowerCase().endsWith('.pdf')
                 ? const Center(
               child: Icon(
                 Icons.picture_as_pdf,

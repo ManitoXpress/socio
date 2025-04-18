@@ -4,7 +4,7 @@ description: "manito xpress socio"
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 
-version: 1.9.1+1
+version: 1.9.15+1
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -32,6 +32,7 @@ dependencies:
   workmanager: ^0.5.2
   device_info_plus: ^9.1.2
   flutter_local_notifications: ^17.2.2
+  provider: ^6.1.4
 
   share_plus: ^10.1.4
 

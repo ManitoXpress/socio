@@ -8,10 +8,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:socio/provider/providerImage.dart';
 
 import '../Utils/styles.dart';
 class CriminalRecordImageStep extends StatefulWidget {
@@ -35,7 +37,8 @@ class CriminalRecordImageStep extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CriminalRecordImageStepState createState() => _CriminalRecordImageStepState();
+  _CriminalRecordImageStepState createState() =>
+      _CriminalRecordImageStepState();
 }
 
 class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
@@ -70,7 +73,7 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'No se pudo acceder a la cámara. Por favor, verifica los permisos en la configuración del dispositivo.',
+                            'No se pudo acceder a la cámara. Verifica los permisos del dispositivo.',
                           ),
                         ),
                       );
@@ -82,7 +85,8 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                   onPressed: () async {
                     Navigator.pop(context);
                     try {
-                      final FilePickerResult? result = await FilePicker.platform.pickFiles(
+                      final FilePickerResult? result =
+                      await FilePicker.platform.pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['pdf'],
                       );
@@ -98,7 +102,8 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                       print('Error al seleccionar el archivo PDF: $e');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Ocurrió un error al seleccionar el archivo PDF: $e'),
+                          content: Text(
+                              'Ocurrió un error al seleccionar el archivo PDF: $e'),
                         ),
                       );
                     }
@@ -125,16 +130,26 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
       setState(() {
         _image = File(file.path);
       });
-
       widget.onImageSelected(file.path);
 
+      // Actualizamos la información en el RegistrationController
       widget.registrationController.updateRegistrationData(
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
         certificateImagePaths: '',
-        criminalRecordImagePath: file.path, referralCode: '',
+        criminalRecordImagePath: file.path,
+        referralCode: '',
       );
+
+      // Actualizamos el provider dependiendo del tipo de archivo.
+      final imageProvider =
+      Provider.of<ImageStateProvider>(context, listen: false);
+      if (file.path.toLowerCase().endsWith('.pdf')) {
+        imageProvider.setCriminalRecordPdf(File(file.path));
+      } else {
+        imageProvider.setCriminalRecordImage(File(file.path));
+      }
 
       print('Archivo seleccionado: ${file.path}');
     }
@@ -148,7 +163,7 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
             "Paso 7: Necesitamos una foto de sus antecedentes penales",
-            style: TextStyle(fontSize: 16),
+            style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
         GestureDetector(
@@ -168,7 +183,7 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                 color: Color(0xA3C9D2D2),
               ),
             )
-                : _image!.path.endsWith('.pdf')
+                : _image!.path.toLowerCase().endsWith('.pdf')
                 ? const Center(
               child: Icon(
                 Icons.picture_as_pdf,
