@@ -3,21 +3,38 @@ import 'package:flutter/material.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-
 class ProposalService {
   final BuildContext context;
   final ServiceRequest serviceRequest;
   final String workerId;
   final UserData userData;
+  final String token;
 
   ProposalService({
     required this.context,
     required this.serviceRequest,
     required this.workerId,
     required this.userData,
+    required this.token,
   });
 
-  Future<bool> sendProposal({
+  // Método estático para verificar propuestas existentes
+  static Future<bool> checkExistingProposal({
+    required String serviceRequestId,
+    required String workerId,
+  }) async {
+    try {
+      return await ApiService().checkProposalExists(
+        serviceRequestId,
+        workerId,
+      );
+    } catch (e) {
+      debugPrint('Error verificando propuesta: $e');
+      return false;
+    }
+  }
+
+  Future<void> sendProposal({
     required double offeredPrice,
     required double extraCosts,
     required Function(String) onStatusChanged,
@@ -28,19 +45,34 @@ class ProposalService {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(),
-        );
-      },
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
     );
 
     try {
-     
-      // Llamar al servicio API para enviar la propuesta
+      // Verificar si el worker ya envió una propuesta
+      bool alreadyExists = await ApiService().checkProposalExists(
+        serviceRequest.id,
+        workerId,
+      );
+
+      // Cerrar el indicador de carga de la verificación
+      Navigator.of(context).pop();
+
+      if (alreadyExists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ya has enviado una propuesta para este servicio'),
+          ),
+        );
+        return;
+      }
+
+      // Llamar al servicio API para enviar la propuesta, usando el token pasado
       await ApiService().sendProposalToServer(
         serviceRequest,
-        userData.getToken!,
+        token,
         offeredPrice.toString(),
         extraCosts,
         workerId,
@@ -50,20 +82,18 @@ class ProposalService {
       setFetchedOfferedPrice(offeredPrice);
       priceController.text = offeredPrice.toString();
 
-      // Cerrar el indicador de carga y el diálogo de propuesta
-      Navigator.of(context).pop(); // Cerrar el indicador de carga
-      Navigator.of(context).pop(); // Cerrar el diálogo de propuesta
+      // Cerrar indicadores y diálogos
+      Navigator.of(context).pop(); // Cerrar loader
+      Navigator.of(context).pop(); // Cerrar diálogo de propuesta
     } catch (e) {
-      print('Error al enviar la propuesta: $e');
-      Navigator.of(context).pop(); // Cerrar el indicador de carga
+      debugPrint('Error al enviar la propuesta: $e');
+      Navigator.of(context).pop(); // Cerrar loader
 
-      // Mostrar un mensaje de error al usuario
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al enviar la propuesta: $e')),
+        SnackBar(
+          content: Text('Error al enviar la propuesta: $e'),
+        ),
       );
     }
-
-    return false; // Return a default value if no other return is reached
   }
-
 }

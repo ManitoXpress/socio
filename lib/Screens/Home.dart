@@ -490,5 +490,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<Widget> _buildScreens() => [Historial(), WalletScreen()];
+  List<Widget> _buildScreens() => [HistorialScreen(userData:widget.userData), WalletScreen()];
 }

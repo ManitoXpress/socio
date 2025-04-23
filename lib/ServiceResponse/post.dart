@@ -37,6 +37,37 @@ class ApiService {
       throw Exception('Error al enviar datos al servidor: $e');
     }
   }
+  Future<bool> checkProposalExists(String serviceId, String workerId) async {
+    try {
+      // Intentar obtener un token actualizado
+      String token = await FirebaseAuth.instance.currentUser?.getIdToken(true) ?? '';
+
+      if (token.isEmpty) {
+        print('Error: No se pudo renovar el token de autenticación.');
+        throw Exception('No se ha proporcionado un token de autenticación válido.');
+      }
+
+      // Asegúrate de que tu endpoint retorne correctamente las ofertas filtradas
+      final response = await http.get(
+        Uri.parse('$baseUrl/offers?serviceId=$serviceId&workerId=$workerId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Respuesta de verificación: $data'); // Para depuración
+        List<dynamic> offers = data is List ? data : (data['offers'] ?? []);
+        return offers.isNotEmpty;
+      }
+      return false;
+    } catch (e) {
+      print('Error al verificar oferta existente: $e');
+      return false;
+    }
+  }
 
   Future<http.Response> sendTokenToServer(String? token) async {
     try {

@@ -7,11 +7,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/fcmToken.dart';
+import 'package:socio/provider/providerImage.dart';
+import 'package:socio/provider/providerService.dart';
 
 import 'firebase_options.dart';
 import 'menu/Loading.dart';
@@ -54,11 +57,18 @@ void main() async {
   print("Device ID: $deviceId");
 
   runApp(
-    ScreenUtilInit(
-      designSize: Size(375, 812),
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) => MyApp(deviceId: deviceId),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ImageStateProvider()),
+        ChangeNotifierProvider(create: (_) => HistorialProvider()),
+        // Aquí puedes añadir más providers si los necesitas
+      ],
+      child: ScreenUtilInit(
+        designSize: Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) => MyApp(deviceId: deviceId),
+      ),
     ),
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:socio/ServiceResponse/post.dart';
 
 import '../Controller/RegisController.dart';
 import '../Screens/Validations.dart';
@@ -76,7 +77,7 @@ class FirstTimeLoginScreen extends StatelessWidget {
                       builder: (context) => RegistrationScreen(
                         registrationController: registrationController,
                         completeRegistrationCallback: () {},
-                        apiService2: ApiService2(),
+                        apiService2: ApiService2(), apiService: ApiService(),
                       ),
                     ),
                   );

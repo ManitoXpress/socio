@@ -96,63 +96,60 @@ class RegistrationData {
   String idDocumentImagePath2;
   String criminalRecordImagePath;
   String certificateImagePaths;
-  List<Expertise> expertises; // Lista de Expertise
+  List<Expertise> expertises;
   List<String> expLevel;
   String imagePath;
+
+  /// Location stored both as map and discrete fields
   Map<String, double?>? location;
+  double? latitude;
+  double? longitude;
+  String? address;
+
+  /// Favorites and extra info
+  bool? isFavorite;
+  String? additionalInfo;
+
   String email;
-  String referralCode; // Código de referido
-  int points; // Puntos
-  String codeReferral; // Código generado
-  String verificationStatus; // Nuevo campo añadido
+  String referralCode;
+  int points;
+  String codeReferral;
+  String verificationStatus;
   String? requiresInvoice;
 
   RegistrationData.fromForm({
-    required String devicesId,
-    required String fcmToken,
-    required String userId,
-    required String displayName,
-    required String idCardNumber,
-    required String phoneNumber,
-    required String paymentType,
-    required String selectedCountryCode,
-    required List<String> imagePathList,
-    required String idDocumentImagePath,
-    required String idDocumentImagePath2,
-    required String criminalRecordImagePath,
-    required String certificateImagePaths,
-    required List<Expertise> expertises,
-    required List<String> expLevel,
-    required String imagePath,
-    required Map<String, double?>? location,
-    required String email,
-    required String referralCode,
-    required int points,
-    required String codeReferral,
-    required String verificationStatus,
-    this.requiresInvoice, // Incluido en el constructor
-  }) : verificationStatus = verificationStatus,
-       userId = userId,
-       fcmToken = fcmToken,
-       devicesId = devicesId,
-       displayName = displayName,
-       idCardNumber = idCardNumber,
-       phoneNumber = phoneNumber,
-       imagePathList = imagePathList,
-       imagePath = imagePath,
-       paymentType = paymentType,
-       expertises = expertises,
-       selectedCountryCode = selectedCountryCode,
-       expLevel = expLevel,
-       idDocumentImagePath = idDocumentImagePath,
-       idDocumentImagePath2 = idDocumentImagePath2,
-       criminalRecordImagePath = criminalRecordImagePath,
-       certificateImagePaths = certificateImagePaths,
-       email = email,
-       location = location,
-       referralCode = referralCode,
-       points = points,
-       codeReferral = '${displayName.split(' ').first}_${idCardNumber.length >= 4 ? idCardNumber.substring(idCardNumber.length - 4) : idCardNumber}';
+    required this.devicesId,
+    required this.fcmToken,
+    required this.userId,
+    required this.displayName,
+    required this.idCardNumber,
+    required this.phoneNumber,
+    required this.paymentType,
+    required this.selectedCountryCode,
+    required this.imagePathList,
+    required this.idDocumentImagePath,
+    required this.idDocumentImagePath2,
+    required this.criminalRecordImagePath,
+    required this.certificateImagePaths,
+    required this.expertises,
+    required this.expLevel,
+    required this.imagePath,
+    required this.location,
+    this.requiresInvoice,
+    required this.email,
+    required this.referralCode,
+    required this.points,
+    required this.codeReferral,
+    required this.verificationStatus,
+  }) {
+    // Derivar campos de ubicación
+    latitude = location?['lat'];
+    longitude = location?['lng'];
+    // Inicializar opcionales
+    address = null;
+    isFavorite = false;
+    additionalInfo = null;
+  }
 
   RegistrationData({
     required this.devicesId,
@@ -177,9 +174,16 @@ class RegistrationData {
     required this.points,
     required this.codeReferral,
     required this.verificationStatus,
-  });
+    this.requiresInvoice,
+  }) {
+    // Derivar lat/lng
+    latitude = location?['lat'];
+    longitude = location?['lng'];
+    address = null;
+    isFavorite = false;
+    additionalInfo = null;
+  }
 
-  /// Constructor factory para el modo invitado
   factory RegistrationData.guest() {
     return RegistrationData(
       devicesId: '',
@@ -188,7 +192,7 @@ class RegistrationData {
       displayName: 'Invitado',
       idCardNumber: '',
       phoneNumber: '',
-      imagePath: 'assets/images/guest_placeholder.png', // Imagen por defecto para invitados
+      imagePath: 'assets/images/guest_placeholder.png',
       imagePathList: [],
       paymentType: '',
       selectedCountryCode: '',
@@ -202,9 +206,8 @@ class RegistrationData {
       location: null,
       referralCode: '',
       points: 0,
-      codeReferral: 'Invitado', // O puedes dejarlo vacío o generar otro código
+      codeReferral: 'Invitado',
       verificationStatus: 'Invitado',
-      
     );
   }
 }

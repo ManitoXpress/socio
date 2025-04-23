@@ -10,10 +10,9 @@ import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
 import 'package:socio/main.dart';
-
 class ServiceRepositoryComplete {
 
-  final ApiService apiService;
+  final ApiService2 apiService;
   final FirebaseFirestore firestore;
   final String baseUrl = ApiConfiguration.baseUrl;
 
@@ -25,7 +24,6 @@ class ServiceRepositoryComplete {
     String userId,
     String column,
     String token,
-    List<Offer> offers, // Agregado el parámetro de ofertas
   ) async {
     // Obtener la lista de estados válidos desde Firestore
     List<String> validStatuses = await _getValidStatusesFromFirestore();
@@ -36,7 +34,7 @@ class ServiceRepositoryComplete {
     }
 
     // Llamar al método privado para realizar la lógica principal
-    return await _fetchServicesByStatus(status, column, userId, token, offers);
+    return await _fetchServicesByStatus(status, column, userId, token, );
    
   }
 
@@ -67,137 +65,165 @@ class ServiceRepositoryComplete {
 
   // Método privado para obtener los servicios por estado
   Future<List<ServiceRequest>> _fetchServicesByStatus(
-    String type,
-    String column,
-    String userId,
-    String token,
-    List<Offer> offers,
-  ) async {
+      String status,
+      String column,
+      String userId,
+      String token,
+      ) async {
     try {
       final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-    if (cachedRequest != null) {
-      // Verificar si el estado del servicio en caché es 'available'
-      if (cachedRequest.status.id == 'completed') {
-        print('Datos del caché encontrados y filtrados por available...');
+      if (cachedRequest != null &&
+          (cachedRequest.status.id == 'in_progress' ||
+              cachedRequest.status.id == 'pending_confirmation' ||
+              cachedRequest.status.id == 'pending_confirmation2')) {
         return [cachedRequest];
-      } else {
-        print('Datos en caché no tienen estado available...');
+      }
+
+      final deviceId = await obtenerDeviceId();
+      final response = await apiService.getAllServices(token, column, userId, status);
+
+      if (response.statusCode != 200) {
         return [];
       }
-    } else {
-      final deviceId = await obtenerDeviceId();
 
-        print('Parámetro type: $type');
-        print('Parámetro column: $column');
-        print('Parámetro userId: $userId');
-        print('Parámetro deviceId: $deviceId');
+      final List<Map<String, dynamic>> servicesData =
+      List<Map<String, dynamic>>.from(json.decode(response.body));
 
-        final response = await ApiService2().getAllServices(
-          token,
-          "userId", // Aquí pasamos "userId" como columna de filtro
-          column,   // Aquí realmente está el userId, por lo que se pasa como valor
-          type,
-      
+      // 1. Filtrar servicios por estado
+      final filteredServices = servicesData.where((item) =>
+          item['status'] == 'completed').toList();
+
+      // 2. Mapear a objetos ServiceRequest
+      List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
+        final statusName = (item['status'] as String?) ?? 'completed';
+        if (statusName != 'completed') {
+          return null;
+        }
+
+        return ServiceRequest(
+          id: item['id']?.toString() ?? '',
+          serviceDateTime: item['serviceDateTime']?.toString() ?? '',
+          description: item['description']?.toString() ?? '',
+          expertises: _extractExpertises(item),
+          images: (item['images'] as List<dynamic>?)
+              ?.map((e) => e?.toString() ?? '')
+              .toList() ??
+              [],
+          location: Map<String, double>.from(
+            (item['location'] as Map<String, dynamic>?)?.map((key, value) =>
+                MapEntry(key, (value as num).toDouble())) ??
+                {},
+          ),
+          offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+          userId: item['userId']?.toString() ?? '',
+          workerId: '',
+          status: Status(
+            id: statusName,
+            name: Status.getNameById(statusName),
+          ),
+          devicesId: '',
+          serviceType: ServiceType(
+            name: item['serviceType']?['name']?.toString() ?? '',
+            id: item['serviceType']?['id']?.toString() ?? '',
+            selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
+            selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
+          ),
+          isFavorite: item['isFavorite'] as bool? ?? false,
+          acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+          subcategoryName: item['subcategoryName']?.toString() ?? '',
+          hasOffer: false,
+          offers: [],
         );
+      }).whereType<ServiceRequest>().toList();
 
+      // 3. Obtener especialidades del trabajador
+      final workerExpertises = await apiService.getWorkerExpertises();
+      final expertiseNames = workerExpertises
+          .map((e) => (e['name'] as String).toLowerCase().trim())
+          .toSet();
 
-        if (response.statusCode == 200) {
-          final List<Map<String, dynamic>> servicesData =
-              List<Map<String, dynamic>>.from(
-            json.decode(response.body),
+      // 4. Filtrar por coincidencia de especialidad
+      serviceRequestsList = serviceRequestsList.where((service) =>
+          expertiseNames.contains(service.subcategoryName.toLowerCase().trim()))
+          .toList();
+
+      // Para cada servicio, se solicitan las ofertas correspondientes.
+      List<ServiceRequest> validServices = [];
+      List<Future> offerRequests = serviceRequestsList.map((serviceRequest) async {
+        print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
+        try {
+          final List<ServiceRequest> offerResponses = await apiService.getOffers(
+            'workerId',   // Columna por la que se filtra en la base de datos
+            userId,       // Valor: el id del trabajador autenticado
+            'offer',      // Tipo (o estado) de la oferta
+            deviceId,
+            [serviceRequest],   // Se pasa la lista con el servicio actual
+            status,
           );
 
-          if (servicesData.isNotEmpty) {
-            try {
-              // Mapeamos los datos para crear una lista de ServiceRequest
-              final List<ServiceRequest> serviceRequestsList = servicesData.map((item) {
-                final statusName = item['status'] as String? ?? 'completed';
-                final statusObject = Status(
-                  id: statusName,
-                  name: Status.getNameById(statusName),
-                );
+          // Filtrar las ofertas para conservar solo las que tengan workerId igual a userId
+          List<Offer> filteredOffers = offerResponses.map((serviceOffer) {
+            final statusName = serviceOffer.status.id;
+            final statusObject = Status(
+              id: statusName,
+              name: Status.getNameById(statusName),
+            );
 
-                final List<dynamic> expertisesArray =
-                    item['expertises'] as List<dynamic>? ?? [];
-                final Map<String, dynamic> expertiseItem =
-                    expertisesArray.isNotEmpty ? expertisesArray.first : {};
+            return Offer(
+              id: serviceOffer.id,
+              workerId: serviceOffer.workerId,
+              offeredPrice: serviceOffer.offeredPrice,
+              hasOffer: serviceOffer.hasOffer,
+              serviceId: serviceRequest.id,
+              extraCosts: 0.0,
+              totalPrice: serviceOffer.offeredPrice,
+              status: statusObject,
+              userToken: '',
+              createdAt: DateTime.now(),
+              expertises: serviceOffer.expertises,
+              subcategoryName: serviceOffer.subcategoryName,
+            );
+          }).where((offer) => offer.workerId == userId).toList();
 
-                return ServiceRequest(
-                  expertises: [
-                    Expertise(
-                      id: expertiseItem['id'] ?? '',
-                      name: expertiseItem['name'] ?? '',
-                    )
-                  ],
-                  id: item['id'] ?? '',
-                  serviceDateTime: item['serviceDateTime'] ?? '',
-                  description: item['description'] ?? '',
-                  images: (item['images'] as List<dynamic>?)
-                          ?.map((image) => image as String? ?? '')
-                          .toList() ??
-                      [],
-                  location: Map<String, double>.from(
-                    (item['location'] as Map<String, dynamic>?)
-                            ?.map((key, value) {
-                          return MapEntry(
-                              key, (value is int) ? value.toDouble() : value);
-                        }) ??
-                        {},
-                  ),
-                  offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                  userId: item['userId'] ?? '',
-                  workerId: item['workerId'] ?? '',
-                  status: statusObject,
-                  isFavorite: item['isFavorite'] as bool? ?? false,
-                  acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                  serviceType: ServiceType(
-                    name: item['serviceType'] ?? '',
-                    id: '',
-                    selectedDate: '',
-                    selectedTime: '',
-                  ),
-               
-                  devicesId: '',
-                  hasOffer: false,
-                  offers: [], subcategoryName: '', // Lista vacía inicialmente
-                );
-              }).where((service) =>
-                  service.status.id == 'completed' && service.userId == column) // Filtrar por userId
-              .toList();
-
-
-              // Cacheamos las solicitudes de servicio
-              serviceRequestsList.forEach((request) {
-                LocalCacheService.cacheServiceRequest(request);
-              });
-              // Retornar la lista de solicitudes de servicio con sus ofertas
-              return serviceRequestsList;
-            } catch (e) {
-              print('Error al procesar los datos del servicio: $e');
-              return [];
-            }
-          } else {
-            print('No se encontraron servicios disponibles.');
-            return [];
+          if (filteredOffers.isNotEmpty) {
+            serviceRequest.workerId = filteredOffers.first.workerId;
+            serviceRequest.hasOffer = true;
+            serviceRequest.offers = filteredOffers;
+            validServices.add(serviceRequest);
           }
-        } else {
-          print('Error en la solicitud HTTP: ${response.statusCode}');
-          return [];
+        } catch (e) {
+          print('Error obteniendo ofertas para ${serviceRequest.id}: $e');
         }
-      }
+      }).toList();
+
+      await Future.wait(offerRequests);
+
+      // 6. Cachear y retornar resultados
+      validServices.forEach(LocalCacheService.cacheServiceRequest);
+      return validServices;
     } catch (e) {
-      print('Error en la solicitud: $e');
+      print('Error crítico en _fetchServicesByInProgress: ${e.toString()}');
       return [];
     }
   }
 
   // Método privado para parsear el precio ofrecido
+  List<Expertise> _extractExpertises(Map<String, dynamic> item) {
+    final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
+    return expertisesArray
+        .map((exp) => Expertise(
+      id: exp['id']?.toString() ?? '',
+      name: exp['name']?.toString() ?? '',
+    ))
+        .toList();
+  }
+
   double _parseOfferedPrice(dynamic value) {
     if (value is String) {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
+        print('Error al convertir precio: $e');
         return 0.0;
       }
     } else if (value is num) {

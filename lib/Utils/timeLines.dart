@@ -20,7 +20,6 @@ import 'package:socio/Utils/styles.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
-
 class ServiceFormWithTimeline extends StatefulWidget {
   final ServiceRequest serviceRequest;
 
@@ -34,11 +33,15 @@ class ServiceFormWithTimeline extends StatefulWidget {
   final ApiService apiService;
   final ApiService2 apiService2;
 
+
   final List<String> images; // Parámetro images
   final String userId;
 
+
+
   const ServiceFormWithTimeline({
     required this.serviceRequest,
+
 
     required this.initialStatus,
     required this.onComplete,
@@ -71,7 +74,10 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
   double? _workerOfferedPrice;
   bool _isSendingProposal = false;
   bool _isCompletingJob = false;
-  bool _workerHasOffered = false;
+  bool _isSubmitting = false;
+  bool _proposalSent = false;
+  bool _isSending = false;
+
 
   final Map<String, String> statusNames = {
     "available": "Disponible",
@@ -92,7 +98,7 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
         .doc(widget.serviceRequest.id)
         .snapshots();
     _fetchWorkerOffer();
-    _checkWorkerOffer();
+    _checkExistingProposal();
   }
 
   @override
@@ -101,17 +107,24 @@ class _ServiceFormWithTimelineState extends State<ServiceFormWithTimeline> {
     _priceController.dispose();
     super.dispose();
   }
-  // Método para verificar si el worker actual ya tiene una oferta para este servicio
-Future<void> _checkWorkerOffer() async {
-  String? workerId = await getCurrentWorkerId();
-  
-  if (workerId != null && widget.serviceRequest.offers.isNotEmpty) {
-    setState(() {
-      // Comprueba si alguna oferta fue hecha por este worker
-      _workerHasOffered = widget.serviceRequest.offers.any((offer) => offer.workerId == workerId);
-    });
+
+  Future<void> _checkExistingProposal() async {
+    String? workerId = await getCurrentWorkerId();
+    if (workerId == null || workerId.isEmpty) return;
+
+    try {
+      final exists = await ProposalService.checkExistingProposal(
+        serviceRequestId: widget.serviceRequest.id,
+        workerId: workerId,
+      );
+
+      if (mounted) {
+        setState(() => _proposalSent = exists);
+      }
+    } catch (e) {
+      print('Error verificando propuesta existente: $e');
+    }
   }
-}
 
   Future<void> _fetchWorkerOffer() async {
     try {
@@ -245,7 +258,7 @@ Future<void> _checkWorkerOffer() async {
       setState(() {
         _fetchedOfferedPrice = offeredPrice;
         _priceController.text =
-            offeredPrice != null ? offeredPrice.toString() : '';
+        offeredPrice != null ? offeredPrice.toString() : '';
       });
     } catch (e) {
       print('Error al obtener el precio ofertado: $e');
@@ -273,136 +286,130 @@ Future<void> _checkWorkerOffer() async {
     return null;
   }
 
-  // Modifica el método _showProposalDialog para usar esta condición
-void _showProposalDialog(BuildContext context) {
-  // Si el worker ya ha ofertado, muestra un mensaje y no abre el diálogo
-  if (_workerHasOffered) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Ya has enviado una propuesta para este servicio')),
-    );
-    return;
-  }
-  
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return StatefulBuilder(
-        builder: (BuildContext context, StateSetter setStateDialog) {
-          return AlertDialog(
-            title: Text(
-              'Enviar Propuesta',
-              style: MyTextStyles.linkTextStyle,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Ingrese el precio que va a ofertar:',
-                    style: MyTextStyles.ButtonTextStyle,
+
+  void _showProposalDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setStateDialog) {
+            return AlertDialog(
+              title: Text(
+                'Enviar Propuesta',
+                style: MyTextStyles.linkTextStyle,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Ingrese el precio que va a ofertar:',
+                      style: MyTextStyles.ButtonTextStyle,
+                    ),
+                  ),
+                  SizedBox(height: 8.0),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: "Precio Ofertado",
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      focusColor: Color(0xFF830A09),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF830A09),
+                        ),
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton.icon(
+                  onPressed: _isSendingProposal
+                      ? null
+                      : () {
+                    Navigator.of(context).pop();
+                  },
+                  icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
+                  label: Text(
+                    "Cancelar",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFF84090D)),
+                    ),
                   ),
                 ),
-                SizedBox(height: 8.0),
-                TextField(
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: "Precio Ofertado",
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                ElevatedButton.icon(
+                  onPressed: _isSendingProposal || _proposalSent
+                      ? null
+                      : () async {
+                    // Si aún no se ha enviado la propuesta, marca como enviada para evitar nuevos envíos
+                    setStateDialog(() {
+                      _isSendingProposal = true;
+                      _proposalSent = true;
+                    });
+
+                    await _sendProposal();
+
+                    setStateDialog(() {
+                      _isSendingProposal = false;
+                    });
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: _isSendingProposal
+                      ? SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                      AlwaysStoppedAnimation<Color>(Color(0xFF84090D)),
                     ),
-                    focusColor: Color(0xFF830A09),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: Color(0xFF830A09),
-                      ),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                  )
+                      : Icon(Icons.check_circle, color: Color(0xFF84090D)),
+                  label: Text(
+                    _isSendingProposal ? "Enviando..." : "Enviar Propuesta",
+                    style: GoogleFonts.karla(
+                      color: Color(0xFF84090D),
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    padding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Color(0xFF84090D)),
                     ),
                   ),
                 ),
               ],
-            ),
-            actions: [
-              ElevatedButton.icon(
-                onPressed: _isSendingProposal
-                    ? null
-                    : () {
-                  Navigator.of(context).pop();
-                },
-                icon: Icon(Icons.dangerous, color: Color(0xFF84090D)),
-                label: Text(
-                  "Cancelar",
-                  style: GoogleFonts.karla(
-                    color: Color(0xFF84090D),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Color(0xFF84090D)),
-                  ),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: _isSendingProposal
-                    ? null
-                    : () async {
-                  setStateDialog(() {
-                    _isSendingProposal = true;
-                  });
-
-                  await _sendProposal();
-
-                  setStateDialog(() {
-                    _isSendingProposal = false;
-                  });
-
-                  Navigator.of(context).pop();
-                },
-                icon: _isSendingProposal
-                    ? SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF84090D),
-                    ),
-                  ),
-                )
-                    : Icon(Icons.check_circle, color: Color(0xFF84090D)),
-                label: Text(
-                  _isSendingProposal ? "Enviando..." : "Enviar Propuesta",
-                  style: GoogleFonts.karla(
-                    color: Color(0xFF84090D),
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Color(0xFF84090D)),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
-
+            );
+          },
+        );
+      },
+    );
+  }
 
 
   Future<void> _sendProposal() async {
@@ -418,11 +425,24 @@ void _showProposalDialog(BuildContext context) {
       return;
     }
 
+    // Mostrar un indicador de carga durante la verificación
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+
+    // Si no existe propuesta previa, continuar con el servicio de propuesta
     ProposalService proposalService = ProposalService(
       context: context,
       serviceRequest: widget.serviceRequest,
       workerId: workerId,
-      userData: widget.userData,
+      userData: widget.userData, token: '',
     );
 
     await proposalService.sendProposal(
@@ -442,8 +462,7 @@ void _showProposalDialog(BuildContext context) {
     );
   }
 
-
-void _showPendingConfirmation2Dialog(BuildContext context) async {
+  void _showPendingConfirmation2Dialog(BuildContext context) async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('offers')
         .where('serviceId', isEqualTo: widget.serviceRequest.id)
@@ -455,7 +474,8 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
       print('✅ Datos obtenidos de la oferta: $offerData');
 
       var offeredPrice = offerData['offeredPrice'];
-      print('📌 Valor original de offeredPrice: $offeredPrice (${offeredPrice.runtimeType})');
+      print('📌 Valor original de offeredPrice: $offeredPrice (${offeredPrice
+          .runtimeType})');
 
       // Conversión robusta del tipo de dato
       if (offeredPrice is num) {
@@ -519,13 +539,14 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
         },
       );
     } else {
-      print('⚠️ No se encontró una oferta para el serviceId proporcionado: ${widget.serviceRequest.id}');
+      print(
+          '⚠️ No se encontró una oferta para el serviceId proporcionado: ${widget
+              .serviceRequest.id}');
     }
   }
 
 
-  void _handleAcceptButton(
-      QuerySnapshot querySnapshot,
+  void _handleAcceptButton(QuerySnapshot querySnapshot,
       double offeredPrice,
       double commission,
       double extraCost,
@@ -583,15 +604,17 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-          ),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+        ),
       );
     }
   }
 
   void _showCompleteJobDialog(BuildContext context) {
-    final offer = widget.offers.isNotEmpty ? widget.offers.first : null; // Usa la primera oferta si está disponible, de lo contrario, null
+    final offer = widget.offers.isNotEmpty
+        ? widget.offers.first
+        : null; // Usa la primera oferta si está disponible, de lo contrario, null
 
     if (widget.serviceRequest.status == 'pending_confirmation2') {
       _showPendingConfirmation2Dialog(context);
@@ -599,7 +622,8 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
       CompleteJobDialog(
         context: context,
         serviceRequest: widget.serviceRequest,
-        offer: offer, // Pasa la oferta aquí
+        offer: offer,
+        // Pasa la oferta aquí
         onStatusChanged: widget.onStatusChanged,
         apiService: widget.apiService,
         apiService2: widget.apiService2,
@@ -939,36 +963,36 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
             ),
             const SizedBox(height: 10),
             ElevatedButton.icon(
-              onPressed: () {
-                final userId = FirebaseAuth.instance.currentUser?.uid;
+            onPressed: () {
+              final userId = FirebaseAuth.instance.currentUser?.uid;
 
-                print("Botón de Chat presionado");
-                print("workerId: ${widget.workerId}");
-                print("userId (actual): $userId");
+              print("Botón de Chat presionado");
+              print("workerId: ${widget.workerId}");
+              print("userId (actual): $userId");
 
-                if (userId == null) {
-                  print("Error: userId es null, usuario no autenticado");
-                  return;
-                }
+              if (userId == null) {
+                print("Error: userId es null, usuario no autenticado");
+                return;
+              }
 
-                _openChat(widget.workerId, userId);
-              },
-              icon: Icon(Icons.chat, color: Colors.white),
-              label: Text(
-                "Chat",
-                style: GoogleFonts.karla(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1A819A),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
+              _openChat(widget.workerId, userId);
+            },
+            icon: Icon(Icons.chat, color: Colors.white),
+            label: Text(
+              "WhatsApp",
+              style: GoogleFonts.karla(
+                color: Colors.white,
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A819A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+            ),
+          ),
           ],
         );
 
@@ -1070,58 +1094,18 @@ void _showPendingConfirmation2Dialog(BuildContext context) async {
   }
 
   void _openChat(String workerId, String userId) async {
-    print("Abriendo chat...");
-    // Asegúrate de que el orden de los parámetros sea consistente con _generateChatId
-    final chatId = _generateChatId(userId, workerId);
-    print("Chat ID generado: $chatId");
-
-    try {
-      // Primero, buscar si existe un chat con estos participantes, independiente del ID
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('chats')
-          .where('participants', arrayContains: userId)
-          .get();
-
-      // Buscar entre los resultados si hay un chat que contenga ambos participantes
-      bool chatExists = false;
-      String existingChatId = '';
-
-      for (var doc in querySnapshot.docs) {
-        List<dynamic> participants = doc.data()['participants'] ?? [];
-        if (participants.contains(workerId) && participants.contains(userId)) {
-          chatExists = true;
-          existingChatId = doc.id;
-          print("Chat existente encontrado con ID: $existingChatId");
-          break;
-        }
-      }
-
-      if (!chatExists) {
-        print("Creando nuevo documento de chat...");
-        await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
-          'chatId': chatId,
-          'participants': [userId, workerId],
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-        print("Chat creado exitosamente");
-        existingChatId = chatId;
-      } else {
-        print("El chat ya existe, usando existingChatId: $existingChatId");
-      }
 
       // Navegar a la pantalla de chat usando el ID encontrado o creado
-      print("Navegando a la pantalla de chat con ID: $existingChatId");
+    try {
       Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            chatId: existingChatId,
-            userId: userId,
-            workerId: workerId,
-            isUser: true,
-          ),
+      context,
+      MaterialPageRoute(
+        builder: (context) => WhatsAppUserContactScreen(
+          userId: userId,
         ),
-      );
+      ),
+    );
+
     } catch (e) {
       print("Error al abrir el chat: $e");
     }
