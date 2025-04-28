@@ -189,65 +189,80 @@ class ApiService {
   }
 
 
-Future<http.Response> updateUser(String userId, RegistrationData registrationData, String token) async {
-  try {
-    String codeReferral = '${registrationData.displayName.split(' ').first}_${registrationData.idCardNumber.length >= 4
-        ? registrationData.idCardNumber.substring(registrationData.idCardNumber.length - 4)
-        : registrationData.idCardNumber}';
+  Future<http.Response> updateUser(
+      String userId,
+      RegistrationData registrationData,
+      String token,
+      ) async {
+    try {
+      // Generar un código de referido único
+      String codeReferral =
+          '${registrationData.displayName.split(' ').first}_${registrationData.idCardNumber.length >= 4 ? registrationData.idCardNumber.substring(registrationData.idCardNumber.length - 4) : registrationData.idCardNumber}';
 
-    // Mapea cada expertise a un mapa con nombre e ID
-    List<Map<String, String>> expertises = (registrationData.expertises ?? [])
-        .where((expertise) => expertise != null) // Filtra elementos nulos
-        .map((expertise) => {
-              'name': expertise!.name ?? '', // Usa ! porque ya filtramos los nulos
-              'id': expertise.id ?? '',
-            })
-        .toList();
+      // Mapear expertises a lista de mapas { name, id }
+      List<Map<String, String>> expertises = registrationData.expertises
+          .map((e) => {
+        'name': e.name,
+        'id': e.id,
+      })
+          .toList();
 
-    // Cuerpo de la solicitud
-    Map<String, dynamic> requestBody = {
-      'displayName': registrationData.displayName,
-      'idCardNumber': registrationData.idCardNumber,
-      'phoneNumber': registrationData.phoneNumber,
-      'location': registrationData.location ?? {},
-      'paymentType': registrationData.paymentType,
-      'imagePath': registrationData.imagePath,
-      'idDocumentImagePath': registrationData.idDocumentImagePath,
-      'idDocumentImagePath2': registrationData.idDocumentImagePath2,
-      'criminalRecordImagePath': registrationData.criminalRecordImagePath,
-      'certificateImagePaths': registrationData.certificateImagePaths,
-      'deviceId': registrationData.devicesId,
-      'fcmToken': registrationData.fcmToken,
-      'expertises': expertises,
-      'expLevel': registrationData.expLevel,
-      'verificationStatus': 'No verificado',
-      'points': registrationData.points,
-      'successfulReferrals': 0,
-      'codeReferral': codeReferral,
-      'requiresInvoice': registrationData.requiresInvoice ?? 'NO', // Agregado el campo requiresInvoice
-    };
+      // Si ahora manejas múltiples certificados en un CSV, convertimos a lista
+      List<String> certificatePathsList = registrationData.certificateImagePaths
+          .split(',')
+          .where((p) => p.isNotEmpty)
+          .toList();
 
-    print('Request Body: $requestBody');
+      // Cuerpo de la petición
+      final requestBody = <String, dynamic>{
+        'displayName': registrationData.displayName,
+        'idCardNumber': registrationData.idCardNumber,
+        'phoneNumber': registrationData.phoneNumber,
+        'location': registrationData.location,
+        'paymentType': registrationData.paymentType,
+        'imagePath': registrationData.imagePath,
+        'idDocumentImagePath': registrationData.idDocumentImagePath,
+        'idDocumentImagePath2': registrationData.idDocumentImagePath2,
+        'criminalRecordImagePath': registrationData.criminalRecordImagePath,
 
-    // Enviar solicitud PATCH
-    final response = await http.patch(
-      Uri.parse('$baseUrl/workers/$userId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode(requestBody),
-    );
+        // Enviamos ahora la lista de certificados
+        'certificateImagePaths': certificatePathsList,
 
-    print('Response Status Code: ${response.statusCode}');
-    print('Response Body: ${response.body}');
+        // Nuevo campo para Título Profesional / Matrícula
+        'professionalTitleImagePath': registrationData.professionalTitleImagePath,
 
-    return response;
-  } catch (e) {
-    print('Error al actualizar el usuario: $e');
-    throw Exception('Error al actualizar el usuario: $e');
+        'deviceId': registrationData.devicesId,
+        'fcmToken': registrationData.fcmToken,
+        'expertises': expertises,
+        'expLevel': registrationData.expLevel,
+        'verificationStatus': 'No verificado',
+        'points': registrationData.points,
+        'successfulReferrals': 0,
+        'codeReferral': codeReferral,
+        'requiresInvoice': registrationData.requiresInvoice ?? 'NO',
+      };
+
+      print('Request Body: $requestBody');
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/workers/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print('Response Status Code: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      return response;
+    } catch (e) {
+      print('Error al actualizar el usuario: $e');
+      throw Exception('Error al actualizar el usuario: $e');
+    }
   }
-}
+
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {
       final String extension = image.path.split('.').last;
@@ -394,8 +409,8 @@ Future<http.Response> updateUser(String userId, RegistrationData registrationDat
     } catch (e) {
       print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
-      }
     }
+  }
   Future<String> uploadImageToFirebaseStorage5(
       File image, String userId) async {
     try {
@@ -416,6 +431,96 @@ Future<http.Response> updateUser(String userId, RegistrationData registrationDat
           .last;
       String imageName =
           'criminalRecord_${DateTime
+          .now()
+          .millisecondsSinceEpoch}.$extension';
+      String userFolderPath = '$userId/';
+      String imagePath = '$userFolderPath$imageName';
+
+      if (await image.exists()) {
+        Reference ref = storage.ref().child(imagePath);
+        UploadTask uploadTask = ref.putFile(image);
+
+        await uploadTask.whenComplete(() {
+          print('Imagen cargada con éxito en Firebase Storage');
+        });
+
+        final imageUrl = await ref.getDownloadURL();
+        print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
+      } else {
+        print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
+      }
+    } catch (e) {
+      print('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+    }
+  }
+  Future<String> uploadImageToFirebaseStorage6(
+      File image, String userId) async {
+    try {
+      print('Comenzando la carga de la imagen a Firebase Storage');
+
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final User? user = auth.currentUser;
+
+      if (user == null) {
+        print('Error: Usuario no autenticado.');
+        throw Exception('Usuario no autenticado');
+      }
+
+      final FirebaseStorage storage = FirebaseStorage.instance;
+
+      String extension = image.path
+          .split('.')
+          .last;
+      String imageName =
+          'medicalLicense_${DateTime
+          .now()
+          .millisecondsSinceEpoch}.$extension';
+      String userFolderPath = '$userId/';
+      String imagePath = '$userFolderPath$imageName';
+
+      if (await image.exists()) {
+        Reference ref = storage.ref().child(imagePath);
+        UploadTask uploadTask = ref.putFile(image);
+
+        await uploadTask.whenComplete(() {
+          print('Imagen cargada con éxito en Firebase Storage');
+        });
+
+        final imageUrl = await ref.getDownloadURL();
+        print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
+      } else {
+        print('Error: El archivo de imagen no existe.');
+        throw Exception('El archivo de imagen no existe');
+      }
+    } catch (e) {
+      print('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+    }
+  }
+  Future<String> uploadImageToFirebaseStorage7(
+      File image, String userId) async {
+    try {
+      print('Comenzando la carga de la imagen a Firebase Storage');
+
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final User? user = auth.currentUser;
+
+      if (user == null) {
+        print('Error: Usuario no autenticado.');
+        throw Exception('Usuario no autenticado');
+      }
+
+      final FirebaseStorage storage = FirebaseStorage.instance;
+
+      String extension = image.path
+          .split('.')
+          .last;
+      String imageName =
+          'professionalTitle_${DateTime
           .now()
           .millisecondsSinceEpoch}.$extension';
       String userFolderPath = '$userId/';
@@ -464,16 +569,16 @@ class FormData {
 
   Map<String, dynamic> toMap() {
     return {
-      'dateTime': dateTime,
-      'description': description,
-      'images': images,
-      'location': {
-        'lat': location['lat'],
-        'lng': location['lng'],
-      },
-      'offeredPrice': offeredPrice,
-      'serviceType': serviceType, // Usar la cadena en lugar de un objeto ServiceType
-      'userId': userId,
-    };
-  }
+    'dateTime': dateTime,
+    'description': description,
+    'images': images,
+    'location': {
+    'lat': location['lat'],
+    'lng': location['lng'],
+    },
+    'offeredPrice': offeredPrice,
+    'serviceType': serviceType, // Usar la cadena en lugar de un objeto ServiceType
+    'userId': userId,
+      };
+    }
 }

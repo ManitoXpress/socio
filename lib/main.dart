@@ -11,9 +11,11 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/Controller/RegisController.dart';
+import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/fcmToken.dart';
 import 'package:socio/provider/providerImage.dart';
+import 'package:socio/provider/providerRegistration.dart';
 import 'package:socio/provider/providerService.dart';
 
 import 'firebase_options.dart';
@@ -56,12 +58,25 @@ void main() async {
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
 
+  final ApiService apiService = ApiService();
+
+  final registrationController = RegistrationController();
+  final completeRegistrationCallback = () {
+    print("Registro completado con éxito");
+  };
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ImageStateProvider()),
         ChangeNotifierProvider(create: (_) => HistorialProvider()),
-        // Aquí puedes añadir más providers si los necesitas
+        ChangeNotifierProvider(
+          create: (_) => RegistrationProvider(
+            registrationController: registrationController,
+            completeRegistrationCallback: completeRegistrationCallback,
+            apiService: apiService,
+          ),
+        ),
       ],
       child: ScreenUtilInit(
         designSize: Size(375, 812),
@@ -220,6 +235,8 @@ Future<UserData> fetchUserData(String userId) async {
     criminalRecordImagePath: '',
     idDocumentImagePath: '',
     idDocumentImagePath2: '',
+    medicalLicenseImagePath: '',
+    professionalTitleImagePath: '',
     selectedCountryCode: '',
     expertises: [],
     expLevel: [],

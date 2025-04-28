@@ -140,6 +140,10 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
         certificateImagePaths: '',
         criminalRecordImagePath: file.path,
         referralCode: '',
+        medicalLicenseImagePath: '', // Provide appropriate value
+        professionalTitleImagePath: '', // Provide appropriate value
+        jobCompletePath: '', // Provide appropriate value
+        jobCompletePaths: [], // Provide appropriate value
       );
 
       // Actualizamos el provider dependiendo del tipo de archivo.

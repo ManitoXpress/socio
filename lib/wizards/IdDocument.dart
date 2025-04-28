@@ -132,6 +132,10 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
           certificateImagePaths: '',
           criminalRecordImagePath: '',
           referralCode: '',
+          medicalLicenseImagePath: '', // Add this argument
+          professionalTitleImagePath: '', // Add this argument
+          jobCompletePath: '', // Add this argument
+          jobCompletePaths: [], // Add this argument
         );
 
         print('Imagen de documento seleccionada: ${image.path}');

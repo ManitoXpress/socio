@@ -8,34 +8,41 @@ class ImageStateProvider extends ChangeNotifier {
   File? _profileImage;
   bool _isProfileImageCaptured = false;
 
-  // Imágenes de documentos
+  // Imágenes de documentos de identidad
   File? _idFrontImage;
   File? _idBackImage;
 
-  // Antecedentes penales
+  // Antecedentes penales (imagen o PDF)
   File? _criminalRecordImage;
   File? _criminalRecordPdf;
 
-  // Certificados profesionales
-  File? _certificateImage;
-  File? _certificatePdf;
+  // Certificados profesionales (múltiples)
+  final List<File> _certificateImages = [];
+  final List<File> _certificatePdfs   = [];
 
-  // Getters
-  File? get profileImage => _profileImage;
-  bool get isProfileImageCaptured => _isProfileImageCaptured;
+  // Título profesional / matrícula (uno)
+  File? _titleImage;
+  File? _titlePdf;
 
-  File? get idFrontImage => _idFrontImage;
-  File? get idBackImage => _idBackImage;
+  // ─── Getters ─────────────────────────────────────────────────
 
-  // Para antecedentes penales
+  File? get profileImage       => _profileImage;
+  bool  get isProfileImageCaptured => _isProfileImageCaptured;
+
+  File? get idFrontImage       => _idFrontImage;
+  File? get idBackImage        => _idBackImage;
+
   File? get criminalRecordImage => _criminalRecordImage;
-  File? get criminalRecordPdf => _criminalRecordPdf;
+  File? get criminalRecordPdf   => _criminalRecordPdf;
 
-  // Para certificados
-  File? get certificateImage => _certificateImage;
-  File? get certificatePdf => _certificatePdf;
+  List<File> get certificateImages => List.unmodifiable(_certificateImages);
+  List<File> get certificatePdfs   => List.unmodifiable(_certificatePdfs);
 
-  // Métodos para imagen de perfil
+  File? get titleImage => _titleImage;
+  File? get titlePdf   => _titlePdf;
+
+  // ─── Perfil ────────────────────────────────────────────────────
+
   void setProfileImage(File image) {
     _profileImage = image;
     _isProfileImageCaptured = true;
@@ -47,7 +54,8 @@ class ImageStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Métodos para imagen frontal del carnet
+  // ─── Carnet de identidad ───────────────────────────────────────
+
   void setIdFrontImage(File image) {
     _idFrontImage = image;
     notifyListeners();
@@ -57,7 +65,6 @@ class ImageStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Métodos para imagen trasera del carnet
   void setIdBackImage(File image) {
     _idBackImage = image;
     notifyListeners();
@@ -67,10 +74,10 @@ class ImageStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Métodos para antecedentes penales (imagen o PDF)
+  // ─── Antecedentes penales ─────────────────────────────────────
+
   void setCriminalRecordImage(File image) {
     _criminalRecordImage = image;
-    // Si se asigna una imagen, se limpia el PDF
     _criminalRecordPdf = null;
     notifyListeners();
   }
@@ -78,9 +85,9 @@ class ImageStateProvider extends ChangeNotifier {
     _criminalRecordImage = null;
     notifyListeners();
   }
+
   void setCriminalRecordPdf(File pdf) {
     _criminalRecordPdf = pdf;
-    // Si se asigna un PDF, se limpia la imagen
     _criminalRecordImage = null;
     notifyListeners();
   }
@@ -89,53 +96,104 @@ class ImageStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Métodos para certificados (imagen o PDF)
-  void setCertificateImage(File image) {
-    _certificateImage = image;
-    _certificatePdf = null;
-    notifyListeners();
-  }
-  void clearCertificateImage() {
-    _certificateImage = null;
-    notifyListeners();
-  }
-  void setCertificatePdf(File pdf) {
-    _certificatePdf = pdf;
-    _certificateImage = null;
-    notifyListeners();
-  }
-  void clearCertificatePdf() {
-    _certificatePdf = null;
+  // ─── Certificados profesionales (múltiples) ───────────────────
+
+  /// Agrega una imagen de certificado y notifica.
+  void addCertificateImage(File image) {
+    _certificateImages.add(image);
     notifyListeners();
   }
 
-  // Método para inicializar las imágenes desde datos ya existentes.
+  /// Elimina todas las imágenes de certificado.
+  void clearAllCertificateImages() {
+    _certificateImages.clear();
+    notifyListeners();
+  }
+
+  /// Agrega un PDF de certificado y notifica.
+  void addCertificatePdf(File pdf) {
+    _certificatePdfs.add(pdf);
+    notifyListeners();
+  }
+
+  /// Elimina todos los PDFs de certificado.
+  void clearAllCertificatePdfs() {
+    _certificatePdfs.clear();
+    notifyListeners();
+  }
+
+  // ─── Título profesional / matrícula (uno) ─────────────────────
+
+  void setTitleImage(File image) {
+    _titleImage = image;
+    _titlePdf = null;
+    notifyListeners();
+  }
+
+  void clearTitleImage() {
+    _titleImage = null;
+    notifyListeners();
+  }
+
+  void setTitlePdf(File pdf) {
+    _titlePdf = pdf;
+    _titleImage = null;
+    notifyListeners();
+  }
+
+  void clearTitlePdf() {
+    _titlePdf = null;
+    notifyListeners();
+  }
+
+  // ─── Inicializar desde datos existentes ────────────────────────
+
+  /// Usa un CSV de rutas para poblar certificados; y un campo para título.
   void initFromRegistrationData(RegistrationData data) {
+    // perfil
     if (data.imagePath.isNotEmpty) {
       _profileImage = File(data.imagePath);
       _isProfileImageCaptured = true;
     }
+
+    // carnet
     if (data.idDocumentImagePath.isNotEmpty) {
       _idFrontImage = File(data.idDocumentImagePath);
     }
     if (data.idDocumentImagePath2.isNotEmpty) {
       _idBackImage = File(data.idDocumentImagePath2);
     }
+
+    // penales
     if (data.criminalRecordImagePath.isNotEmpty) {
-      // Detecta si es pdf o imagen
       if (data.criminalRecordImagePath.toLowerCase().endsWith('.pdf')) {
         _criminalRecordPdf = File(data.criminalRecordImagePath);
       } else {
         _criminalRecordImage = File(data.criminalRecordImagePath);
       }
     }
+
+    // certificados (CSV concatenado con comas)
     if (data.certificateImagePaths.isNotEmpty) {
-      if (data.certificateImagePaths.toLowerCase().endsWith('.pdf')) {
-        _certificatePdf = File(data.certificateImagePaths);
-      } else {
-        _certificateImage = File(data.certificateImagePaths);
+      for (final p in data.certificateImagePaths.split(',')) {
+        if (p.toLowerCase().endsWith('.pdf')) {
+          _certificatePdfs.add(File(p));
+        } else {
+          _certificateImages.add(File(p));
+        }
       }
     }
+
+    // título profesional / matrícula
+    if (data.professionalTitleImagePath.isNotEmpty) {
+      final p = data.professionalTitleImagePath;
+      if (p.toLowerCase().endsWith('.pdf')) {
+        _titlePdf = File(p);
+      } else {
+        _titleImage = File(p);
+      }
+    }
+
     notifyListeners();
   }
 }

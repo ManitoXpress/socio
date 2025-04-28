@@ -138,6 +138,8 @@ class NotificationService {
       criminalRecordImagePath: '',
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],

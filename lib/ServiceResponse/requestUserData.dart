@@ -14,6 +14,8 @@ class UserData {
   String criminalRecordImagePath;
   String idDocumentImagePath;
   String idDocumentImagePath2;
+  String medicalLicenseImagePath;
+  String professionalTitleImagePath;
   String selectedCountryCode;
   List<Expertise> expertises;
   List<String> expLevel;
@@ -39,6 +41,8 @@ class UserData {
     required this.criminalRecordImagePath,
     required this.idDocumentImagePath,
     required this.idDocumentImagePath2,
+    required this.medicalLicenseImagePath,
+    required this.professionalTitleImagePath,
     required this.selectedCountryCode,
     required this.expertises,
     required this.expLevel,
@@ -67,6 +71,9 @@ class UserData {
       criminalRecordImagePath: '',
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
+      requiresInvoice: null, // Inicializa como null
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],
@@ -103,6 +110,8 @@ class UserData {
           : null,
       idDocumentImagePath: json['idDocumentImagePath'] ?? '',
       idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
+      medicalLicenseImagePath: json['medicalLicenseImagePath'] ?? '',
+      professionalTitleImagePath: json['professionalTitleImagePath'] ?? '',
       referrerWorkerId: json['referrerWorkerId'] ?? '',
       referralCode: json['referralCode'] ?? '',
       verificationStatus: json['verificationStatus'] ?? '',

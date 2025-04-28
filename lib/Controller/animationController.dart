@@ -125,6 +125,8 @@ Future<UserData> fetchUserData(String userId) async {
     criminalRecordImagePath: '',
     idDocumentImagePath: '',
     idDocumentImagePath2: '',
+    medicalLicenseImagePath: '',
+    professionalTitleImagePath: '',
     selectedCountryCode: '',
     expertises: [],
     expLevel: [],

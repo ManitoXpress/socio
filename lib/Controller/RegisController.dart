@@ -61,7 +61,10 @@ class RegistrationController {
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
     required String certificateImagePaths,
-    required String criminalRecordImagePath, required String referralCode,
+    required String medicalLicenseImagePath,
+    required String professionalTitleImagePath,
+    required String jobCompletePath,
+    required String criminalRecordImagePath, required String referralCode, required List<String> jobCompletePaths,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
     if (idCardNumber != null) registrationData.idCardNumber = idCardNumber;
@@ -96,17 +99,22 @@ class RegistrationData {
   String idDocumentImagePath2;
   String criminalRecordImagePath;
   String certificateImagePaths;
+
+  // Nuevos campos para Salud
+  String medicalLicenseImagePath;
+  String professionalTitleImagePath;
+
   List<Expertise> expertises;
   List<String> expLevel;
   String imagePath;
 
-  /// Location stored both as map and discrete fields
+  /// Ubicación tanto en Map como en campos discretos
   Map<String, double?>? location;
   double? latitude;
   double? longitude;
   String? address;
 
-  /// Favorites and extra info
+  /// Favoritos e información extra
   bool? isFavorite;
   String? additionalInfo;
 
@@ -117,40 +125,7 @@ class RegistrationData {
   String verificationStatus;
   String? requiresInvoice;
 
-  RegistrationData.fromForm({
-    required this.devicesId,
-    required this.fcmToken,
-    required this.userId,
-    required this.displayName,
-    required this.idCardNumber,
-    required this.phoneNumber,
-    required this.paymentType,
-    required this.selectedCountryCode,
-    required this.imagePathList,
-    required this.idDocumentImagePath,
-    required this.idDocumentImagePath2,
-    required this.criminalRecordImagePath,
-    required this.certificateImagePaths,
-    required this.expertises,
-    required this.expLevel,
-    required this.imagePath,
-    required this.location,
-    this.requiresInvoice,
-    required this.email,
-    required this.referralCode,
-    required this.points,
-    required this.codeReferral,
-    required this.verificationStatus,
-  }) {
-    // Derivar campos de ubicación
-    latitude = location?['lat'];
-    longitude = location?['lng'];
-    // Inicializar opcionales
-    address = null;
-    isFavorite = false;
-    additionalInfo = null;
-  }
-
+  /// Constructor principal
   RegistrationData({
     required this.devicesId,
     required this.fcmToken,
@@ -166,6 +141,8 @@ class RegistrationData {
     required this.idDocumentImagePath2,
     required this.criminalRecordImagePath,
     required this.certificateImagePaths,
+    this.medicalLicenseImagePath = '',
+    this.professionalTitleImagePath = '',
     required this.expertises,
     required this.expLevel,
     required this.email,
@@ -176,14 +153,53 @@ class RegistrationData {
     required this.verificationStatus,
     this.requiresInvoice,
   }) {
-    // Derivar lat/lng
+    // Derivar latitud/longitud
     latitude = location?['lat'];
     longitude = location?['lng'];
+    // Inicializar opcionales
     address = null;
     isFavorite = false;
     additionalInfo = null;
   }
 
+  /// Constructor para enviar al servidor (desde formulario)
+  RegistrationData.fromForm({
+    required this.devicesId,
+    required this.fcmToken,
+    required this.userId,
+    required this.displayName,
+    required this.idCardNumber,
+    required this.phoneNumber,
+    required this.paymentType,
+    required this.selectedCountryCode,
+    required this.imagePathList,
+    required this.idDocumentImagePath,
+    required this.idDocumentImagePath2,
+    required this.criminalRecordImagePath,
+    required this.certificateImagePaths,
+    this.medicalLicenseImagePath = '',
+    this.professionalTitleImagePath = '',
+    required this.expertises,
+    required this.expLevel,
+    required this.imagePath,
+    required this.location,
+    this.requiresInvoice,
+    required this.email,
+    required this.referralCode,
+    required this.points,
+    required this.codeReferral,
+    required this.verificationStatus,
+  }) {
+    // Derivar latitud/longitud
+    latitude = location?['lat'];
+    longitude = location?['lng'];
+    // Inicializar opcionales
+    address = null;
+    isFavorite = false;
+    additionalInfo = null;
+  }
+
+  /// Constructor para invitado
   factory RegistrationData.guest() {
     return RegistrationData(
       devicesId: '',
@@ -200,6 +216,8 @@ class RegistrationData {
       idDocumentImagePath2: '',
       criminalRecordImagePath: '',
       certificateImagePaths: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
       expertises: [],
       expLevel: [],
       email: '',

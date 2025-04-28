@@ -43,173 +43,253 @@ class CertificateImageStep extends StatefulWidget {
   @override
   _CertificateImageStepState createState() => _CertificateImageStepState();
 }
+
 class _CertificateImageStepState extends State<CertificateImageStep> {
-  File? _image;
+  /// Ahora guardamos *múltiples* certificados en una lista
+  final List<File> _certificateFiles = [];
+
+  /// Y un único archivo para el título profesional / matrícula
+  File? _titleFile;
+
   final ImagePicker _imagePicker = ImagePicker();
 
-  Future<void> _pickImage() async {
-    try {
-      await showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Seleccione una opción'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    try {
-                      final XFile? image = await _imagePicker.pickImage(
-                        source: ImageSource.camera,
-                      );
-                      if (image != null) {
-                        print('Imagen capturada: ${image.path}');
-                        _processImage(image);
-                      } else {
-                        print('No se capturó ninguna imagen.');
-                      }
-                    } catch (e) {
-                      print('Error al acceder a la cámara: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'No se pudo acceder a la cámara. Por favor, verifica los permisos en la configuración del dispositivo.',
-                          ),
-                        ),
-                      );
+  Future<void> _pickDialog({required bool forTitle}) async {
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(forTitle
+              ? 'Seleccione su Título Profesional'
+              : 'Seleccione un Certificado'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  try {
+                    final XFile? image = await _imagePicker.pickImage(
+                      source: ImageSource.camera,
+                    );
+                    if (image != null) {
+                      _processPicked(File(image.path), forTitle: forTitle);
                     }
-                  },
-                  child: const Text('Tomar Foto'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    Navigator.pop(context);
-                    try {
-                      final FilePickerResult? result =
-                      await FilePicker.platform.pickFiles(
-                        type: FileType.custom,
-                        allowedExtensions: ['pdf'],
-                      );
-                      if (result != null) {
-                        final PlatformFile file = result.files.first;
-                        final File pdfFile = File(file.path!);
-                        print('Archivo PDF seleccionado: ${pdfFile.path}');
-                        _processImage(XFile(pdfFile.path));
-                      } else {
-                        print('No se seleccionó ningún archivo.');
-                      }
-                    } catch (e) {
-                      print('Error al seleccionar el archivo PDF: $e');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                              'Ocurrió un error al seleccionar el archivo PDF: $e'),
-                        ),
-                      );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error cámara: $e')),
+                    );
+                  }
+                },
+                child: const Text('Tomar Foto'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  try {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'jpg', 'png'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _processPicked(
+                          File(result.files.single.path!), forTitle: forTitle);
                     }
-                  },
-                  child: const Text('Seleccionar PDF'),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      print('Error al mostrar el cuadro de diálogo: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Ocurrió un error: $e'),
-        ),
-      );
-    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al seleccionar archivo: $e')),
+                    );
+                  }
+                },
+                child: const Text('Seleccionar Archivo'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
-  void _processImage(XFile? file) {
-    if (file != null) {
-      setState(() {
-        _image = File(file.path);
-      });
-
-      widget.onImageSelected(file.path);
-
-      // Actualizamos el estado en el RegistrationController
+  void _processPicked(File file, {required bool forTitle}) {
+    setState(() {
+      if (forTitle) {
+        _titleFile = file;
+        widget.onImageSelected(file.path);
+      } else {
+        _certificateFiles.add(file);
+        widget.onImageSelected(file.path);
+      }
+      // Actualizar el RegistrationController
       widget.registrationController.updateRegistrationData(
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths: file.path,
+        certificateImagePaths:
+        _certificateFiles.map((f) => f.path).join(','), // cadena CSV
         criminalRecordImagePath: '',
         referralCode: '',
+        medicalLicenseImagePath: '',
+        professionalTitleImagePath: _titleFile?.path ?? '',
+        jobCompletePath: '',
+        jobCompletePaths: [],
       );
-
-      // Dependiendo del tipo de archivo, actualizamos el provider
-      final imageProvider =
-      Provider.of<ImageStateProvider>(context, listen: false);
-      if (file.path.toLowerCase().endsWith('.pdf')) {
-        imageProvider.setCertificatePdf(File(file.path));
+      // Actualizar el provider de imágenes
+      final imgProv = Provider.of<ImageStateProvider>(context, listen: false);
+      if (forTitle) {
+        if (_titleFile!.path.toLowerCase().endsWith('.pdf')) {
+          imgProv.setTitlePdf(_titleFile!);
+        } else {
+          imgProv.setTitleImage(_titleFile!);
+        }
       } else {
-        imageProvider.setCertificateImage(File(file.path));
+        if (file.path.toLowerCase().endsWith('.pdf')) {
+          imgProv.addCertificatePdf(file);
+        } else {
+          imgProv.addCertificateImage(file);
+        }
       }
+      // Marcar que al menos uno está capturado
+      widget.isImageCaptured.value =
+          _certificateFiles.isNotEmpty || _titleFile != null;
+    });
+  }
 
-      print('Archivo seleccionado: ${file.path}');
-    }
+  Widget _buildThumbnail(File file, {required bool isTitle}) {
+    final isPdf = file.path.toLowerCase().endsWith('.pdf');
+    return Stack(
+      children: [
+        Container(
+          width: 100,
+          height: 100,
+          margin: EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: isPdf
+              ? Icon(Icons.picture_as_pdf, size: 48, color: Colors.redAccent)
+              : ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.file(file, fit: BoxFit.cover),
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isTitle) {
+                  _titleFile = null;
+                } else {
+                  _certificateFiles.remove(file);
+                }
+                // re–actualizar controlador y provider
+                widget.onImageSelected(file.path);
+                widget.registrationController.updateRegistrationData(
+                  idDocumentImagePath: '',
+                  workerType: '',
+                  idDocumentImagePath2: '',
+                  certificateImagePaths:
+                  _certificateFiles.map((f) => f.path).join(','),
+                  criminalRecordImagePath: '',
+                  referralCode: '',
+                  medicalLicenseImagePath: '',
+                  professionalTitleImagePath: _titleFile?.path ?? '',
+                  jobCompletePath: '',
+                  jobCompletePaths: [],
+                );
+                widget.isImageCaptured.value =
+                    _certificateFiles.isNotEmpty || _titleFile != null;
+              });
+            },
+            child: CircleAvatar(
+              radius: 10,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.close, size: 16, color: Colors.redAccent),
+            ),
+          ),
+        )
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
+        // CERTIFICADOS
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 8: Necesitamos una foto de sus certificados profesionales (no obligatorio)",
+            "Paso 8: Cargue los siguientes documentos si corresponde:"
+                "Título / Matrícula / Autorización",
             style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
-        GestureDetector(
-          onTap: _pickImage,
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xA3C9D2D2)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _image == null
-                ? const Center(
-              child: Icon(
-                Icons.cloud_upload,
-                size: 48,
-                color: Color(0xA3C9D2D2),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              ..._certificateFiles
+                  .map((f) => _buildThumbnail(f, isTitle: false))
+                  .toList(),
+              GestureDetector(
+                onTap: () => _pickDialog(forTitle: false),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  margin: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.add, size: 32, color: Colors.grey),
+                  ),
+                ),
               ),
-            )
-                : _image!.path.toLowerCase().endsWith('.pdf')
-                ? const Center(
-              child: Icon(
-                Icons.picture_as_pdf,
-                size: 48,
-                color: Color(0xA3C9D2D2),
-              ),
-            )
-                : Image.file(
-              _image!,
-              width: 200,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
+            ],
           ),
         ),
-        if (_image == null)
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Text(
-              'Saca una foto o selecciona un PDF antes de continuar.',
-              style: TextStyle(color: Color(0xFF830A09)),
-            ),
+
+        // TÍTULO PROFESIONAL
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            "Paso 9: Cargue los siguientes documentos si corresponde:"
+                "Cursos / Maestrías / Especialidades",
+            style: MyTextStyles.drawerButtonTextStyle2,
           ),
+        ),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              if (_titleFile != null)
+                _buildThumbnail(_titleFile!, isTitle: true),
+              GestureDetector(
+                onTap: () => _pickDialog(forTitle: true),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  margin: EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.add, size: 32, color: Colors.grey),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 24),
+        // El avance al siguiente paso lo controla el Stepper externo (onNextStep)
       ],
     );
   }

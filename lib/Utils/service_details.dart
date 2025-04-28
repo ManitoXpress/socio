@@ -117,6 +117,8 @@ class _ServiceRequestState extends State<ServiceRequest> {
       criminalRecordImagePath: '',
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],
