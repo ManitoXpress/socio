@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:socio/Controller/RegisController.dart';
-
 class ImageStateProvider extends ChangeNotifier {
   // Imágenes de perfil
   File? _profileImage;
@@ -18,7 +17,7 @@ class ImageStateProvider extends ChangeNotifier {
 
   // Certificados profesionales (múltiples)
   final List<File> _certificateImages = [];
-  final List<File> _certificatePdfs   = [];
+  final List<File> _certificatePdfs = [];
 
   // Título profesional / matrícula (uno)
   File? _titleImage;
@@ -26,20 +25,20 @@ class ImageStateProvider extends ChangeNotifier {
 
   // ─── Getters ─────────────────────────────────────────────────
 
-  File? get profileImage       => _profileImage;
-  bool  get isProfileImageCaptured => _isProfileImageCaptured;
+  File? get profileImage => _profileImage;
+  bool get isProfileImageCaptured => _isProfileImageCaptured;
 
-  File? get idFrontImage       => _idFrontImage;
-  File? get idBackImage        => _idBackImage;
+  File? get idFrontImage => _idFrontImage;
+  File? get idBackImage => _idBackImage;
 
   File? get criminalRecordImage => _criminalRecordImage;
-  File? get criminalRecordPdf   => _criminalRecordPdf;
+  File? get criminalRecordPdf => _criminalRecordPdf;
 
   List<File> get certificateImages => List.unmodifiable(_certificateImages);
-  List<File> get certificatePdfs   => List.unmodifiable(_certificatePdfs);
+  List<File> get certificatePdfs => List.unmodifiable(_certificatePdfs);
 
   File? get titleImage => _titleImage;
-  File? get titlePdf   => _titlePdf;
+  File? get titlePdf => _titlePdf;
 
   // ─── Perfil ────────────────────────────────────────────────────
 
@@ -48,6 +47,7 @@ class ImageStateProvider extends ChangeNotifier {
     _isProfileImageCaptured = true;
     notifyListeners();
   }
+
   void clearProfileImage() {
     _profileImage = null;
     _isProfileImageCaptured = false;
@@ -60,6 +60,7 @@ class ImageStateProvider extends ChangeNotifier {
     _idFrontImage = image;
     notifyListeners();
   }
+
   void clearIdFrontImage() {
     _idFrontImage = null;
     notifyListeners();
@@ -69,6 +70,7 @@ class ImageStateProvider extends ChangeNotifier {
     _idBackImage = image;
     notifyListeners();
   }
+
   void clearIdBackImage() {
     _idBackImage = null;
     notifyListeners();
@@ -81,6 +83,7 @@ class ImageStateProvider extends ChangeNotifier {
     _criminalRecordPdf = null;
     notifyListeners();
   }
+
   void clearCriminalRecordImage() {
     _criminalRecordImage = null;
     notifyListeners();
@@ -91,6 +94,7 @@ class ImageStateProvider extends ChangeNotifier {
     _criminalRecordImage = null;
     notifyListeners();
   }
+
   void clearCriminalRecordPdf() {
     _criminalRecordPdf = null;
     notifyListeners();
@@ -148,15 +152,15 @@ class ImageStateProvider extends ChangeNotifier {
 
   // ─── Inicializar desde datos existentes ────────────────────────
 
-  /// Usa un CSV de rutas para poblar certificados; y un campo para título.
+  /// Población inicial usando listas en lugar de CSV
   void initFromRegistrationData(RegistrationData data) {
-    // perfil
+    // Perfil
     if (data.imagePath.isNotEmpty) {
       _profileImage = File(data.imagePath);
       _isProfileImageCaptured = true;
     }
 
-    // carnet
+    // Carnet
     if (data.idDocumentImagePath.isNotEmpty) {
       _idFrontImage = File(data.idDocumentImagePath);
     }
@@ -164,27 +168,26 @@ class ImageStateProvider extends ChangeNotifier {
       _idBackImage = File(data.idDocumentImagePath2);
     }
 
-    // penales
+    // Penales
     if (data.criminalRecordImagePath.isNotEmpty) {
-      if (data.criminalRecordImagePath.toLowerCase().endsWith('.pdf')) {
-        _criminalRecordPdf = File(data.criminalRecordImagePath);
+      final p = data.criminalRecordImagePath;
+      if (p.toLowerCase().endsWith('.pdf')) {
+        _criminalRecordPdf = File(p);
       } else {
-        _criminalRecordImage = File(data.criminalRecordImagePath);
+        _criminalRecordImage = File(p);
       }
     }
 
-    // certificados (CSV concatenado con comas)
-    if (data.certificateImagePaths.isNotEmpty) {
-      for (final p in data.certificateImagePaths.split(',')) {
-        if (p.toLowerCase().endsWith('.pdf')) {
-          _certificatePdfs.add(File(p));
-        } else {
-          _certificateImages.add(File(p));
-        }
+    // Certificados (lista de rutas)
+    for (final p in data.certificateImagePaths) {
+      if (p.toLowerCase().endsWith('.pdf')) {
+        _certificatePdfs.add(File(p));
+      } else {
+        _certificateImages.add(File(p));
       }
     }
 
-    // título profesional / matrícula
+    // Título profesional
     if (data.professionalTitleImagePath.isNotEmpty) {
       final p = data.professionalTitleImagePath;
       if (p.toLowerCase().endsWith('.pdf')) {

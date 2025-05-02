@@ -22,12 +22,14 @@ import 'package:file_picker/file_picker.dart';
 import '../Utils/styles.dart';
 class CertificateImageStep extends StatefulWidget {
   final RegistrationController registrationController;
-  final void Function(String) onImageSelected;
+  /// Ahora recibe lista de rutas
+  final void Function(List<String>) onImageSelected;
   final void Function() onNextStep;
   final ValueNotifier<bool> isImageCaptured;
   final RegistrationData registrationData;
   final UserData userData;
-  final String certificateImagePaths;
+  /// Lista en lugar de String
+  final List<String> certificateImagePaths;
 
   const CertificateImageStep({
     Key? key,
@@ -53,6 +55,15 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
 
   final ImagePicker _imagePicker = ImagePicker();
 
+  @override
+  void initState() {
+    super.initState();
+    // Si ya vienen rutas iniciales, poblamos _certificateFiles
+    for (final path in widget.certificateImagePaths) {
+      _certificateFiles.add(File(path));
+    }
+  }
+
   Future<void> _pickDialog({required bool forTitle}) async {
     await showDialog(
       context: context,
@@ -67,17 +78,11 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  try {
-                    final XFile? image = await _imagePicker.pickImage(
-                      source: ImageSource.camera,
-                    );
-                    if (image != null) {
-                      _processPicked(File(image.path), forTitle: forTitle);
-                    }
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error cámara: $e')),
-                    );
+                  final XFile? image = await _imagePicker.pickImage(
+                    source: ImageSource.camera,
+                  );
+                  if (image != null) {
+                    _processPicked(File(image.path), forTitle: forTitle);
                   }
                 },
                 child: const Text('Tomar Foto'),
@@ -85,19 +90,12 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  try {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['pdf', 'jpg', 'png'],
-                    );
-                    if (result != null && result.files.single.path != null) {
-                      _processPicked(
-                          File(result.files.single.path!), forTitle: forTitle);
-                    }
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error al seleccionar archivo: $e')),
-                    );
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['pdf', 'jpg', 'png'],
+                  );
+                  if (result != null && result.files.single.path != null) {
+                    _processPicked(File(result.files.single.path!), forTitle: forTitle);
                   }
                 },
                 child: const Text('Seleccionar Archivo'),
@@ -113,18 +111,22 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
     setState(() {
       if (forTitle) {
         _titleFile = file;
-        widget.onImageSelected(file.path);
       } else {
         _certificateFiles.add(file);
-        widget.onImageSelected(file.path);
       }
-      // Actualizar el RegistrationController
+
+      // Construye la lista de rutas
+      final paths = _certificateFiles.map((f) => f.path).toList();
+
+      // Callback con lista
+      widget.onImageSelected(paths);
+
+      // Actualiza el RegistrationController con lista
       widget.registrationController.updateRegistrationData(
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths:
-        _certificateFiles.map((f) => f.path).join(','), // cadena CSV
+        certificateImagePaths: paths, // ahora List<String>
         criminalRecordImagePath: '',
         referralCode: '',
         medicalLicenseImagePath: '',
@@ -132,13 +134,14 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
         jobCompletePath: '',
         jobCompletePaths: [],
       );
-      // Actualizar el provider de imágenes
+
+      // Actualiza el ImageStateProvider
       final imgProv = Provider.of<ImageStateProvider>(context, listen: false);
       if (forTitle) {
-        if (_titleFile!.path.toLowerCase().endsWith('.pdf')) {
-          imgProv.setTitlePdf(_titleFile!);
+        if (file.path.toLowerCase().endsWith('.pdf')) {
+          imgProv.setTitlePdf(file);
         } else {
-          imgProv.setTitleImage(_titleFile!);
+          imgProv.setTitleImage(file);
         }
       } else {
         if (file.path.toLowerCase().endsWith('.pdf')) {
@@ -147,7 +150,8 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
           imgProv.addCertificateImage(file);
         }
       }
-      // Marcar que al menos uno está capturado
+
+      // Marcar captura
       widget.isImageCaptured.value =
           _certificateFiles.isNotEmpty || _titleFile != null;
     });
@@ -183,14 +187,14 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
                 } else {
                   _certificateFiles.remove(file);
                 }
-                // re–actualizar controlador y provider
-                widget.onImageSelected(file.path);
+
+                final paths = _certificateFiles.map((f) => f.path).toList();
+                widget.onImageSelected(paths);
                 widget.registrationController.updateRegistrationData(
                   idDocumentImagePath: '',
                   workerType: '',
                   idDocumentImagePath2: '',
-                  certificateImagePaths:
-                  _certificateFiles.map((f) => f.path).join(','),
+                  certificateImagePaths: paths,
                   criminalRecordImagePath: '',
                   referralCode: '',
                   medicalLicenseImagePath: '',
@@ -222,8 +226,7 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 8: Cargue los siguientes documentos si corresponde:"
-                "Título / Matrícula / Autorización",
+            "Paso 8: Cargue los certificados (imágenes o PDFs)",
             style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
@@ -254,12 +257,11 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
           ),
         ),
 
-        // TÍTULO PROFESIONAL
+        // TÍTULO PROFESIONAL / MATRÍCULA
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            "Paso 9: Cargue los siguientes documentos si corresponde:"
-                "Cursos / Maestrías / Especialidades",
+            "Paso 9: Cargue título profesional o matrícula (opcional)",
             style: MyTextStyles.drawerButtonTextStyle2,
           ),
         ),
@@ -288,6 +290,7 @@ class _CertificateImageStepState extends State<CertificateImageStep> {
             ],
           ),
         ),
+
         SizedBox(height: 24),
         // El avance al siguiente paso lo controla el Stepper externo (onNextStep)
       ],

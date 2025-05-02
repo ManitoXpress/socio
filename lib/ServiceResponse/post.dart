@@ -208,10 +208,7 @@ class ApiService {
           .toList();
 
       // Si ahora manejas múltiples certificados en un CSV, convertimos a lista
-      List<String> certificatePathsList = registrationData.certificateImagePaths
-          .split(',')
-          .where((p) => p.isNotEmpty)
-          .toList();
+      List<String> certificatePathsList = registrationData.certificateImagePaths;
 
       // Cuerpo de la petición
       final requestBody = <String, dynamic>{
@@ -262,6 +259,26 @@ class ApiService {
       throw Exception('Error al actualizar el usuario: $e');
     }
   }
+  Future<http.Response> updateUserFields(
+      String userId,
+      Map<String, dynamic> fields,
+      String token,
+      ) async {
+    final url = Uri.parse('$baseUrl/workers/$userId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(fields),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Error ${response.statusCode}: ${response.body}');
+    }
+    return response;
+  }
+
 
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {
     try {

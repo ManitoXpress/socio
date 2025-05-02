@@ -47,7 +47,7 @@ class RegistrationProvider extends ChangeNotifier {
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
       criminalRecordImagePath: '',
-      certificateImagePaths: '',
+      certificateImagePaths: [],
       expertises: [],
       expLevel: [],
       email: '',
@@ -73,7 +73,7 @@ class RegistrationProvider extends ChangeNotifier {
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],
-      certificateImagePaths: '',
+      certificateImagePaths: [],
       paymentType: '',
       email: '',
       referrerWorkerId: '',
@@ -106,7 +106,7 @@ class RegistrationProvider extends ChangeNotifier {
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
       criminalRecordImagePath: '',
-      certificateImagePaths: '',
+      certificateImagePaths: [],
       expertises: [],
       expLevel: [],
       email: user?.email ?? '',
@@ -172,13 +172,55 @@ class RegistrationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfileImage({
+    required String fieldKey,
+    required String localPath,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await _uploadAndSetUrl(
+      localPath: localPath,
+      uploadFn: apiService.uploadImageToFirebaseStorage,
+      setUrl: (url) {
+        switch (fieldKey) {
+          case 'profile':
+            registrationData.imagePath = url;
+            break;
+          case 'idFront':
+            registrationData.idDocumentImagePath = url;
+            break;
+          case 'idBack':
+            registrationData.idDocumentImagePath2 = url;
+            break;
+          case 'certificate':
+            registrationData.certificateImagePaths.add(url);
+            break;
+          case 'criminal':
+            registrationData.criminalRecordImagePath = url;
+            break;
+          case 'medicalLicense':
+            registrationData.medicalLicenseImagePath = url;
+            break;
+          case 'professionalTitle':
+            registrationData.professionalTitleImagePath = url;
+            break;
+          default:
+            break;
+        }
+      },
+      uid: user.uid,
+    );
+    notifyListeners();
+  }
+
   Future<File> compressAndResizeImage(File file) async {
     final bytes = await file.readAsBytes();
     final image = img.decodeImage(bytes);
     if (image == null) return file;
     final resized = img.copyResize(image, width: 800);
     final tempDir = await getTemporaryDirectory();
-    final targetPath = '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_cmp.jpg';
+    final targetPath =
+        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_cmp.jpg';
     final jpg = img.encodeJpg(resized, quality: 85);
     final compressedFile = File(targetPath)..writeAsBytesSync(jpg);
     return compressedFile;
@@ -201,6 +243,7 @@ class RegistrationProvider extends ChangeNotifier {
       debugPrint('Error subiendo $localPath: $e');
     }
   }
+
   Future<List<String>> uploadMultipleCertificates(
       List<String> localPaths, String uid) async {
     final List<String> urls = [];
@@ -208,9 +251,9 @@ class RegistrationProvider extends ChangeNotifier {
       final file = File(path);
       if (!file.existsSync()) continue;
       try {
-        // Opcional: comprime / redimensiona
         final compressed = await compressAndResizeImage(file);
-        final url = await apiService.uploadImageToFirebaseStorage4(compressed, uid);
+        final url =
+            await apiService.uploadImageToFirebaseStorage4(compressed, uid);
         if (url.isNotEmpty) urls.add(url);
       } catch (e) {
         debugPrint('Error subiendo certificado $path: $e');
@@ -219,7 +262,6 @@ class RegistrationProvider extends ChangeNotifier {
     return urls;
   }
 
-  /// Ahora recibe [context] y navega a HomeScreen tras statusCode 200.
   Future<void> completeRegistration(BuildContext context) async {
     loading = true;
     notifyListeners();
@@ -229,20 +271,20 @@ class RegistrationProvider extends ChangeNotifier {
       if (user == null) throw Exception('Usuario no autenticado');
       final uid = user.uid;
 
-      // 1) Actualizar campos de registrationData
+      // Actualizar datos básicos
       registrationData
-        ..userId       = uid
-        ..location     = {
-          'lat': location?.latitude  ?? 0.0,
-          'lng': location?.longitude ?? 0.0,
+        ..userId = uid
+        ..location = {
+          'lat': location?.latitude ?? 0.0,
+          'lng': location?.longitude ?? 0.0
         }
-        ..expertises   = userData.expertises
-        ..expLevel     = userData.expLevel
-        ..paymentType  = registrationData.paymentType
-        ..phoneNumber  = registrationData.phoneNumber
+        ..expertises = userData.expertises
+        ..expLevel = userData.expLevel
+        ..paymentType = registrationData.paymentType
+        ..phoneNumber = registrationData.phoneNumber
         ..referralCode = userData.referralCode;
 
-      // 2) Subir imágenes únicas (perfil, documentos)
+      // Subir imágenes únicas
       await _uploadAndSetUrl(
         localPath: registrationData.imagePath,
         uploadFn: apiService.uploadImageToFirebaseStorage,
@@ -262,36 +304,20 @@ class RegistrationProvider extends ChangeNotifier {
         uid: uid,
       );
 
-      // 3) Subir *múltiples* certificados
-      // 3.1 Extraer las rutas locales del campo CSV
-      final localCertPaths = registrationData
-          .certificateImagePaths
-          .split(',')
-          .map((p) => p.trim())
-          .where((p) => p.isNotEmpty)
-          .toList();
+      // Subir múltiples certificados
+      final uploadedCertUrls = await uploadMultipleCertificates(
+        registrationData.certificateImagePaths,
+        uid,
+      );
+      registrationData.certificateImagePaths = uploadedCertUrls;
 
-      // 3.2 Iterar y subir cada uno
-      final List<String> uploadedCertUrls = [];
-      for (final localPath in localCertPaths) {
-        final file = File(localPath);
-        if (!file.existsSync()) continue;
-        // Opcional: comprimir/resizer
-        final compressed = await compressAndResizeImage(file);
-        final url = await apiService.uploadImageToFirebaseStorage4(compressed, uid);
-        if (url.isNotEmpty) {
-          uploadedCertUrls.add(url);
-        }
-      }
-      // 3.3 Guardar las URLs de vuelta en CSV
-      registrationData.certificateImagePaths = uploadedCertUrls.join(',');
-
-      // 4) Subir PDF de antecedentes penales (si existe)
+      // Subir PDF criminal si existe
       if (registrationData.criminalRecordImagePath.isNotEmpty) {
         final pdfFile = File(registrationData.criminalRecordImagePath);
         if (pdfFile.existsSync()) {
           try {
-            final pdfUrl = await apiService.uploadImageToFirebaseStorage5(pdfFile, uid);
+            final pdfUrl =
+                await apiService.uploadImageToFirebaseStorage5(pdfFile, uid);
             if (pdfUrl.isNotEmpty) {
               registrationData.criminalRecordImagePath = pdfUrl;
             }
@@ -301,33 +327,36 @@ class RegistrationProvider extends ChangeNotifier {
         }
       }
 
-      // 5) (Opcional) subir Título Profesional si lo tienes en otro campo
+      // Subir título profesional si existe
       if (registrationData.professionalTitleImagePath.isNotEmpty) {
-        final titleFile = File(registrationData.professionalTitleImagePath);
-        if (titleFile.existsSync()) {
-          final compressedTitle = await compressAndResizeImage(titleFile);
-          final titleUrl = await apiService.uploadImageToFirebaseStorage4(compressedTitle, uid);
+        final file = File(registrationData.professionalTitleImagePath);
+        if (file.existsSync()) {
+          final compressed = await compressAndResizeImage(file);
+          final titleUrl =
+              await apiService.uploadImageToFirebaseStorage4(compressed, uid);
           if (titleUrl.isNotEmpty) {
             registrationData.professionalTitleImagePath = titleUrl;
           }
         }
       }
 
-      // 6) Incrementar puntos al referrer
-      if (userData.referralCode.isNotEmpty) {
+      // Incrementar puntos al referidor
+      if (userData.referrerWorkerId.isNotEmpty) {
         await FirebaseFirestore.instance
             .collection('workers')
-            .doc(userData.referralCode)
-            .update({ 'points': FieldValue.increment(10) });
+            .doc(userData.referrerWorkerId)
+            .update({'points': FieldValue.increment(10)});
       }
 
-      // 7) Obtener puntos actualizados
-      final doc = await FirebaseFirestore.instance.collection('workers').doc(uid).get();
+      // Obtener puntos actualizados
+      final doc =
+          await FirebaseFirestore.instance.collection('workers').doc(uid).get();
       registrationData.points = doc.data()?['points'] ?? 0;
 
-      // 8) Llamada final a API
+      // Llamada final a API
       final token = await user.getIdToken();
-      final response = await apiService.updateUser(uid, registrationData, token!);
+      final response =
+          await apiService.updateUser(uid, registrationData, token!);
 
       if (response.statusCode == 200) {
         Navigator.pushReplacement(
@@ -340,17 +369,16 @@ class RegistrationProvider extends ChangeNotifier {
           ),
         );
       } else {
-        throw Exception('Error en servidor: ${response.statusCode}');
+        throw Exception('Error en servidor: \${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error en completeRegistration: $e');
+      debugPrint('Error en completeRegistration: \$e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error completando registro: $e')),
+        SnackBar(content: Text('Error completando registro: \$e')),
       );
     } finally {
       loading = false;
       notifyListeners();
     }
   }
-
 }

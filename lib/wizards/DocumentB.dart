@@ -136,7 +136,7 @@ class _IdCardImageStepState extends State<IdCardImageStepB> {
           idDocumentImagePath: '',
           workerType: '',
           idDocumentImagePath2: image.path,
-          certificateImagePaths: '',
+          certificateImagePaths: [],
           criminalRecordImagePath: '',
           referralCode: '',
           medicalLicenseImagePath: '', // Provide appropriate value

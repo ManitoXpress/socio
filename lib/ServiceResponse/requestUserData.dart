@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 class UserData {
   String userId;
   String displayName;
@@ -19,7 +18,7 @@ class UserData {
   String selectedCountryCode;
   List<Expertise> expertises;
   List<String> expLevel;
-  String certificateImagePaths;
+  List<String> certificateImagePaths;        // Cambiado a List<String>
   Map<String, double?>? location;
   String paymentType;
   String email;
@@ -28,7 +27,7 @@ class UserData {
   String referralCode;
   String verificationStatus;
   int points;
-  String? requiresInvoice; // Nuevo campo agregado
+  String? requiresInvoice;
 
   UserData({
     required this.userId,
@@ -46,7 +45,7 @@ class UserData {
     required this.selectedCountryCode,
     required this.expertises,
     required this.expLevel,
-    required this.certificateImagePaths,
+    required this.certificateImagePaths,     // constructor actualizado
     this.location,
     required this.paymentType,
     required this.email,
@@ -55,41 +54,19 @@ class UserData {
     required this.referralCode,
     required this.verificationStatus,
     required this.points,
-    this.requiresInvoice, // Incluido en el constructor
+    this.requiresInvoice,
   });
 
-  /// Constructor para invitados
-  factory UserData.guest() {
-    return UserData(
-      userId: '',
-      displayName: 'Invitado',
-      idCardNumber: '',
-      phoneNumber: '',
-      getToken: null,
-      imagePath: '',
-      pdfPathController: '',
-      criminalRecordImagePath: '',
-      idDocumentImagePath: '',
-      idDocumentImagePath2: '',
-      medicalLicenseImagePath: '',
-      professionalTitleImagePath: '',
-      requiresInvoice: null, // Inicializa como null
-      selectedCountryCode: '',
-      expertises: [],
-      expLevel: [],
-      certificateImagePaths: '',
-      location: null,
-      paymentType: '',
-      email: '',
-      registrationData: RegistrationData.guest(), // asegúrate de tener esto en tu clase RegistrationData
-      referrerWorkerId: '',
-      referralCode: '',
-      verificationStatus: 'Invitado',
-      points: 0,
-    );
-  }
-
   factory UserData.fromJson(Map<String, dynamic> json) {
+    // Convertir certificateImagePaths de dynamic a List<String>
+    List<String> certPaths = [];
+    final rawCerts = json['certificateImagePaths'];
+    if (rawCerts is String) {
+      certPaths = rawCerts.split(',').map((s) => s.trim()).toList();
+    } else if (rawCerts is List) {
+      certPaths = rawCerts.whereType<String>().toList();
+    }
+
     return UserData(
       userId: json['id'] ?? '',
       displayName: json['displayName'] ?? '',
@@ -103,7 +80,7 @@ class UserData {
       selectedCountryCode: json['selectedCountryCode'] ?? '',
       expertises: _convertToExpertisesList(json['expertises']),
       expLevel: _convertToList(json['expLevel']),
-      certificateImagePaths: json['certificateImagePaths'] ?? '',
+      certificateImagePaths: certPaths,    // uso de la lista procesada
       idCardNumber: json['idCardNumber'] ?? '',
       location: json['location'] != null
           ? Map<String, double?>.from(json['location'])
@@ -115,7 +92,7 @@ class UserData {
       referrerWorkerId: json['referrerWorkerId'] ?? '',
       referralCode: json['referralCode'] ?? '',
       verificationStatus: json['verificationStatus'] ?? '',
-      requiresInvoice: json['requiresInvoice'], // Incluido en fromJson
+      requiresInvoice: json['requiresInvoice'],
       points: json['points'] is int
           ? json['points']
           : int.tryParse(json['points'].toString()) ?? 0,
@@ -133,14 +110,13 @@ class UserData {
         imagePath: json['imagePath'] ?? '',
         location: json['location'] != null
             ? Map<String, double?>.from(json['location'])
-            : null,
+            : {},
         idDocumentImagePath: json['idDocumentImagePath'] ?? '',
         idDocumentImagePath2: json['idDocumentImagePath2'] ?? '',
         email: json['email'] ?? '',
         imagePathList: [],
-        
         criminalRecordImagePath: json['criminalRecordImagePath'] ?? '',
-        certificateImagePaths: json['certificateImagePaths'] ?? '',
+        certificateImagePaths: _convertToList(json['certificateImagePaths']),
         referralCode: json['referralCode'] ?? '',
         codeReferral: json['codeReferral'] ?? '',
         verificationStatus: json['verificationStatus'] ?? '',
@@ -165,7 +141,7 @@ class UserData {
       'selectedCountryCode': selectedCountryCode,
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'expLevel': expLevel,
-      'certificateImagePaths': certificateImagePaths,
+      'certificateImagePaths': certificateImagePaths, // Lista directamente
       'idCardNumber': idCardNumber,
       'location': location,
       'idDocumentImagePath': idDocumentImagePath,
@@ -174,8 +150,38 @@ class UserData {
       'referralCode': referralCode,
       'verificationStatus': verificationStatus,
       'points': points,
-      'requiresInvoice': requiresInvoice, // Incluido en toJson
+      'requiresInvoice': requiresInvoice,
     };
+  }
+  /// Constructor para invitados
+  factory UserData.guest() {
+    return UserData(
+      userId: '',
+      displayName: 'Invitado',
+      idCardNumber: '',
+      phoneNumber: '',
+      getToken: null,
+      imagePath: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
+      requiresInvoice: null, // Inicializa como null
+      selectedCountryCode: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: [],
+      location: null,
+      paymentType: '',
+      email: '',
+      registrationData: RegistrationData.guest(), // asegúrate de tener esto en tu clase RegistrationData
+      referrerWorkerId: '',
+      referralCode: '',
+      verificationStatus: 'Invitado',
+      points: 0,
+    );
   }
 
   static List<String> _convertToList(dynamic value) {

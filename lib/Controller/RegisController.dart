@@ -14,11 +14,12 @@ class RegistrationController {
     paymentType: '',
     expertises: [],
     idDocumentImagePath: '',
+
     email: '',
     imagePathList: [],
     idDocumentImagePath2: '',
     criminalRecordImagePath: '',
-    certificateImagePaths: '',
+    certificateImagePaths: [],
     expLevel: [],
     selectedCountryCode: '',
     devicesId: '',
@@ -60,11 +61,8 @@ class RegistrationController {
     required String workerType,
     required String idDocumentImagePath,
     required String idDocumentImagePath2,
-    required String certificateImagePaths,
-    required String medicalLicenseImagePath,
-    required String professionalTitleImagePath,
-    required String jobCompletePath,
-    required String criminalRecordImagePath, required String referralCode, required List<String> jobCompletePaths,
+    List<String> certificateImagePaths = const [],
+    required String criminalRecordImagePath, required String referralCode, required String medicalLicenseImagePath, required String professionalTitleImagePath, required String jobCompletePath, required List jobCompletePaths,
   }) {
     if (displayName != null) registrationData.displayName = displayName;
     if (idCardNumber != null) registrationData.idCardNumber = idCardNumber;
@@ -98,7 +96,7 @@ class RegistrationData {
   String idDocumentImagePath;
   String idDocumentImagePath2;
   String criminalRecordImagePath;
-  String certificateImagePaths;
+  List<String> certificateImagePaths;
 
   // Nuevos campos para Salud
   String medicalLicenseImagePath;
@@ -202,30 +200,30 @@ class RegistrationData {
   /// Constructor para invitado
   factory RegistrationData.guest() {
     return RegistrationData(
-      devicesId: '',
-      fcmToken: '',
-      userId: 'guest',
-      displayName: 'Invitado',
-      idCardNumber: '',
-      phoneNumber: '',
-      imagePath: 'assets/images/guest_placeholder.png',
-      imagePathList: [],
-      paymentType: '',
-      selectedCountryCode: '',
-      idDocumentImagePath: '',
-      idDocumentImagePath2: '',
-      criminalRecordImagePath: '',
-      certificateImagePaths: '',
-      medicalLicenseImagePath: '',
-      professionalTitleImagePath: '',
-      expertises: [],
-      expLevel: [],
-      email: '',
-      location: null,
-      referralCode: '',
-      points: 0,
-      codeReferral: 'Invitado',
-      verificationStatus: 'Invitado',
-    );
-  }
+        devicesId: '',
+        fcmToken: '',
+        userId: 'guest',
+        displayName: 'Invitado',
+        idCardNumber: '',
+        phoneNumber: '',
+        imagePath: 'assets/images/guest_placeholder.png',
+        imagePathList: [],
+        paymentType: '',
+        selectedCountryCode: '',
+        idDocumentImagePath: '',
+        idDocumentImagePath2: '',
+        criminalRecordImagePath: '',
+        certificateImagePaths: [],
+        medicalLicenseImagePath: '',
+        professionalTitleImagePath: '',
+        expertises: [],
+        expLevel: [],
+        email: '',
+        location: null,
+        referralCode: '',
+        points: 0,
+        codeReferral: 'Invitado',
+        verificationStatus: 'Invitado',
+        );
+    }
 }

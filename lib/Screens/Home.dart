@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/Screens/Cartscreen.dart';
+import 'package:socio/Screens/buttonDocument.dart';
 import 'package:socio/Screens/maps.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/Utils/homeData.dart';
@@ -12,10 +14,10 @@ import 'package:socio/menu/help.dart';
 import 'package:socio/menu/profilescreen.dart';
 import 'package:socio/menu/referidos.dart';
 import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
+import 'package:socio/provider/providerRegistration.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../ServiceResponse/requestUserData.dart';
-
 class HomeScreen extends StatefulWidget {
   final RegistrationData registrationData;
   final UserData userData;
@@ -35,10 +37,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Nota: Para evitar reasignaciones de variables final, declara _pageController como "late"
-  final userId = FirebaseAuth.instance.currentUser?.uid;
-  int _currentIndex = 0;
   late PageController _pageController;
+  int _currentIndex = 0;
+  bool isVerified = false;
+  late Future<UserData> _remoteUserFuture;
+
   final customColor = const MaterialColor(0xFF841813, {
     50: Color(0xFF841813),
     100: Color(0xFF841813),
@@ -52,149 +55,77 @@ class _HomeScreenState extends State<HomeScreen> {
     900: Color(0xFF841813),
   });
 
-  late Future<HomeData> _verificationFuture;
-  bool isVerified = false;
-
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialPageIndex;
     _pageController = PageController(initialPage: widget.initialPageIndex);
-    _verificationFuture = _verification(widget.registrationData);
-    _checkVerificationStatus();
-  }
 
-  Future<void> _checkVerificationStatus() async {
-    try {
-      final homeData = await _verification(widget.registrationData);
-      setState(() => isVerified = homeData.verificationStatus == 'Verificado');
-
-      if (!isVerified) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              title: const Text(
-                "Cuenta en revisión",
-                style: MyTextStyles.inputTextStyle4,
-              ),
-              content: const Text(
-                "Su cuenta está siendo verificada. Por favor espere la confirmación.",
-                style: MyTextStyles.formServiceTextStyle,
-              ),
-              actions: [
-                TextButton(
-                  onPressed: _openWhatsApp,
-                  child: const Text(
-                    "Contactar soporte",
-                    style: MyTextStyles.linkTextStyle,
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF841813),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      side: const BorderSide(
-                        color: Color(0xFF841813),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        });
-      }
-    } catch (e) {
-      print('Error verificando estado: $e');
-    }
-  }
-
-  Future<HomeData> _verification(RegistrationData registrationData) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      final userId = user?.uid;
-      final token = await user?.getIdToken();
-
-      if (userId == null || token == null) throw 'Usuario no autenticado';
-
-      final userDoc = await FirebaseFirestore.instance
-          .collection('workers')
-          .doc(userId)
-          .get();
-
-      // Función auxiliar para obtener un valor seguro, con un valor predeterminado
-      String getString(String key, {String defaultValue = ''}) {
-        return userDoc.data()?[key] is String ? userDoc.data()![key] : defaultValue;
-      }
-
-      // Función auxiliar para obtener una lista de strings
-      List<String> getListOfStrings(String key) {
-        if (userDoc.data()?[key] is List) {
-          return List<String>.from(userDoc.data()?[key].where((item) => item is String));
-        }
-        return [];
-      }
-
-      return HomeData(
-        displayName: getString('displayName'),
-        email: getString('email'),
-        phoneNumber: getString('phoneNumber'),
-        paymentType: getString('paymentType'),
-        verificationStatus: userDoc.data()?['verificationStatus'],
-        expertises: getListOfStrings('expertises'),
-        expLevel: getListOfStrings('expLevel'),
-        imagePath: getString('imagePath'),
-        userData: widget.userData,
-        registrationData: registrationData,
-        points: userDoc.data()?['points'] is int ? (userDoc.data()!['points'] as int) : 0,
-      );
-    } catch (e) {
-      print('Error en verificación: $e');
-      return HomeData(
-        displayName: '',
-        email: '',
-        phoneNumber: '',
-        paymentType: '',
-        verificationStatus: '',
-        expertises: [],
-        expLevel: [],
-        imagePath: '',
-        userData: widget.userData,
-        registrationData: registrationData,
-        points: 0,
-      );
-    }
-  }
-
-  void _openWhatsApp() async {
-    const supportPhoneNumber = "59173666393";
-    const message = "Hola, necesito soporte técnico en ManitosXpress.";
-    final url = Uri.parse(
-        "https://wa.me/$supportPhoneNumber?text=${Uri.encodeComponent(message)}");
-
-    try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Error al abrir WhatsApp. Verifica la instalación."),
-        ),
-      );
-    }
-  }
-
-  Future<void> _abrirEnlace(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (widget.isGuest) {
+      isVerified = true;
     } else {
-      debugPrint('No se pudo abrir $url');
+      _remoteUserFuture = _fetchRemoteUser();
     }
   }
 
+  Future<UserData> _fetchRemoteUser() async {
+    final user = FirebaseAuth.instance.currentUser!;
+    final token = await user.getIdToken();
+    return await ApiService2().fetchUserData(user.uid, token!);
+  }
+
+  void _openUploadDocuments(UserData remoteUser) async {
+    final regProv = Provider.of<RegistrationProvider>(context, listen: false);
+
+    // Sincroniza los paths
+    regProv.registrationData
+      ..imagePath                  = remoteUser.imagePath
+      ..idDocumentImagePath        = remoteUser.idDocumentImagePath
+      ..idDocumentImagePath2       = remoteUser.idDocumentImagePath2
+      ..criminalRecordImagePath    = remoteUser.criminalRecordImagePath
+      ..certificateImagePaths      = remoteUser.certificateImagePaths
+      ..medicalLicenseImagePath    = remoteUser.medicalLicenseImagePath
+      ..professionalTitleImagePath = remoteUser.professionalTitleImagePath;
+    regProv.notifyListeners();
+
+    final profileData = ProfileData(
+      displayName:      remoteUser.displayName,
+      email:            remoteUser.email,
+      phoneNumber:      remoteUser.phoneNumber,
+      paymentType:      remoteUser.paymentType,
+      expertises:       remoteUser.expertises.map((e) => e.name).toList(),
+      expLevel:         remoteUser.expLevel,
+      imagePath:        remoteUser.imagePath,
+      userData:         remoteUser,
+      registrationData: regProv.registrationData,
+      points:           remoteUser.points,
+    );
+
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DocumentsScreen(
+          provider:    regProv,
+          profileData: profileData,
+          onSaved:     () {},
+        ),
+      ),
+    );
+
+    // ✅ Recargar datos y actualizar estado
+    if (result == true) {
+      final updatedUser = await _fetchRemoteUser();
+
+      final ok = updatedUser.imagePath.isNotEmpty &&
+          updatedUser.idDocumentImagePath.isNotEmpty &&
+          updatedUser.idDocumentImagePath2.isNotEmpty;
+
+      setState(() {
+        isVerified = ok;
+        _remoteUserFuture = Future.value(updatedUser);
+        if (ok) _pageController.jumpToPage(0);
+      });
+    }
+  }
   Future<String?> getCodeReferral() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return null;
@@ -207,42 +138,80 @@ class _HomeScreenState extends State<HomeScreen> {
     return doc.data()?['codeReferral'] as String?;
   }
 
-  Widget _buildBlockedScreen() {
+  Widget _buildBlockedScreen(UserData remoteUser) {
     return Scaffold(
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 80, color: Color(0xFF841813)),
-            const SizedBox(height: 20),
-            const Text(
-              "Cuenta en proceso de verificación",
-              style: MyTextStyles.inputTextStyle4,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _openWhatsApp,
-              child: const Text(
-                "Contactar soporte técnico",
-                style: MyTextStyles.linkTextStyle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 80,
+                color: Color(0xFF841813),
               ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF841813),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
-                  side: const BorderSide(
-                    color: Color(0xFF841813),
+              const SizedBox(height: 24),
+              Text(
+                "Para continuar debes subir las *tres* fotos obligatorias:",
+                style: MyTextStyles.inputTextStyle4.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              // Lista de requisitos
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  _BulletItem(text: "Foto de perfil"),
+                  _BulletItem(text: "Carnet de identidad (frontal)"),
+                  _BulletItem(text: "Carnet de identidad (posterior)"),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Mensaje aclaratorio
+              Text(
+                "Este mensaje aparece solo si falta alguna de las tres imágenes obligatorias. "
+                    "No es un nuevo requerimiento de fotos completo, sino un recordatorio "
+                    "para que completes la que quedó pendiente en el registro.",
+                style: MyTextStyles.inputTextStyle4,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => _openUploadDocuments(remoteUser),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF841813),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
+                child: const Text(
+                  "Subir fotos",
+                  style: MyTextStyles.buttonTextStyle,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+
+
+  List<Widget> _buildScreens() => [
+    HistorialScreen(userData: widget.userData),
+    WalletScreen(),
+  ];
+
+  Future<void> _abrirEnlace(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Widget _buildDrawer() {
@@ -254,7 +223,6 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   constraints: BoxConstraints(
@@ -264,23 +232,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Image.network("https://i.imgur.com/AWrWerE.png"),
                   margin: EdgeInsets.only(top: 70.h, bottom: 40.h),
                 ),
-                SizedBox(height: 1.h),
               ],
             ),
             SizedBox(height: 10.h),
             _buildDrawerButton(
               icon: Icons.person,
               text: "Perfil",
-              color: const Color(0xFF84090D),
               onPressed: () async {
-                // Bloquear funcionalidad si es invitado
-                if (widget.isGuest) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("Función no disponible para invitados")),
-                  );
-                  return;
-                }
+
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null) {
                   try {
@@ -306,21 +265,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     print('Error al obtener datos del usuario: $e');
                   }
                 }
+                // ... tu navegación a ProfilePage ...
               },
             ),
             _buildDrawerButton(
               icon: Icons.share,
               text: "Referidos",
-              color: const Color(0xFF84090D),
               onPressed: () async {
-                // Bloquear funcionalidad si es invitado
-                if (widget.isGuest) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text("Función no disponible para invitados")),
-                  );
-                  return;
-                }
+
                 final codeReferral = await getCodeReferral();
                 if (codeReferral == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -334,42 +286,39 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) => ReferralScreen(codeReferral: codeReferral),
                   ),
                 );
+                // ... tu navegación a ReferralScreen ...
               },
             ),
             _buildDrawerButton(
               icon: Icons.help,
               text: "Ayuda",
-              color: const Color(0xFF84090D),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => HelpScreen()),
+                MaterialPageRoute(builder: (_) => HelpScreen()),
               ),
             ),
             _buildDrawerButton(
               icon: Icons.support_agent,
               text: "Soporte Técnico",
-              color: const Color(0xFF84090D),
-              onPressed: _openWhatsApp,
+              onPressed: () => _abrirEnlace(
+                  "https://wa.me/59173666393?text=Necesito%20soporte"),
             ),
             SizedBox(height: 18.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildSocialButton(
-                  icon: Icons.facebook,
-                  url: 'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress',
-                  fallbackUrl: 'https://www.facebook.com/ManitosXpress',
-                ),
+                    icon: Icons.facebook,
+                    url:
+                    'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress'),
                 SizedBox(width: 18.w),
                 _buildSocialButton(
-                  icon: Icons.camera_alt,
-                  url: 'https://www.instagram.com/manitosxpress',
-                ),
+                    icon: Icons.camera_alt,
+                    url: 'https://www.instagram.com/manitosxpress'),
                 SizedBox(width: 18.w),
                 _buildSocialButton(
-                  icon: Icons.tiktok,
-                  url: 'https://www.tiktok.com/@manitosxpress',
-                ),
+                    icon: Icons.tiktok,
+                    url: 'https://www.tiktok.com/@manitosxpress'),
               ],
             ),
           ],
@@ -378,117 +327,129 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawerButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback onPressed,
-    required Color color,
-  }) {
+
+  Widget _buildDrawerButton(
+      {required IconData icon,
+        required String text,
+        required VoidCallback onPressed}) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5.h),
       child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 24.w, color: const Color(0xFF830A09)),
+        label: Text(text, style: MyTextStyles.linkTextStyle),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF830A09),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
-        icon: Icon(
-          icon,
-          size: 24.w,
-          color: const Color(0xFF830A09),
-        ),
-        label: Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            text,
-            style: MyTextStyles.linkTextStyle,
-          ),
-        ),
-        onPressed: onPressed,
       ),
     );
   }
 
-  Widget _buildSocialButton({required IconData icon, required String url, String? fallbackUrl}) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        size: 45.w,
-        color: Colors.white,
-      ),
-      onPressed: () => _abrirEnlace(url),
-    );
-  }
+  Widget _buildSocialButton(
+      {required IconData icon, required String url}) =>
+      IconButton(
+        icon: Icon(icon, size: 45.w, color: Colors.white),
+        onPressed: () => _abrirEnlace(url),
+      );
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<HomeData>(
-      future: _verificationFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+
+    // De lo contrario, esperamos el fetch de UserData remoto
+    return FutureBuilder<UserData>(
+      future: _remoteUserFuture,
+      builder: (ctx, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snap.hasError || !snap.hasData) {
+          return Center(child: Text('Error cargando usuario'));
+        }
+        final remoteUser = snap.data!;
 
-        if (snapshot.hasError || !snapshot.hasData || !isVerified) {
-          return _buildBlockedScreen();
+        // Si faltan las 3 fotos, bloquea
+        final ok = remoteUser.imagePath.isNotEmpty &&
+            remoteUser.idDocumentImagePath.isNotEmpty &&
+            remoteUser.idDocumentImagePath2.isNotEmpty;
+        if (!ok) {
+          return _buildBlockedScreen(remoteUser);
         }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('ManitoXpress', style: MyTextStyles.buttonTextStyle),
-                Flexible(
-                  child: Container(
-                    padding: EdgeInsets.all(10.w),
-                    constraints: BoxConstraints(maxWidth: 0.22.sw),
-                    child: Image.asset(
-                      'assets/images/LOGO1_Blanco.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            iconTheme: const IconThemeData(color: Colors.white),
-          ),
-          drawer: _buildDrawer(),
-          body: PageView(
-            controller: _pageController,
-            children: _buildScreens(),
-            onPageChanged: (index) => setState(() => _currentIndex = index),
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() => _currentIndex = index);
-              _pageController.jumpToPage(index);
-            },
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.assignment),
-                label: 'SERVICIOS',
-                backgroundColor: Color(0xFF1A819A),
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.balance),
-                label: 'MOVIMIENTOS',
-                backgroundColor: Color.fromARGB(166, 50, 196, 233),
-              ),
-            ],
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Color.fromARGB(255, 230, 121, 121),
-            selectedLabelStyle: MyTextStyles.navBarTextStyle,
-            unselectedLabelStyle: MyTextStyles.navBarTextStyle,
-            backgroundColor: const Color(0xFF841813),
-          ),
-        );
+        // Ya pasó la verificación
+        return _buildMainScaffold();
       },
     );
   }
 
-  List<Widget> _buildScreens() => [HistorialScreen(userData:widget.userData), WalletScreen()];
+  Widget _buildMainScaffold() {
+    return Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF841813),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ManitoXpress', style: MyTextStyles.buttonTextStyle),
+              Flexible(
+                child: Container(
+                  padding: EdgeInsets.all(10.w),
+                  constraints: BoxConstraints(maxWidth: 0.22.sw),
+                  child: Image.asset(
+                    'assets/images/LOGO1_Blanco.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        drawer: _buildDrawer(),
+        body: PageView(
+          controller: _pageController,
+          children: _buildScreens(),
+          onPageChanged: (i) => setState(() => _currentIndex = i),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) {
+              setState(() => _currentIndex = i);
+              _pageController.jumpToPage(i);
+            },
+            items: const [
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.assignment), label: 'SERVICIOS'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.balance), label: 'MOVIMIENTOS'),
+            ],
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Color.fromARGB(255, 230, 121, 121),
+            backgroundColor: const Color(0xFF841813),
+            ),
+        );
+    }
+}
+class _BulletItem extends StatelessWidget {
+  final String text;
+  const _BulletItem({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("•  ", style: TextStyle(fontSize: 20)),
+          Expanded(
+            child: Text(
+              text,
+              style: MyTextStyles.inputTextStyle4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

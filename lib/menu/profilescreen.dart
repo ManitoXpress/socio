@@ -6,13 +6,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/Controller/editController.dart';
+import 'package:socio/Screens/buttonDocument.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/Colors.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/login.dart';
+import 'package:socio/provider/providerRegistration.dart';
 
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestUserData.dart';
@@ -115,8 +118,6 @@ class _ProfilePageState extends State<ProfilePage> {
             imagePath: userData.imagePath,
             idDocumentImagePath: userData.idDocumentImagePath,
             idDocumentImagePath2: userData.idDocumentImagePath2,
-            medicalLicenseImagePath: userData.medicalLicenseImagePath,
-            professionalTitleImagePath: userData.professionalTitleImagePath,
             location: userData.location,
             paymentType: userData.paymentType,
             registrationData: registrationData,
@@ -124,7 +125,9 @@ class _ProfilePageState extends State<ProfilePage> {
             pdfPathController: userData.pdfPathController,
             certificateImagePaths: userData.certificateImagePaths,
             getToken: '',
-            referrerWorkerId: userData.referrerWorkerId, referralCode: userData.referralCode, points: userData.points, verificationStatus: userData.verificationStatus,
+            referrerWorkerId: userData.referrerWorkerId, referralCode: userData.referralCode, points: userData.points,
+            verificationStatus: userData.verificationStatus,
+            medicalLicenseImagePath: userData.medicalLicenseImagePath, professionalTitleImagePath: userData.professionalTitleImagePath,
           ),
           registrationData: registrationData,
           points: points, // Asigna los puntos al campo points
@@ -150,19 +153,17 @@ class _ProfilePageState extends State<ProfilePage> {
           expertises: [],
           imagePath: '',
           idDocumentImagePath: '',
-          medicalLicenseImagePath: '',
-          professionalTitleImagePath: '',
           location: {},
           paymentType: '',
           registrationData: registrationData,
           criminalRecordImagePath: '',
           pdfPathController: '',
           idDocumentImagePath2: '',
-          certificateImagePaths: '',
+          certificateImagePaths: [],
           expLevel: [],
           selectedCountryCode: '',
           getToken: '',
-          referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '',
+          referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '', medicalLicenseImagePath: '', professionalTitleImagePath: '',
         ),
         registrationData: registrationData,
         expLevel: [],
@@ -287,31 +288,49 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Column(
             children: [
-              ElevatedButton(
-                onPressed: _signOut,
-                child: const Text(
-                  'Cerrar Sesión',
-                  style: MyTextStyles.buttonTextStyle,
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: customColor,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: _signOut,
+                    child: const Text('Cerrar Sesión', style: MyTextStyles.buttonTextStyle),
+                    style: ElevatedButton.styleFrom(backgroundColor: customColor),
+                  ),
+                  ElevatedButton(
+                    onPressed: _editProfile,
+                    child: const Text('Editar perfil', style: MyTextStyles.buttonTextStyle),
+                    style: ElevatedButton.styleFrom(backgroundColor: customColor),
+                  ),
+                ],
               ),
-              ElevatedButton(
-                onPressed: _editProfile,
-                child: const Text(
-                  'Editar perfil',
-                  style: MyTextStyles.buttonTextStyle,
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: customColor,
+              const SizedBox(height: 16),  // separación vertical
+              Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    final regProvider = Provider.of<RegistrationProvider>(context, listen: false);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DocumentsScreen(
+                          provider: regProvider,
+                          profileData: profileData!,
+                          onSaved: _loadAndRefreshUserData,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Cargar Documentos', style: MyTextStyles.buttonTextStyle),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: customColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                 ),
               ),
             ],
           ),
+
+
           const SizedBox(height: 20),
           Container(
             width: double.infinity,

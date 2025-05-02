@@ -304,7 +304,7 @@ class _PhotoStepState extends State<PhotoStep> {
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
-        certificateImagePaths: '',
+        certificateImagePaths: [],
         criminalRecordImagePath: '',
         referralCode: '',
         medicalLicenseImagePath: '', // Provide the appropriate value here

@@ -96,9 +96,10 @@ class _HistorialScreenState extends State<HistorialScreen>
   }
 
   void _showWelcomeDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
+  showDialog(
+    context: context,
+    builder: (BuildContext dialogContext) {                // 👈 usa aquí dialogContext
+      return AlertDialog(
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15)),
         title: Text('¡Bienvenido a ManitosXpress!',
@@ -112,24 +113,33 @@ class _HistorialScreenState extends State<HistorialScreen>
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            Text(
+              'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
+              style: MyTextStyles.formServiceTextStyle,
+              textAlign: TextAlign.center,
+            ),
             const Icon(Icons.build_rounded,
                 size: 60, color: Color(0xFF84090D)),
             const SizedBox(height: 20),
             Text(
-              '🔔 ¡Atención, socios! 🚀 ¡La app Manito Xpress arranca el 19 de abril! Prepárate para recibir servicios. 💪',
-              style: MyTextStyles.formServiceTextStyle,
+              '"Queremos recordarte que este mes los servicios serán libres de comisión, a partir del mes de Junio se cobrará el 10% de comisión por cada servicio realizado"',
+              style: MyTextStyles.inputTextStyle6,
               textAlign: TextAlign.center,
             ),
+
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              // 👇 navega o cierra usando dialogContext
+              Navigator.of(dialogContext).pop();
+            },
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFF84090D),
               backgroundColor: const Color(0xFFE8E8E8),
               padding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
               side: const BorderSide(
@@ -138,10 +148,10 @@ class _HistorialScreenState extends State<HistorialScreen>
             child: Text("Comenzar", style: MyTextStyles.linkTextStyle),
           ),
         ],
-      ),
-    );
-  }
-
+      );
+    },
+  );
+}
   @override
   void dispose() {
     _tabController.dispose();
