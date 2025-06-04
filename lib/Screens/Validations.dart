@@ -5,6 +5,7 @@ import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/provider/providerImage.dart';
 
@@ -23,12 +24,14 @@ class RegistrationScreen extends StatelessWidget {
   final VoidCallback completeRegistrationCallback;
   final ApiService apiService;
   final ApiService2 apiService2;
+  final UserData userData;
 
   RegistrationScreen({
     required this.registrationController,
     required this.completeRegistrationCallback,
     required this.apiService,
     required this.apiService2,
+    required this.userData,
   });
 
   @override
@@ -49,7 +52,10 @@ class RegistrationScreen extends StatelessWidget {
           final steps = <Step>[
             Step(
               title: Text('Datos del Servicio', style: MyTextStyles.drawerButtonTextStyle3),
-              content: ServiceDataWizard(onNextStep: provider.nextStep),
+              content: ServiceDataWizard(
+                onNextStep: provider.nextStep,
+                userData: provider.userData,
+              ),
               isActive: provider.currentStep >= 0,
               state: provider.currentStep > 0 ? StepState.complete : StepState.indexed,
             ),

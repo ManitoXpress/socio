@@ -13,9 +13,11 @@ import 'package:socio/Screens/buttonDocument.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/Colors.dart';
+import 'package:socio/Utils/deleteAccount.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/login.dart';
 import 'package:socio/provider/providerRegistration.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestUserData.dart';
@@ -44,7 +46,6 @@ class ProfileData {
     required this.points, // Inicializa el campo points
   });
 }
-
 
 class ProfilePage extends StatefulWidget {
   final RegistrationData registrationData;
@@ -95,7 +96,10 @@ class _ProfilePageState extends State<ProfilePage> {
         String? profileImageUrl = await ApiService2().fetchProfileImage(userId);
 
         // Fetch points from Firestore
-        final userDoc = await FirebaseFirestore.instance.collection('workers').doc(userId).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('workers')
+            .doc(userId)
+            .get();
         final points = userDoc.data()?['points'] ?? 0;
 
         return ProfileData(
@@ -103,7 +107,8 @@ class _ProfilePageState extends State<ProfilePage> {
           email: userData.email,
           phoneNumber: userData.phoneNumber,
           paymentType: userData.paymentType,
-          expertises: userData.expertises.map((expertise) => expertise.name).toList(),
+          expertises:
+          userData.expertises.map((expertise) => expertise.name).toList(),
           expLevel: userData.expLevel,
           imagePath: profileImageUrl ?? '',
           userData: UserData(
@@ -125,9 +130,12 @@ class _ProfilePageState extends State<ProfilePage> {
             pdfPathController: userData.pdfPathController,
             certificateImagePaths: userData.certificateImagePaths,
             getToken: '',
-            referrerWorkerId: userData.referrerWorkerId, referralCode: userData.referralCode, points: userData.points,
+            referrerWorkerId: userData.referrerWorkerId,
+            referralCode: userData.referralCode,
+            points: userData.points,
             verificationStatus: userData.verificationStatus,
-            medicalLicenseImagePath: userData.medicalLicenseImagePath, professionalTitleImagePath: userData.professionalTitleImagePath,
+            medicalLicenseImagePath: userData.medicalLicenseImagePath,
+            professionalTitleImagePath: userData.professionalTitleImagePath,
           ),
           registrationData: registrationData,
           points: points, // Asigna los puntos al campo points
@@ -163,7 +171,12 @@ class _ProfilePageState extends State<ProfilePage> {
           expLevel: [],
           selectedCountryCode: '',
           getToken: '',
-          referrerWorkerId: '', referralCode: '', points: 0, verificationStatus: '', medicalLicenseImagePath: '', professionalTitleImagePath: '',
+          referrerWorkerId: '',
+          referralCode: '',
+          points: 0,
+          verificationStatus: '',
+          medicalLicenseImagePath: '',
+          professionalTitleImagePath: '',
         ),
         registrationData: registrationData,
         expLevel: [],
@@ -171,7 +184,6 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
   }
-
 
   Future<void> _loadAndRefreshUserData() async {
     try {
@@ -189,45 +201,17 @@ class _ProfilePageState extends State<ProfilePage> {
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => LoginScreen(
-                deviceId: '',
-              )));
+            deviceId: '',
+          )));
     } catch (e) {
       print('Error al cerrar sesión: $e');
     }
   }
 
-  Future<void> _editProfile() async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-
-      if (userId != null && token != null) {
-        final userData = await ApiService2().fetchUserData(userId, token);
-
-        if (userData == null) {
-          throw 'No se pudo obtener los datos del usuario.';
-        }
-
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return EditProfileDialog(
-              displayName: userData.displayName,
-              idCardNumber: userData.idCardNumber,
-              phoneNumber: userData.phoneNumber,
-              expertises: userData.expertises,
-              expLevel: userData.expLevel,
-              apiService2: ApiService2(),
-              onUpdateProfile:
-                  _loadAndRefreshUserData, // Pass the refresh method here
-            );
-          },
-        );
-      } else {
-        throw 'No se pudo obtener el ID del usuario autenticado.';
-      }
-    } catch (e) {
-      print('Error al obtener datos del usuario: $e');
+  Future<void> _abrirEnlace(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -235,189 +219,171 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Perfil', style: MyTextStyles.buttonTextStyle),
         iconTheme: IconThemeData(color: Colors.white),
-        title: const Text(
-          'Perfil',
-          style: MyTextStyles.buttonTextStyle,
-        ),
       ),
       body: FutureBuilder<ProfileData>(
         future: userData,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text('Error: ${snapshot.error}'),
-            );
-          } else {
-            final profileData = snapshot.data;
-            return SingleChildScrollView(
-              child: _buildProfileInfo(profileData),
-            );
+        builder: (_, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
           }
-        },
-      ),
-    );
-  }
-
-  Widget _buildProfileInfo(ProfileData? profileData) {
-    if (profileData == null) {
-      return Text('Error: No se pudo cargar la información del perfil');
-    }
-
-    return Container(
-      margin: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipOval(
-            child: Image.asset(
-              'assets/manito.png', // Reemplaza 'your_image.png' con la ruta de tu imagen
-              width: 300, // Ajusta el ancho de la imagen según sea necesario
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Puntos: ${profileData.points}', // Muestra los puntos del usuario
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: _signOut,
-                    child: const Text('Cerrar Sesión', style: MyTextStyles.buttonTextStyle),
-                    style: ElevatedButton.styleFrom(backgroundColor: customColor),
-                  ),
-                  ElevatedButton(
-                    onPressed: _editProfile,
-                    child: const Text('Editar perfil', style: MyTextStyles.buttonTextStyle),
-                    style: ElevatedButton.styleFrom(backgroundColor: customColor),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),  // separación vertical
-              Center(
-                child: ElevatedButton(
+          if (snap.hasError) {
+            return Center(child: Text('Error: ${snap.error}'));
+          }
+          final profile = snap.data!;
+          final supportUrl =
+              'https://wa.me/59173666393?text=Hola%20Soy%20${Uri.encodeComponent(profile.displayName)},%20Necesito%20modificar%20mi%20perfil%20en%20Manito%20Socio';
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                ClipOval(
+                  child: Image.asset('assets/manito.png', width: 300),
+                ),
+                const SizedBox(height: 10),
+                Text('Puntos: ${profile.points}',
+                    style: TextStyle(fontSize: 18)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _signOut,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: customColor),
+                      child: const Text('Cerrar Sesión',
+                          style: MyTextStyles.buttonTextStyle),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _abrirEnlace(supportUrl),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: customColor),
+                      child: const Text('Editar Perfil',
+                          style: MyTextStyles.buttonTextStyle),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
                   onPressed: () {
-                    final regProvider = Provider.of<RegistrationProvider>(context, listen: false);
+                    final regProv = Provider.of<RegistrationProvider>(context,
+                        listen: false);
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => DocumentsScreen(
-                          provider: regProvider,
-                          profileData: profileData!,
+                          provider: regProv,
+                          profileData: profile,
                           onSaved: _loadAndRefreshUserData,
                         ),
                       ),
                     );
                   },
-                  child: const Text('Cargar Documentos', style: MyTextStyles.buttonTextStyle),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: customColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: customColor),
+                  child: const Text('Cargar Documentos',
+                      style: MyTextStyles.buttonTextStyle),
                 ),
-              ),
-            ],
-          ),
-
-
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
-              children: [
-                _buildProfileInfoRow('Nombre:', profileData.displayName),
-                const SizedBox(height: 10),
-                _buildProfileInfoRow(
-                    'Número de Teléfono:', profileData.phoneNumber),
-                const SizedBox(height: 10),
-                _buildProfileInfoRow(
-                    'Especialidades:', profileData.expertises.join(', ')),
-                const SizedBox(height: 10),
-                _buildProfileInfoRow(
-                    'Experiencia laboral:', profileData.expLevel.join(', ')),
-                const SizedBox(height: 10),
-                _buildProfileInfoRow('Pagos con QR:', profileData.paymentType),
-                const SizedBox(height: 10),
-                // Boton de documentos debajo del cuadro
+                const SizedBox(height: 20),
+                ElevatedButton(
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user != null) {
+                        final authToken = await user.getIdToken();
+                        showDialog(
+                          context: context,
+                          builder: (_) => DeleteAccountByIdDialog(
+                            userId: user.uid,
+                            authToken: authToken!,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_forever, color: Colors.white),
+                        SizedBox(width: 8),
+                        Text(
+                          'Eliminar Cuenta',
+                          style: MyTextStyles.buttonTextStyle.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                _buildInfoCard(profile),
               ],
             ),
-          ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(ProfileData profile) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildRow('Nombre:', profile.displayName),
+          _buildRow('Teléfono:', profile.phoneNumber),
+          _buildRow('Especialidades:', profile.expertises.join(', '),
+              expandable: true),
+          _buildRow('Experiencia:', profile.expLevel.join(', '),
+              expandable: true),
+          _buildRow('Pagos con QR:', profile.paymentType),
         ],
       ),
     );
   }
 
-
-  Widget _buildExpandableText(String value) {
-    List<String> items = value.split(', ');
-    return ExpansionTile(
-      title: Text(
-        'Ver más',
-        style: MyTextStyles.formsdetails,
-      ),
-      children: items.map((item) {
-        return Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Text(
-            item,
-            style: MyTextStyles.servicesButtonTextStyle,
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildProfileInfoRow(String label, String value) {
+  Widget _buildRow(String label, String value, {bool expandable = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: MyTextStyles.inputTextStyle3,
-              ),
-              Flexible(
-                child: Container(
-                  margin: const EdgeInsets.only(left: 8.0),
-                  child: label == 'Especialidades:'
-                      ? _buildExpandableText(value)
-                      : Text(
-                          value,
-                          style: MyTextStyles.formsdetails,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                ),
-              ),
-            ],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: MyTextStyles.inputTextStyle3),
+            Flexible(
+              child: expandable
+                  ? _buildExpandableText(value)
+                  : Text(value,
+                  style: MyTextStyles.formsdetails,
+                  overflow: TextOverflow.ellipsis),
+            ),
+          ],
         ),
-        Container(
-          margin: const EdgeInsets.only(left: 8.0),
-          child: Divider(
-            color: Color(0xFF841813),
-            height: 2,
-          ),
-        ),
+        Divider(color: Color(0xFF841813), height: 2),
+        const SizedBox(height: 8),
       ],
+    );
+  }
+
+  Widget _buildExpandableText(String value) {
+    final items = value.split(', ');
+    return ExpansionTile(
+      title: Text('Ver más', style: MyTextStyles.formsdetails),
+      children: items
+          .map((t) => Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Text(t, style: MyTextStyles.servicesButtonTextStyle),
+      ))
+          .toList(),
     );
   }
 }

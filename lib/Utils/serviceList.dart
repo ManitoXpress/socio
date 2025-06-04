@@ -16,8 +16,9 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-
-      final UserData userData, final ApiService apiService,final ApiService2 apiService2) {
+      final UserData userData,
+      final ApiService apiService,
+      final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -65,6 +66,7 @@ class ServiceListBuilder {
                           offers: [],
                           workerDetails: workerDetails,
                           userId: '',
+                          CreatedAt: '',
                         ),
                         initialStatus: offer.status.id,
                         onComplete: (status) {
@@ -78,7 +80,9 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
-                        apiService: apiService, apiService2: apiService2, userId: service.userId,
+                        apiService: apiService, apiService2: apiService2,
+                        userId: service.userId,
+                        displayName: userData.displayName, offer: offer,
                       ),
                     ),
                   );
@@ -101,7 +105,9 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      final UserData userData, final ApiService apiService, final ApiService2 apiService2) {
+      final UserData userData,
+      final ApiService apiService,
+      final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -149,6 +155,7 @@ class ServiceListBuilder {
                           offers: [],
                           workerDetails: workerDetails,
                           userId: service.userId,
+                          CreatedAt: '',
                         ),
                         initialStatus: offer.status.id,
                         onComplete: (status) {
@@ -162,7 +169,9 @@ class ServiceListBuilder {
                         workerDetails: workerDetails,
                         offers: [],
                         images: [],
-                        apiService: apiService, apiService2: apiService2, userId: service.userId,
+                        apiService: apiService, apiService2: apiService2,
+                        userId: service.userId,
+                        displayName: userData.displayName, offer: offer,
                       ),
                     ),
                   );
@@ -179,19 +188,20 @@ class ServiceListBuilder {
   }
 
   static Widget buildServiceListAvailable(
-      List<ServiceRequest> services,
-      List<Offer> allOffers,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      dynamic userData,
-      final ApiService apiService,
-      final ApiService2 apiService2,
-      ) {
+    List<ServiceRequest> services,
+    List<Offer> allOffers,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    dynamic userData,
+    final ApiService apiService,
+    final ApiService2 apiService2,
+  ) {
     final serviceDataFetcher = ServiceDataFetcher();
     // Filtrar servicios sin oferta
     final offeredServiceIds = allOffers.map((o) => o.serviceId).toSet();
-    final availableServices = services.where((s) => !offeredServiceIds.contains(s.id)).toList();
+    final availableServices =
+        services.where((s) => !offeredServiceIds.contains(s.id)).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -199,77 +209,23 @@ class ServiceListBuilder {
         itemCount: availableServices.length,
         itemBuilder: (context, index) {
           final service = availableServices[index];
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails = await serviceDataFetcher.fetchWorkerDetails(service.workerId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: service.serviceDateTime,
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: service.location,
-                        offeredPrice: service.offeredPrice,
-                        serviceType: ServiceType(id: '', name: '', selectedDate: '', selectedTime: ''),
-                        workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
-                      apiService: apiService,
-                      apiService2: apiService2, userId: service.userId,
-                    ),
-                  ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
-            },
-            child: _buildServiceCard(service, screenWidth, screenHeight),
+          final offerForService = allOffers.firstWhere(
+            (offer) => offer.serviceId == service.id,
+            orElse: () => Offer(
+              id: '',
+              serviceId: '',
+              offeredPrice: 0.0,
+              status: Status(id: '', name: ''),
+              subcategoryName: '',
+              expertises: [],
+              workerId: '',
+              extraCosts: 0.0,
+              totalPrice: 0.0,
+              hasOffer: false,
+              userToken: '',
+              createdAt: DateTime.now(),
+            ),
           );
-        },
-      ),
-    );
-  }
-
-
-  static Widget buildServiceListComplete(
-      List<ServiceRequest> services,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
-    final serviceDataFetcher = ServiceDataFetcher();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-          final offer = null; // Define offer as null
           return GestureDetector(
             onTap: () async {
               try {
@@ -281,7 +237,7 @@ class ServiceListBuilder {
                     builder: (context) => ServiceFormWithTimeline(
                       serviceRequest: ServiceRequest(
                         id: service.id,
-                        serviceDateTime: '',
+                        serviceDateTime: service.serviceDateTime,
                         devicesId: '',
                         description: '',
                         images: [],
@@ -302,6 +258,7 @@ class ServiceListBuilder {
                         offers: [],
                         workerDetails: workerDetails,
                         userId: '',
+                        CreatedAt: '',
                       ),
                       initialStatus: service.status.id,
                       onComplete: (status) {
@@ -315,7 +272,11 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2, userId: service.userId,
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                      offer: offerForService,
                     ),
                   ),
                 );
@@ -330,12 +291,105 @@ class ServiceListBuilder {
     );
   }
 
+  static Widget buildServiceListComplete(
+  List<ServiceRequest> services,
+  List<Offer> offers,
+  double screenWidth,
+  double screenHeight,
+  String userId,
+  final UserData userData,
+  final ApiService apiService,
+  final ApiService2 apiService2,
+) {
+  final serviceDataFetcher = ServiceDataFetcher();
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: ListView.builder(
+      itemCount: offers.length,
+      itemBuilder: (context, index) {
+        final offer = offers[index];
+
+        // Busca el ServiceRequest correspondiente a esta oferta
+        final service = services.firstWhere(
+          (s) => s.id == offer.serviceId,
+          orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
+        );
+
+        return GestureDetector(
+          onTap: () async {
+            try {
+              final workerDetails = await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+              if (workerDetails == null) return;
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ServiceFormWithTimeline(
+                    serviceRequest: ServiceRequest(
+                      id: offer.serviceId,
+                      serviceDateTime: '',
+                      devicesId: '',
+                      description: '',
+                      images: [],
+                      location: service.location,
+                      offeredPrice: offer.offeredPrice,
+                      serviceType: ServiceType(
+                          id: '',
+                          name: '',
+                          selectedDate: '',
+                          selectedTime: ''),
+                      workerId: offer.workerId,
+                      isFavorite: false,
+                      acceptedTerms: false,
+                      expertises: offer.expertises,
+                      status: Status(id: '', name: ''),
+                      subcategoryName: offer.subcategoryName,
+                      hasOffer: false,
+                      offers: [],
+                      workerDetails: workerDetails,
+                      userId: '',
+                      CreatedAt: '',
+                    ),
+                    initialStatus: offer.status.id,
+                    onComplete: (status) {
+                      print('Estado completado: $status');
+                    },
+                    onStatusChanged: (newStatus) {
+                      print('Estado cambiado a: $newStatus');
+                    },
+                    userData: userData,
+                    workerId: offer.workerId,
+                    workerDetails: workerDetails,
+                    offers: [],
+                    images: [],
+                    apiService: apiService,
+                    apiService2: apiService2,
+                    userId: service.userId,
+                    displayName: userData.displayName,
+                    offer: offer,
+                  ),
+                ),
+              );
+            } catch (e) {
+              print('Error al cargar los detalles del trabajador: $e');
+            }
+          },
+          child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+        );
+      },
+    ),
+  );
+}
+
+
   static Widget buildServiceListCancelled(
       List<ServiceRequest> services,
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
+      dynamic userData,
+      final ApiService apiService,
+      final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -376,6 +430,7 @@ class ServiceListBuilder {
                         offers: [],
                         workerDetails: workerDetails,
                         userId: '',
+                        CreatedAt: '',
                       ),
                       initialStatus: service.status.id,
                       onComplete: (status) {
@@ -389,7 +444,11 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2, userId: service.userId,
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                      offer: offer,
                     ),
                   ),
                 );
@@ -397,7 +456,7 @@ class ServiceListBuilder {
                 print('Error al cargar los detalles del trabajador: $e');
               }
             },
-            child: _buildServiceCard(service, screenWidth, screenHeight),
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
           );
         },
       ),
@@ -410,7 +469,9 @@ class ServiceListBuilder {
       double screenWidth,
       double screenHeight,
       String userId,
-      dynamic userData, final ApiService apiService, final ApiService2 apiService2) {
+      dynamic userData,
+      final ApiService apiService,
+      final ApiService2 apiService2) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -457,6 +518,7 @@ class ServiceListBuilder {
                         offers: [],
                         workerDetails: workerDetails,
                         userId: '',
+                        CreatedAt: '',
                       ),
                       initialStatus: service.status.id,
                       onComplete: (status) {
@@ -470,7 +532,11 @@ class ServiceListBuilder {
                       workerDetails: workerDetails,
                       offers: [],
                       images: [],
-                      apiService: apiService, apiService2: apiService2, userId: service.userId,
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                      offer: offer,
                     ),
                   ),
                 );
@@ -539,7 +605,7 @@ class ServiceListBuilder {
                 Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle),
                 Text(expertise, style: MyTextStyles.drawerButtonTextStyle8),
                 SizedBox(height: screenHeight * 0.01),
-                Text('Precio Ofertado: \$${price.toStringAsFixed(2)}',
+                Text('Precio Ofertado: \Bs ${price.toStringAsFixed(2)}',
                     style: MyTextStyles.drawerButtonTextStyle),
               ],
             ),

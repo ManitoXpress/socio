@@ -132,7 +132,7 @@ class ServiceRepositoryComplete {
           acceptedTerms: item['acceptedTerms'] as bool? ?? false,
           subcategoryName: item['subcategoryName']?.toString() ?? '',
           hasOffer: false,
-          offers: [],
+          offers: [], CreatedAt: item['CreatedAt'] ?? '',
         );
       }).whereType<ServiceRequest>().toList();
 

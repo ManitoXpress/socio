@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
+
 class MyTextStyles {
   static const TextStyle inputTextStyle = TextStyle(
     color: Color(0xFF000405),
@@ -43,6 +45,20 @@ class MyTextStyles {
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
   );
+  static const TextStyle inputTextStyle7 = TextStyle(
+    color: Color(0xFF000405),
+    fontSize: 22,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w700,
+    fontStyle: FontStyle.normal,
+  );
+  static const TextStyle inputTextStyle5 = TextStyle(
+    color: Color(0xFF000405),
+    fontSize: 22,
+    fontFamily: 'Xpress',
+    fontWeight: FontWeight.w300,
+    fontStyle: FontStyle.normal,
+  );
   static const TextStyle unselectedTabTextStyle = TextStyle(
     fontSize: 12,
     fontFamily: 'Xpress',
@@ -51,7 +67,7 @@ class MyTextStyles {
   );
   static const TextStyle tabTextStyle = TextStyle(
     fontSize: 12,
-    color: Color(0xFFFFFFFF),
+    color: Color.fromARGB(255, 0, 0, 0),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
@@ -96,7 +112,7 @@ class MyTextStyles {
   static const TextStyle tittleButton = TextStyle(
     color: Color(0xFF830A09),
     fontFamily: 'Xpress',
-    fontWeight: FontWeight.w200,
+    fontWeight: FontWeight.w600,
     fontStyle: FontStyle.normal,
     fontSize: 18,
   );
@@ -207,7 +223,7 @@ class MyTextStyles {
   static const TextStyle welcomeTotheJungle = TextStyle(
     color: Color(0xFF830A09),
     fontFamily: 'Xpress',
-    fontWeight: FontWeight.w200,
+    fontWeight: FontWeight.w600,
     fontStyle: FontStyle.normal,
     fontSize: 25.0,
   );

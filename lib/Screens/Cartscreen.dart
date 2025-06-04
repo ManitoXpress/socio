@@ -1,21 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
+
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Controller/inProgressFetcher.dart';
-import 'package:socio/Controller/offerFetcher.dart';
-import 'package:socio/Controller/serviceCancelled.dart';
-import 'package:socio/Controller/serviceComplete.dart';
 import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
+
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/notification.dart';
 import 'package:socio/Utils/serviceFetcher.dart';
@@ -426,8 +420,10 @@ class _ServiceListTabState extends State<_ServiceListTab>
           widget.apiService2,
         );
       case 'completed':
+      final offers = list.expand((s) => s.offers).toList();
         return ServiceListBuilder.buildServiceListComplete(
           list,
+          offers,
           w, h,
           widget.userId,
           widget.userData,

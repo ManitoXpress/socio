@@ -109,9 +109,11 @@ class ServiceRequest {
   bool hasOffer;
   List<Offer> offers;
   WorkerDetails? workerDetails;
+  String CreatedAt;
 
   // Constructor principal
   ServiceRequest({
+    required this.CreatedAt,
     required this.serviceDateTime,
     required this.id,
     required this.devicesId,
@@ -159,7 +161,7 @@ class ServiceRequest {
       subcategoryName: '',
       hasOffer: false,
       offers: [],
-      workerDetails: null,
+      workerDetails: null, CreatedAt: '',
     );
   }
 
@@ -226,7 +228,7 @@ class ServiceRequest {
           : [],
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
-          : null,
+          : null, CreatedAt: map['CreatedAt'] ?? '',
     );
   }
 

@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../Utils/styles.dart';
-
 class WalletScreen extends StatefulWidget {
   WalletScreen({Key? key}) : super(key: key);
 
@@ -267,18 +266,20 @@ class _WalletScreenState extends State<WalletScreen> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 2,
+          color: Colors.white, // Establece el color de fondo a blanco
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: Colors.grey[200],
               child: const Icon(Icons.monetization_on, color: Colors.white),
             ),
             title: Text(
-              'Comisión: \$${commission.toStringAsFixed(2)}',
+              'Comisión: \Bs${commission.toStringAsFixed(2)}',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text('Costos extras: \$${extraCosts.toStringAsFixed(2)}'),
+            subtitle:
+                Text('Costos extras: \Bs${extraCosts.toStringAsFixed(2)}'),
             trailing: Text(
-              'Total: \$${total.toStringAsFixed(2)}',
+              'Total: \Bs${total.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
@@ -293,7 +294,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Widget _buildIncomeList(BuildContext context, List<double> ingresos,
       List<QueryDocumentSnapshot> services) {
-    // Filtrar los servicios según el campo `serviceId` y el término de búsqueda
+    // Filtrar los servicios según el campo serviceId y el término de búsqueda
     final filteredServices = services
         .where((doc) => (doc.data() as Map<String, dynamic>)['serviceId']
             .toString()
@@ -347,7 +348,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: const Icon(Icons.attach_money, color: Colors.white),
                 ),
                 title: Text(
-                  'Ingreso: \$${offeredPrice.toStringAsFixed(2)}',
+                  'Ingreso: \Bs${offeredPrice.toStringAsFixed(2)}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
@@ -369,11 +370,11 @@ class _WalletScreenState extends State<WalletScreen> {
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
-                    Text('Comisión: \$${commission.toStringAsFixed(2)}'),
-                    Text('Costos extras: \$${extraCosts.toStringAsFixed(2)}'),
+                    Text('Comisión: \Bs${commission.toStringAsFixed(2)}'),
+                    Text('Costos extras: \Bs${extraCosts.toStringAsFixed(2)}'),
                     Text(
-                        'Precio ofertado: \$${offeredPrice.toStringAsFixed(2)}'),
-                    Text('Total: \$${totalPrice.toStringAsFixed(2)}'),
+                        'Precio ofertado: \Bs${offeredPrice.toStringAsFixed(2)}'),
+                    Text('Total: \Bs ${totalPrice.toStringAsFixed(2)}'),
                     Text('Estado del pago: $paymentStatus'),
                     Text('Estado: $status'),
                     Text('Service ID: $serviceId'),
@@ -425,9 +426,9 @@ class _WalletScreenState extends State<WalletScreen> {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  Text('Comisión: \$${commission.toStringAsFixed(2)}'),
-                  Text('Costos extras: \$${extraCosts.toStringAsFixed(2)}'),
-                  Text('Total: \$${total.toStringAsFixed(2)}'),
+                  Text('Comisión: \Bs${commission.toStringAsFixed(2)}'),
+                  Text('Costos extras: \Bs${extraCosts.toStringAsFixed(2)}'),
+                  Text('Total: \Bs${total.toStringAsFixed(2)}'),
                   Text('Service ID: $serviceId'),
                   const SizedBox(height: 16),
                   if (completionImageUrl.isNotEmpty)

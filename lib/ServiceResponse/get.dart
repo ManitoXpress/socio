@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
@@ -9,20 +11,178 @@ import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
-
 class ApiService2 {
   String? getToken;
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
+  Future<void> _initializeToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      getToken = await user.getIdToken(true);
+    } else {
+      getToken = null;
+    }
+  }
 
-  Future<void> updateWorkerPoints(String workerId,String token) async {
+
+  Future<Map<String, dynamic>> fetchSingleService(
+    String workerColumn,
+    String workerValue,
+    String type,
+    String deviceId,
+    String serviceId,
+  ) async {
+    // Llamas a tu método que ya funciona
+    final resp = await getAllServices(
+      await AuthUtils.getToken() ?? '',
+      workerColumn,
+      workerValue,
+      type,
+    );
+
+    if (resp.statusCode != 200) {
+      throw Exception('Error al obtener servicios: ${resp.statusCode}');
+    }
+
+    // Parseas el body como una lista de JSON
+    final List<dynamic> data = json.decode(resp.body);
+    // Buscamos el que tenga el id que queremos
+    final found = data.cast<Map<String, dynamic>>().firstWhere(
+          (srv) => srv['id'] == serviceId,
+          orElse: () => throw Exception('Servicio no encontrado'),
+        );
+
+    return found;
+  }
+
+  Future<void> patchServiceComments(
+    String serviceId,
+    List<Map<String, String>> commentsList,
+  ) async {
+    await _initializeToken();
+    final resp = await http.patch(
+      Uri.parse('$baseUrl/services/$serviceId'),
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'comments': commentsList}),
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('Error al actualizar comentarios: '
+          '${resp.statusCode} ${resp.body}');
+    }
+  }
+  // 1) GET /offers?serviceId={id}
+  Future<Map<String, dynamic>> getOfferByServiceId(String serviceId) async {
+    await _initializeToken();
+    final url = Uri.parse('$baseUrl/offers/$serviceId');
+    print('🎯 GET Offer URL: $url');
+    final resp = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    print('📥 Status: ${resp.statusCode}, Body: ${resp.body}');
+    if (resp.statusCode == 404) {
+      throw Exception('Oferta no encontrada para serviceId $serviceId');
+    }
+    if (resp.statusCode != 200) {
+      throw Exception('Error al cargar oferta: ${resp.statusCode}');
+    }
+    // Suponemos que el backend responde un JSON array de ofertas
+    final List data = json.decode(resp.body) as List;
+    if (data.isEmpty) {
+      throw Exception('No hay oferta para serviceId $serviceId');
+    }
+    return Map<String, dynamic>.from(data.first);
+  }
+
+  // 2) PATCH /offers/{offerId}
+Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
+    debugPrint('▶️ patchOffer iniciado para offerId=$offerId');
+    debugPrint('   • Payload body: ${json.encode(body)}');
+
+    await _initializeToken();
+    debugPrint('   • Token tras inicializar: $getToken');
+
+    final url = Uri.parse('$baseUrl/offers/$offerId');
+    debugPrint('   • URL PATCH → $url');
+
+    final resp = await http.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(body),
+    );
+
+    debugPrint('   • Código de respuesta: ${resp.statusCode}');
+    debugPrint('   • Cuerpo de respuesta: ${resp.body}');
+
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      debugPrint('   ❌ Error al actualizar oferta via HTTP: ${resp.statusCode}');
+      throw Exception('Error al actualizar oferta via HTTP: ${resp.statusCode}');
+    }
+
+    debugPrint('✅ patchOffer HTTP completado para offerId=$offerId');
+
+    // ————— Ahora parcheamos en Firestore —————
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('offers').doc(offerId);
+      debugPrint('   • Firestore update en offers/$offerId con $body');
+      await docRef.update(body);
+      debugPrint('✅ Firestore update completado para offers/$offerId');
+    } catch (e) {
+      debugPrint('❌ Error al actualizar Firestore offers/$offerId: $e');
+      // Dependiendo de tu lógica, podrías tirar aquí o solo notificar:
+      // throw;
+    }
+  }
+
+  // 3) PATCH /services/{serviceId}
+  Future<void> patchService(String serviceId, Map<String, dynamic> body) async {
+    await _initializeToken();
+    final url = Uri.parse('$baseUrl/services/$serviceId');
+    final resp = await http.patch(
+      url,
+      headers: {
+        'Authorization': 'Bearer $getToken',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(body),
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      throw Exception('Error al actualizar servicio: ${resp.statusCode}');
+    }
+  }
+
+  Future<void> updateWorkerPoints(String workerId, String token) async {
     final url = Uri.parse('$baseUrl/workers/$workerId');
-
-
 
     print('Token usado para la autenticación: $token');
 
     try {
+      // Primero debemos obtener los valores actuales del trabajador en Firestore
+      final workerDoc = await FirebaseFirestore.instance
+          .collection('workers')
+          .doc(workerId)
+          .get();
+
+      if (!workerDoc.exists) {
+        print('No se encontró el documento del trabajador');
+        return;
+      }
+
+      final workerData = workerDoc.data() as Map<String, dynamic>;
+      final currentPoints = workerData['points'] ?? 0;
+      final currentReferrals = workerData['successfulReferrals'] ?? 0;
+
+      // Enviar los valores actuales al backend
       final response = await http.patch(
         url,
         headers: {
@@ -30,8 +190,8 @@ class ApiService2 {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'successfulReferrals': 1,
-          'points': 10,
+          'successfulReferrals': currentReferrals,
+          'points': currentPoints,
         }),
       );
 
@@ -45,47 +205,98 @@ class ApiService2 {
     }
   }
 
+  /// 1) Obtener el servicio completo (incluye array comments)
+  Future<Map<String, dynamic>> getService(String serviceId) async {
+    await _initializeToken(); // <--- ESTA LÍNEA ES CRUCIAL
 
-  Future<List<Map<String, dynamic>>> getWorkerExpertises() async {
-  try {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw Exception('No hay usuario autenticado');
+    if (getToken == null) {
+      throw Exception('Token de autenticación no disponible');
     }
 
-    final String? token = await user.getIdToken(true);
-    final String userId = user.uid;
+    final url = Uri.parse('$baseUrl/services/$serviceId');
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $getToken',
+    });
 
+    if (response.statusCode != 200) {
+      throw Exception('Error cargando servicio: ${response.statusCode}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getOffers2(String offerId) async {
+    // Asegúrate de tener el token más reciente
+
+    if (getToken == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+
+    final url = Uri.parse('$baseUrl/offers/$offerId');
     final response = await http.get(
-      Uri.parse('$baseUrl/workers/$userId'),
+      url,
       headers: {
-        'Authorization': 'Bearer $token',
+        'Authorization': 'Bearer $getToken',
         'Content-Type': 'application/json',
       },
     );
 
+    print('getOffers2 status: ${response.statusCode}, body: ${response.body}');
+
     if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      final List<dynamic> rawExpertises = data['expertises'] ?? [];
-
-      final expertises = rawExpertises.map((e) {
-        if (e is Map<String, dynamic>) {
-          return e;
-        } else {
-          return {'name': e, 'id': ''}; 
-        }
-      }).toList();
-
-      return expertises;
+      // Suponemos que el backend devuelve un array JSON
+      final List<dynamic> data = json.decode(response.body);
+      // Convertimos cada elemento a Map<String, dynamic>
+      return data
+          .map<Map<String, dynamic>>(
+              (item) => Map<String, dynamic>.from(item as Map))
+          .toList();
     } else {
-      throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
+      throw Exception(
+          'Error cargando oferta $offerId: ${response.statusCode} ${response.body}');
     }
-  } catch (e) {
-    print('[ApiService2] Error: $e');
-    rethrow;
   }
-}
 
+  Future<List<Map<String, dynamic>>> getWorkerExpertises() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('No hay usuario autenticado');
+      }
+
+      final String? token = await user.getIdToken(true);
+      final String userId = user.uid;
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/workers/$userId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> rawExpertises = data['expertises'] ?? [];
+
+        final expertises = rawExpertises.map((e) {
+          if (e is Map<String, dynamic>) {
+            return e;
+          } else {
+            return {'name': e, 'id': ''};
+          }
+        }).toList();
+
+        return expertises;
+      } else {
+        throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      print('[ApiService2] Error: $e');
+      rethrow;
+    }
+  }
 
   Future<List<ServiceResponse>> fetchServicesFromBackend(String token) async {
     try {
@@ -291,6 +502,7 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
+
   Future<UserData> fetchUserDataRef(String userId, String token) async {
     try {
       // Construir el header con el token
@@ -321,7 +533,6 @@ class ApiService2 {
       throw Exception('Error al obtener datos del backend');
     }
   }
-
 
   Future<List<Category>> fetchExpertises() async {
     final response =
@@ -447,7 +658,6 @@ class ApiService2 {
     print('Mensaje de error: ${response.body}');
   }
 }
-
 class ServiceResponse {
   final String id;
   final String name;

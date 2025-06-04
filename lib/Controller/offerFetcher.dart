@@ -58,7 +58,7 @@ class OfferRepository {
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: '',
+      subcategoryName: '', CreatedAt: '',
     );
 
     // Se invoca la función que obtiene los servicios y, para cada uno, sus ofertas filtradas.
@@ -167,7 +167,7 @@ class OfferRepository {
                       devicesId: '',
                       hasOffer: false,
                       offers: [],
-                      subcategoryName: item['subcategoryName'] ?? '',
+                      subcategoryName: item['subcategoryName'] ?? '', CreatedAt: item['CreatedAt'] ?? '',
                     );
                   })
                   .where((service) => service.status.id == 'available')

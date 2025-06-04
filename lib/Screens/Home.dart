@@ -1,13 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socio/Controller/RegisController.dart';
 import 'package:socio/Screens/Cartscreen.dart';
 import 'package:socio/Screens/buttonDocument.dart';
 import 'package:socio/Screens/maps.dart';
 import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/Utils/fcmToken.dart';
 import 'package:socio/Utils/homeData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/menu/help.dart';
@@ -42,17 +46,17 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isVerified = false;
   late Future<UserData> _remoteUserFuture;
 
-  final customColor = const MaterialColor(0xFF841813, {
-    50: Color(0xFF841813),
-    100: Color(0xFF841813),
-    200: Color(0xFF841813),
-    300: Color(0xFF841813),
-    400: Color(0xFF841813),
-    500: Color(0xFF841813),
-    600: Color(0xFF841813),
-    700: Color(0xFF841813),
-    800: Color(0xFF841813),
-    900: Color(0xFF841813),
+  final customColor = const MaterialColor(0xFF830A09, {
+    50: Color(0xFF830A09),
+    100: Color(0xFF830A09),
+    200: Color(0xFF830A09),
+    300: Color(0xFF830A09),
+    400: Color(0xFF830A09),
+    500: Color(0xFF830A09),
+    600: Color(0xFF830A09),
+    700: Color(0xFF830A09),
+    800: Color(0xFF830A09),
+    900: Color(0xFF830A09),
   });
 
   @override
@@ -60,6 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _currentIndex = widget.initialPageIndex;
     _pageController = PageController(initialPage: widget.initialPageIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FCMService().registerTokenForUser(widget.userData.userId);
+    });
 
     if (widget.isGuest) {
       isVerified = true;
@@ -79,34 +86,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Sincroniza los paths
     regProv.registrationData
-      ..imagePath                  = remoteUser.imagePath
-      ..idDocumentImagePath        = remoteUser.idDocumentImagePath
-      ..idDocumentImagePath2       = remoteUser.idDocumentImagePath2
-      ..criminalRecordImagePath    = remoteUser.criminalRecordImagePath
-      ..certificateImagePaths      = remoteUser.certificateImagePaths
-      ..medicalLicenseImagePath    = remoteUser.medicalLicenseImagePath
+      ..imagePath = remoteUser.imagePath
+      ..idDocumentImagePath = remoteUser.idDocumentImagePath
+      ..idDocumentImagePath2 = remoteUser.idDocumentImagePath2
+      ..criminalRecordImagePath = remoteUser.criminalRecordImagePath
+      ..certificateImagePaths = remoteUser.certificateImagePaths
+      ..medicalLicenseImagePath = remoteUser.medicalLicenseImagePath
       ..professionalTitleImagePath = remoteUser.professionalTitleImagePath;
     regProv.notifyListeners();
 
     final profileData = ProfileData(
-      displayName:      remoteUser.displayName,
-      email:            remoteUser.email,
-      phoneNumber:      remoteUser.phoneNumber,
-      paymentType:      remoteUser.paymentType,
-      expertises:       remoteUser.expertises.map((e) => e.name).toList(),
-      expLevel:         remoteUser.expLevel,
-      imagePath:        remoteUser.imagePath,
-      userData:         remoteUser,
+      displayName: remoteUser.displayName,
+      email: remoteUser.email,
+      phoneNumber: remoteUser.phoneNumber,
+      paymentType: remoteUser.paymentType,
+      expertises: remoteUser.expertises.map((e) => e.name).toList(),
+      expLevel: remoteUser.expLevel,
+      imagePath: remoteUser.imagePath,
+      userData: remoteUser,
       registrationData: regProv.registrationData,
-      points:           remoteUser.points,
+      points: remoteUser.points,
     );
 
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => DocumentsScreen(
-          provider:    regProv,
+          provider: regProv,
           profileData: profileData,
-          onSaved:     () {},
+          onSaved: () {},
         ),
       ),
     );
@@ -126,6 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
   }
+
   Future<String?> getCodeReferral() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return null;
@@ -153,10 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                "Para continuar debes subir las *tres* fotos obligatorias:",
-                style: MyTextStyles.inputTextStyle4.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                "Para continuar te invitamos a completar tu registro:",
+                style: MyTextStyles.inputTextStyle5.copyWith(),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -172,10 +178,9 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 16),
               // Mensaje aclaratorio
               Text(
-                "Este mensaje aparece solo si falta alguna de las tres imágenes obligatorias. "
-                    "No es un nuevo requerimiento de fotos completo, sino un recordatorio "
-                    "para que completes la que quedó pendiente en el registro.",
-                style: MyTextStyles.inputTextStyle4,
+                "Este mensaje solo aparece si te falta una de esas fotos. "
+                "Haz clic en 'Subir fotos' para completar tu registro.",
+                style: MyTextStyles.inputTextStyle5,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -183,7 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () => _openUploadDocuments(remoteUser),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF841813),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -200,12 +206,76 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Pantalla de bloqueo solicitando cambio de nombre
+  Widget _buildNameChangeBlockedScreen(
+    BuildContext context, UserData remoteUser) {
+  final name = Uri.encodeComponent(remoteUser.displayName);
+  final supportUrl =
+      'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
+  
+  return WillPopScope(
+    // Evita que el usuario retroceda usando el botón físico o el gesto de swipe
+    onWillPop: () async => false,
+    child: Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // Quita el botón de “atrás”
+        title: const Text(
+          'Acceso Restringido',
+          style: MyTextStyles.buttonTextStyle,
+        ),
+        backgroundColor: const Color(0xFF830A09),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 80,
+                color: Colors.grey.shade700,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Necesita cambiar de nombre',
+                style: MyTextStyles.formServiceTextStyle.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tu nombre de perfil actual no es válido para continuar. '
+                'Por favor edita tu perfil y elige un nombre diferente.',
+                style: MyTextStyles.formServiceTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () => _abrirEnlace(supportUrl),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: customColor,
+                ),
+                child: const Text(
+                  'Editar Perfil',
+                  style: MyTextStyles.buttonTextStyle,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 
   List<Widget> _buildScreens() => [
-    HistorialScreen(userData: widget.userData),
-    WalletScreen(),
-  ];
+        HistorialScreen(userData: widget.userData),
+        WalletScreen(),
+      ];
 
   Future<void> _abrirEnlace(String url) async {
     final uri = Uri.parse(url);
@@ -214,7 +284,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Widget _buildDrawer() {
+  Widget _buildDrawer(UserData remoteUser) {
+    final name = Uri.encodeComponent(remoteUser.displayName);
+    final supportUrl =
+        'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
     return Drawer(
       child: Container(
         color: customColor,
@@ -239,12 +312,12 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.person,
               text: "Perfil",
               onPressed: () async {
-
                 final user = FirebaseAuth.instance.currentUser;
                 if (user != null) {
                   try {
                     final token = await user.getIdToken();
-                    final userData = await ApiService2().fetchUserData(user.uid, token!);
+                    final userData =
+                        await ApiService2().fetchUserData(user.uid, token!);
 
                     Navigator.push(
                       context,
@@ -255,7 +328,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           phoneNumber: userData.phoneNumber,
                           paymentType: userData.paymentType,
                           expertises: userData.expertises,
-                          imagePath: userData.imagePath.isNotEmpty ? userData.imagePath[0] : '',
+                          imagePath: userData.imagePath.isNotEmpty
+                              ? userData.imagePath[0]
+                              : '',
                           userData: widget.userData,
                           registrationData: widget.registrationData,
                         ),
@@ -272,18 +347,19 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.share,
               text: "Referidos",
               onPressed: () async {
-
                 final codeReferral = await getCodeReferral();
                 if (codeReferral == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("No se encontró código de referido")),
+                    const SnackBar(
+                        content: Text("No se encontró código de referido")),
                   );
                   return;
                 }
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ReferralScreen(codeReferral: codeReferral),
+                    builder: (context) =>
+                        ReferralScreen(codeReferral: codeReferral),
                   ),
                 );
                 // ... tu navegación a ReferralScreen ...
@@ -300,8 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildDrawerButton(
               icon: Icons.support_agent,
               text: "Soporte Técnico",
-              onPressed: () => _abrirEnlace(
-                  "https://wa.me/59173666393?text=Necesito%20soporte"),
+              onPressed: () => _abrirEnlace(supportUrl),
             ),
             SizedBox(height: 18.h),
             Row(
@@ -309,8 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildSocialButton(
                     icon: Icons.facebook,
-                    url:
-                    'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress'),
+                    url: 'https://www.facebook.com/ManitosXpress'),
                 SizedBox(width: 18.w),
                 _buildSocialButton(
                     icon: Icons.camera_alt,
@@ -327,28 +401,36 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-  Widget _buildDrawerButton(
-      {required IconData icon,
-        required String text,
-        required VoidCallback onPressed}) {
+  Widget _buildDrawerButton({
+    required IconData icon,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5.h),
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         onPressed: onPressed,
-        icon: Icon(icon, size: 24.w, color: const Color(0xFF830A09)),
-        label: Text(text, style: MyTextStyles.linkTextStyle),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Row(
+          mainAxisAlignment:
+              MainAxisAlignment.start, // Alinea el contenido a la izquierda
+          crossAxisAlignment:
+              CrossAxisAlignment.center, // Centra el contenido verticalmente
+          children: [
+            Icon(icon, size: 24.w, color: const Color(0xFF830A09)),
+            SizedBox(width: 8.w), // Espacio entre el icono y el texto
+            Text(text, style: MyTextStyles.linkTextStyle),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSocialButton(
-      {required IconData icon, required String url}) =>
+  Widget _buildSocialButton({required IconData icon, required String url}) =>
       IconButton(
         icon: Icon(icon, size: 45.w, color: Colors.white),
         onPressed: () => _abrirEnlace(url),
@@ -356,7 +438,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     // De lo contrario, esperamos el fetch de UserData remoto
     return FutureBuilder<UserData>(
       future: _remoteUserFuture,
@@ -369,7 +450,13 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         final remoteUser = snap.data!;
 
-        // Si faltan las 3 fotos, bloquea
+        // 1) Si el displayName es exactamente "Julio Socio", bloqueamos para cambiar de nombre
+        final displayName = remoteUser.registrationData.displayName ?? '';
+        if (displayName == '') {
+          return _buildNameChangeBlockedScreen(context, remoteUser);
+        }
+
+        // 2) Si faltan las 3 fotos, bloquea
         final ok = remoteUser.imagePath.isNotEmpty &&
             remoteUser.idDocumentImagePath.isNotEmpty &&
             remoteUser.idDocumentImagePath2.isNotEmpty;
@@ -377,59 +464,60 @@ class _HomeScreenState extends State<HomeScreen> {
           return _buildBlockedScreen(remoteUser);
         }
 
-        // Ya pasó la verificación
-        return _buildMainScaffold();
+        // 3) Ya pasó la verificación, mostramos el contenido normal
+        return _buildMainScaffold(remoteUser);
       },
     );
   }
 
-  Widget _buildMainScaffold() {
+  Widget _buildMainScaffold(UserData remoteUser) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF841813),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('ManitoXpress', style: MyTextStyles.buttonTextStyle),
-              Flexible(
-                child: Container(
-                  padding: EdgeInsets.all(10.w),
-                  constraints: BoxConstraints(maxWidth: 0.22.sw),
-                  child: Image.asset(
-                    'assets/images/LOGO1_Blanco.png',
-                    fit: BoxFit.contain,
-                  ),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF841813),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('ManitosXpress', style: MyTextStyles.buttonTextStyle),
+            Flexible(
+              child: Container(
+                padding: EdgeInsets.all(10.w),
+                constraints: BoxConstraints(maxWidth: 0.22.sw),
+                child: Image.asset(
+                  'assets/images/LOGO1_Blanco.png',
+                  fit: BoxFit.contain,
                 ),
               ),
-            ],
-          ),
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        drawer: _buildDrawer(),
-        body: PageView(
-          controller: _pageController,
-          children: _buildScreens(),
-          onPageChanged: (i) => setState(() => _currentIndex = i),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (i) {
-              setState(() => _currentIndex = i);
-              _pageController.jumpToPage(i);
-            },
-            items: const [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.assignment), label: 'SERVICIOS'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.balance), label: 'MOVIMIENTOS'),
-            ],
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Color.fromARGB(255, 230, 121, 121),
-            backgroundColor: const Color(0xFF841813),
             ),
-        );
-    }
+          ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      drawer: _buildDrawer(remoteUser),
+      body: PageView(
+        controller: _pageController,
+        children: _buildScreens(),
+        onPageChanged: (i) => setState(() => _currentIndex = i),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (i) {
+          setState(() => _currentIndex = i);
+          _pageController.jumpToPage(i);
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.assignment), label: 'SERVICIOS'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.balance), label: 'MOVIMIENTOS'),
+        ],
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Color.fromARGB(255, 230, 121, 121),
+        backgroundColor: const Color(0xFF841813),
+      ),
+    );
+  }
 }
+
 class _BulletItem extends StatelessWidget {
   final String text;
   const _BulletItem({required this.text});
@@ -445,7 +533,7 @@ class _BulletItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: MyTextStyles.inputTextStyle4,
+              style: MyTextStyles.inputTextStyle7,
             ),
           ),
         ],

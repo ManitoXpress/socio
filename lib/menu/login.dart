@@ -12,6 +12,7 @@ import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/Utils/deleteAccount.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:google_fonts/google_fonts.dart';
@@ -41,6 +42,7 @@ class _LoginFormState extends State<LoginScreen> {
   bool isPasswordVisible = false;
   bool isLoadingGoogle = false; // Indicador de carga para Google
   bool isLoadingApple = false; // Indicador de carga para Apple
+  bool isLoadingAnonymous = false; // Indicador de carga para Apple
 
   rive.StateMachineController? stateMachineController;
   final TextEditingController _emailController = TextEditingController();
@@ -139,23 +141,20 @@ class _LoginFormState extends State<LoginScreen> {
     });
   }
   Future<void> _signInAsGuest() async {
+  setState(() => isLoadingAnonymous = true);
   try {
-    print("Usuario ingresó como invitado");
-    // Navegar a la pantalla de inicio pasando el flag isGuest y datos dummy
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomeScreen(
-          userData: UserData.guest(), // Implementa un constructor o método factory para invitados
-          registrationData: RegistrationData.guest(),
-          isGuest: true,
-        ),
-      ),
-    );
+    // Llamas a tu controlador para manejo uniforme
+    await LoginScreenController.signInAnonymously(context);
+    // No hace falta llamar onLoginSuccess() porque dentro
+    // de signInAnonymously ya navega al siguiente screen.
   } catch (e) {
     print('Error al iniciar como invitado: $e');
+    // Quizás mostrar _showErrorDialog(context, '…');
+  } finally {
+    setState(() => isLoadingAnonymous = false);
   }
 }
+
 
   void _launchDeleteAccountURL() async {
     const url = 'https://manitosxpress.com/#/DeleteAccount';
@@ -341,41 +340,7 @@ class _LoginFormState extends State<LoginScreen> {
                             ),
                     ),
                     SizedBox(width: 10.w), // Espacio entre los botones
-                   // Botón de Invitado
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey, // Color neutral para el botón de invitado
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: _signInAsGuest, // Llama a la función de inicio como invitado
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 40.r,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.person_outline,
-                              color: Colors.black,
-                              size: 30.r, // Tamaño ajustado del icono
-                            ),
-                            SizedBox(height: 4.h), // Espacio entre icono y texto
-                            Text(
-                              'Invitado',
-                              style: GoogleFonts.lato(
-                                color: Colors.black,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-      
-                  SizedBox(width: 10.w),
+         
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Color(0xFF841813),
@@ -415,44 +380,44 @@ class _LoginFormState extends State<LoginScreen> {
                   ],
                 ),
                  SizedBox(height: 20.h), 
-                // Botón de Eliminar Cuenta
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF1A819A), // Color rojo para el botón de eliminar
-                    shape: CircleBorder(),
-                    padding: EdgeInsets.all(3.w),
-                  ),
-                  onPressed: _launchDeleteAccountURL,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    radius: 40.r,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 37.r,
+                // Row with Delete and Guest buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                 
+                    // Invitado
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: const CircleBorder(),
+                        padding: EdgeInsets.all(3.w),
+                      ),
+                      onPressed: isLoadingAnonymous ? null : _signInAsGuest,
                       child: CircleAvatar(
-                        radius: 35.r,
                         backgroundColor: Colors.white,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.delete,
-                              color: Colors.red,
-                            ),
-                            Text(
-                              'Eliminar',
-                              style: GoogleFonts.lato(
-                                color: Colors.red,
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
+                        radius: 35.r,
+                        child: isLoadingAnonymous
+                            ? const CircularProgressIndicator()
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.person_outline, color: Colors.black, size: 30.r),
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    'Invitado',
+                                    style: GoogleFonts.lato(
+                                      color: Colors.black,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
+                SizedBox(height: 20.h),
               ],
             ),
           ),

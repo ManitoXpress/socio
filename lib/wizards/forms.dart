@@ -1,15 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/provider/providerRegistration.dart';
 
 class ServiceDataWizard extends StatefulWidget {
   final VoidCallback onNextStep;
+  final UserData userData;
 
   const ServiceDataWizard({
     Key? key,
     required this.onNextStep,
+    required this.userData,
   }) : super(key: key);
 
   @override
@@ -24,19 +28,35 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
 
   final List<String> qrOptions = ['Marque aqui', 'SI', 'NO'];
   final List<String> invoiceOptions = ['Marque aqui', 'SI', 'NO'];
+  late bool _isNameEditable;
 
   @override
   void initState() {
     super.initState();
+    final user = FirebaseAuth.instance.currentUser;
     final prov = Provider.of<RegistrationProvider>(context, listen: false);
-    fullNameController = TextEditingController(text: prov.registrationData.displayName);
+    final providers = user?.providerData.map((p) => p.providerId).toList() ?? [];
+
+  if (providers.contains('google.com')) {
+    // Si vino por Google: mostramos su nombre y NO es editable
+    fullNameController = TextEditingController(text: user?.displayName ?? '');
+    _isNameEditable = false;
+  } else if (providers.contains('apple.com')) {
+    // Si vino por Apple/iCloud: ponemos “Private” y NO editable
+    fullNameController = TextEditingController(text: 'Private');
+    _isNameEditable = false;
+  } else {
+    // Si es otro flujo (registro manual, etc): sí permitimos editar
+    fullNameController = TextEditingController(text: prov.registrationData.displayName );
+    _isNameEditable = true;
+  }
     idCardController = TextEditingController(text: prov.registrationData.idCardNumber);
     phoneController = TextEditingController(text: prov.registrationData.phoneNumber);
     referralController = TextEditingController(text: prov.registrationData.referralCode);
   }
 
   bool _isValid() {
-    return fullNameController.text.isNotEmpty &&
+    return
         idCardController.text.isNotEmpty &&
         phoneController.text.isNotEmpty;
   }
@@ -101,15 +121,27 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             "Paso 1: Rellena el formulario con tus datos",
             style: MyTextStyles.drawerButtonTextStyle2,
           ),
-          SizedBox(height: 20),
-          _buildStyledTextField(
-            controller: fullNameController,
-            hintText: "Nombre completo",
-            onChanged: (value) {
-              prov.registrationData.displayName = value;
-              prov.notifyListeners();
-            },
-          ),
+          TextField(
+                  controller: fullNameController,
+                  enabled: _isNameEditable,
+                  decoration: InputDecoration(
+                    prefixIcon: Icon(Icons.person, color: Color(0xFF84090D)),
+                    hintText: 'Nombre completo',
+                    filled: true,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF84090D)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  onChanged: _isNameEditable
+                      ? (value) {
+                          prov.registrationData.displayName = value;
+                          prov.notifyListeners();
+                          
+                        }
+                      : null,
+                ),
           SizedBox(height: 20),
           _buildStyledTextField(
             controller: idCardController,

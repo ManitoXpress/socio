@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
@@ -15,6 +16,60 @@ import 'package:http/http.dart' as http;
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
+  Future<http.Response> updateFcmToken(
+    String userId,
+    String authToken,
+    String fcmToken,
+  ) async {
+    try {
+      final body = jsonEncode({'fcmToken': fcmToken});
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/workers/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: body,
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('✅ FCM token actualizado en backend');
+      } else {
+        debugPrint('❌ Error al actualizar FCM token: ${response.statusCode}');
+      }
+
+      return response;
+    } catch (e) {
+      debugPrint('❌ Excepción actualizando FCM token: $e');
+      rethrow;
+    }
+  }
+  Future<bool> deleteWorker(String userId, String authToken) async {
+  try {
+    final url = Uri.parse('$baseUrl/workers/$userId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      debugPrint('✅ Worker eliminado correctamente');
+      return true;
+    } else {
+      debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+      return false;
+    }
+  } catch (e) {
+    debugPrint('❌ Excepción al eliminar worker: $e');
+    return false;
+  }
+}
+
+
 
   Future<http.Response> sendTokenAndUserDataToServer({
     required String? token,
@@ -37,6 +92,41 @@ class ApiService {
       throw Exception('Error al enviar datos al servidor: $e');
     }
   }
+  Future<String?> _getToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Usuario no autenticado');
+    }
+    return await user.getIdToken(true);
+  }
+  /// Añade un comentario al servicio (hace PATCH solo de la lista comments)
+  Future<http.Response> addCommentToService({
+    required String serviceId,
+    required Map<String, String> comment,
+  }) async {
+    final token = await _getToken();
+
+    final url = Uri.parse('$baseUrl/services/$serviceId');
+    final body = jsonEncode({'comments': [comment]});
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+          'Error añadiendo comentario: '
+              '${response.statusCode} ${response.body}'
+      );
+    }
+    return response;
+  }
+
   Future<bool> checkProposalExists(String serviceId, String workerId) async {
     try {
       // Intentar obtener un token actualizado

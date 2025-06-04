@@ -94,31 +94,42 @@ class LoginScreenController {
   }
 
   // Navegación según el estado del usuario
-  static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) async {
-    final registrationController = RegistrationController();
+static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alreadyRegistered = false}) async {
+  final registrationController = RegistrationController();
+  final user = FirebaseAuth.instance.currentUser;
 
-    if (alreadyRegistered) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final userData = await fetchUserData(user.uid); // Obtén los datos del usuario
-        final registrationData = userData.registrationData;
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => HomeScreen(registrationData: registrationData, userData: userData),
-          ),
-        );
-      }
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FirstTimeLoginScreen(registrationController: registrationController),
-        ),
-      );
-    }
+  if (user == null) {
+    // Si no hay usuario autenticado, podrías redirigir a login o lanzar un error
+    return;
   }
+
+  final userData = await fetchUserData(user.uid); // Obtener datos del usuario
+
+  if (alreadyRegistered) {
+    final registrationData = userData.registrationData;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+          registrationData: registrationData,
+          userData: userData,
+        ),
+      ),
+    );
+  } else {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FirstTimeLoginScreen(
+          registrationController: registrationController,
+          userData: userData, // 👉 Pasar userData también aquí
+        ),
+      ),
+    );
+  }
+}
+
 
   static Future<void> _updateLoginState(bool isLoggedIn) async {
     final prefs = await SharedPreferences.getInstance();
@@ -161,6 +172,84 @@ class LoginScreenController {
       _showErrorDialog(context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
     }
   }
+   static Future<void> signInAnonymously(BuildContext context) async {
+  try {
+    final authResult = await FirebaseAuth.instance.signInAnonymously();
+    final user = authResult.user;
+    if (user == null) return;
+
+    // (Opcional) Si quieres mantener hospedado un UserData mínimo, créalo aquí.
+    final userData = UserData(
+      userId: user.uid,
+      displayName: '',
+      email: '',
+      phoneNumber: '',
+      location: {},
+      paymentType: '',
+      selectedCountryCode: '',
+      registrationData: RegistrationData(
+        userId: user.uid,
+        displayName: '',
+        devicesId: '',
+        fcmToken: '',
+        phoneNumber: '',
+        paymentType: '',
+        selectedCountryCode: '',
+        email: '',
+        location: {},
+        points: 0,
+        idCardNumber: '',
+        imagePath: '',
+        imagePathList: [],
+        idDocumentImagePath: '',
+        idDocumentImagePath2: '',
+        criminalRecordImagePath: '',
+        certificateImagePaths: [],
+        expertises: [],
+        expLevel: [],
+        referralCode: '',
+        codeReferral: '',
+        verificationStatus: '',
+      ),
+      getToken: '',
+      referralCode: '',
+      points: 0,
+      idCardNumber: '',
+      imagePath: '',
+      pdfPathController: '',
+      criminalRecordImagePath: '',
+      idDocumentImagePath: '',
+      idDocumentImagePath2: '',
+      medicalLicenseImagePath: '',
+      professionalTitleImagePath: '',
+      expertises: [],
+      expLevel: [],
+      certificateImagePaths: [],
+      referrerWorkerId: '',
+      verificationStatus: '',
+    );
+
+    // Guarda en Firestore si lo necesitas
+    await storeUserData(user);
+    // Aquí puedes guardar el userData en tu base de datos Firestore si es necesario
+    await _updateLoginState(true);
+
+    // Ahora indicamos que YA está “registrado”
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          userData: userData,
+          registrationData: userData.registrationData,
+          isGuest: true,            // ← aquí
+        ),
+      ),
+    );
+
+  } catch (e) {
+    print('Error durante el inicio de sesión anónima: $e');
+    _showErrorDialog(context, 'No se pudo iniciar sesión como invitado.');
+  }
+}
 
   // Inicio de sesión con Google
   static Future<void> signInWithGoogle(BuildContext context) async {

@@ -106,7 +106,7 @@ class HistorialProvider extends ChangeNotifier {
         hasOffer: false,
         offers: [],
         devicesId: '',
-        subcategoryName: '',
+        subcategoryName: '', CreatedAt: '',
       ),
       deviceId,
     )

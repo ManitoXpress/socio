@@ -50,10 +50,6 @@ void main() async {
   if (Platform.isIOS) {
     await requestTrackingPermission(); // Solo en iOS
   }
-
-  // Inicializar el servicio de notificaciones
-  await FCMService().init();
-
   // Obtener y guardar Device ID
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
@@ -96,6 +92,18 @@ Future<void> requestTrackingPermission() async {
     }
   }
 }
+Future<void> requestNotificationPermissions() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  print('User granted permission: ${settings.authorizationStatus}');
+}
+
 
 Future<String> obtenerDeviceId() async {
   try {
@@ -136,6 +144,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+  requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
+  _checkLoginStatus();
+});
+
 
     isLoading = true;
     _checkLoginStatus(); // Llama directamente a la función
@@ -190,7 +203,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             0xFF1A819A,
             <int, Color>{
               50: Color(0xFF84090D),
-              100: Color(0xFF84090D),
+              100: Color.fromARGB(255, 127, 108, 109),
               200: Color(0xFF84090D),
               300: Color(0xFF84090D),
               400: Color(0xFF84090D),

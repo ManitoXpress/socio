@@ -235,7 +235,7 @@ class ServiceRepository {
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: item['subcategoryName'] ?? '',
+      subcategoryName: item['subcategoryName'] ?? '', CreatedAt: item['CreatedAt'] ?? '',
     );
   }
 
