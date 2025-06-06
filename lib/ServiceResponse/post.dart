@@ -368,6 +368,34 @@ class ApiService {
     }
     return response;
   }
+  Future<String> getUploadedImageUrl(File image, String userId) async {
+    try {
+      final String extension = image.path.split('.').last;
+      final String imageName =
+          'userID_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      final String userFolderPath = '$userId/';  // Agregar barra al final
+      final String imagePath = '$userFolderPath$imageName';
+      // Concatenar correctamente
+
+      if (await image.exists()) {
+        Reference ref = storage.ref().child(imagePath);
+        UploadTask uploadTask = ref.putFile(image);
+
+        await uploadTask.whenComplete(() {
+          print('Imagen cargada con éxito en Firebase Storage');
+        });
+
+        final imageUrl = await ref.getDownloadURL();
+        print('URL de la imagen en Firebase Storage: $imageUrl');
+        return imageUrl;
+      } else {
+        throw Exception('El archivo de imagen no existe.');
+      }
+    } catch (e) {
+      print('Error al cargar la imagen en Firebase Storage: $e');
+      throw Exception('Error al cargar la imagen en Firebase Storage: $e');
+    }
+  }
 
 
   Future<String> uploadImageToFirebaseStorage(File image, String userId) async {

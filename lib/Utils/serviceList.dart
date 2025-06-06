@@ -3,193 +3,604 @@ import 'package:socio/Screens/customtickets.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:socio/Utils/timeLines.dart';
 import 'package:socio/Utils/workerDetails.dart';
+import 'package:socio/models/expertise_models.dart';
+import 'package:socio/models/offer_models.dart';
+import 'package:socio/models/serviceRequest_models.dart';
+
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:socio/provider/service_partner_provider.dart';
+
+
 class ServiceListBuilder {
+  /// Lista de servicios en estado “offer” (ofertas hechas por el socio).
   static Widget buildOfferList(
-      List<ServiceRequest> services,
-      List<Offer> offers,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      final UserData userData,
-      final ApiService apiService,
-      final ApiService2 apiService2) {
-    final serviceDataFetcher = ServiceDataFetcher();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: offers.length,
-        itemBuilder: (context, index) {
-          final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
-          final service = services.firstWhere(
-            (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
-          );
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails =
-                    await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
-                if (workerDetails == null) return;
-                if (userData is UserData) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ServiceFormWithTimeline(
-                        serviceRequest: ServiceRequest(
-                          id: offer.serviceId,
-                          serviceDateTime: '',
-                          devicesId: '',
-                          description: '',
-                          images: [],
-                          location: service.location,
-                          offeredPrice: offer.offeredPrice,
-                          serviceType: ServiceType(
-                              id: '',
-                              name: '',
-                              selectedDate: '',
-                              selectedTime: ''),
-                          workerId: offer.workerId,
-                          isFavorite: false,
-                          acceptedTerms: false,
-                          expertises: offer.expertises,
-                          status: Status(id: '', name: ''),
-                          subcategoryName: offer.subcategoryName,
-                          hasOffer: false,
-                          offers: [],
-                          workerDetails: workerDetails,
-                          userId: '',
-                          CreatedAt: '',
-                        ),
-                        initialStatus: offer.status.id,
-                        onComplete: (status) {
-                          print('Estado completado: $status');
-                        },
-                        onStatusChanged: (newStatus) {
-                          print('Estado cambiado a: $newStatus');
-                        },
-                        userData: userData, // Solo lo pasa si es UserData
-                        workerId: offer.workerId,
-                        workerDetails: workerDetails,
-                        offers: [],
-                        images: [],
-                        apiService: apiService, apiService2: apiService2,
-                        userId: service.userId,
-                        displayName: userData.displayName, offer: offer,
-                      ),
-                    ),
-                  );
-                }
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
-            },
-            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
-          );
-        },
-      ),
-    );
-  }
-
-  // ignore: non_constant_identifier_names
-  static Widget in_progressList(
-      List<ServiceRequest> services,
-      List<Offer> offers,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      final UserData userData,
-      final ApiService apiService,
-      final ApiService2 apiService2) {
-    final serviceDataFetcher = ServiceDataFetcher();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: offers.length,
-        itemBuilder: (context, index) {
-          final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
-          final service = services.firstWhere(
-            (s) => s.id == offer.serviceId,
-            orElse: () => throw Exception(
-                'Servicio no encontrado para oferta ${offer.id}'),
-          );
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails =
-                    await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
-                if (workerDetails == null) return;
-                if (userData is UserData) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ServiceFormWithTimeline(
-                        serviceRequest: ServiceRequest(
-                          id: offer.serviceId,
-                          serviceDateTime: '',
-                          devicesId: '',
-                          description: '',
-                          images: [],
-                          location: service.location,
-                          offeredPrice: offer.offeredPrice,
-                          serviceType: ServiceType(
-                              id: '',
-                              name: '',
-                              selectedDate: '',
-                              selectedTime: ''),
-                          workerId: offer.workerId,
-                          isFavorite: false,
-                          acceptedTerms: false,
-                          expertises: offer.expertises,
-                          status: Status(id: '', name: ''),
-                          subcategoryName: service.subcategoryName,
-                          hasOffer: false,
-                          offers: [],
-                          workerDetails: workerDetails,
-                          userId: service.userId,
-                          CreatedAt: '',
-                        ),
-                        initialStatus: offer.status.id,
-                        onComplete: (status) {
-                          print('Estado completado: $status');
-                        },
-                        onStatusChanged: (newStatus) {
-                          print('Estado cambiado a: $newStatus');
-                        },
-                        userData: userData, // Solo lo pasa si es UserData
-                        workerId: offer.workerId,
-                        workerDetails: workerDetails,
-                        offers: [],
-                        images: [],
-                        apiService: apiService, apiService2: apiService2,
-                        userId: service.userId,
-                        displayName: userData.displayName, offer: offer,
-                      ),
-                    ),
-                  );
-                }
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
-            },
-            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
-          );
-        },
-      ),
-    );
-  }
-
-  static Widget buildServiceListAvailable(
     List<ServiceRequest> services,
-    List<Offer> allOffers,
+    List<Offer> offers,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    final UserData userData,
+    final ApiService apiService,
+    final ApiService2 apiService2,
+  ) {
+    final serviceDataFetcher = ServiceDataFetcher();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: ListView.builder(
+        itemCount: offers.length,
+        itemBuilder: (context, index) {
+          final offer = offers[index];
+          // Busca el ServiceRequest correspondiente a esta oferta
+          final service = services.firstWhere(
+            (s) => s.id == offer.serviceId,
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
+          );
+
+          return GestureDetector(
+            onTap: () async {
+              // 1) Traemos detalles del trabajador
+              final workerDetails =
+                  await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+              if (workerDetails == null) return;
+
+              // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+              final serviceModel = ServiceRequestModel(
+                id: service.id,
+                status: service.status.id,
+                date: service.serviceType.selectedDate,
+                time: service.serviceType.selectedTime,
+                description: service.description,
+                location: service.location,
+                images: service.images,
+                expertises: service.expertises
+                    .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                    .toList(),
+                rawOffers: [],    // El proveedor (ServicePartnerProvider) lo llenará
+                rawComments: [],  // idem
+                userId: service.userId,
+                workerId: service.workerId,
+                completionImageUrl: null,
+              );
+
+              // 3) Mapeamos Offer -> OfferModel
+              final offerModel = OfferModel(
+                id: offer.id,
+                serviceId: offer.serviceId,
+                workerId: offer.workerId,
+                offeredPrice: offer.offeredPrice,
+                status: offer.status.id,
+                subcategoryName: offer.subcategoryName,
+                expertises: offer.expertises
+                    .map((e) => Expertise(id: e.id, name: e.name))
+                    .toList(),
+                clientNIT: '',
+                extraCosts: offer.extraCosts,
+                totalPrice: offer.totalPrice,
+                paymentStatus: '',
+             
+              );
+
+              // 4) Navegamos al timeline del socio, inyectando ServicePartnerProvider
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider<ServicePartnerProvider>(
+                    create: (_) {
+                      final prov = ServicePartnerProvider(
+                        serviceRequest: serviceModel,
+                        offer: offerModel,
+                        userData: userData,
+                        workerId: offer.workerId,
+                        offers: offers
+                            .map((o) => OfferModel(
+                                  id: o.id,
+                                  serviceId: o.serviceId,
+                                  workerId: o.workerId,
+                                  offeredPrice: o.offeredPrice,
+                                  status: o.status.id,
+                                  subcategoryName: o.subcategoryName,
+                                  expertises: o.expertises
+                                      .map((e) => Expertise(id: e.id, name: e.name))
+                                      .toList(),
+                                  clientNIT: '',
+                                  extraCosts: o.extraCosts,
+                                  totalPrice: o.totalPrice,
+                                  paymentStatus: '',
+                              
+                                ))
+                            .toList(),
+                        apiService: apiService,
+                        apiService2: apiService2,
+                        userId: service.userId,
+                      );
+                      return prov;
+                    },
+                    child: ServiceFormWithTimelineSocio(
+                      serviceRequest: serviceModel,
+                      offer: offerModel,
+                      userData: userData,
+                      workerId: offer.workerId,
+                      offers: offers
+                          .map((o) => OfferModel(
+                                id: o.id,
+                                serviceId: o.serviceId,
+                                workerId: o.workerId,
+                                offeredPrice: o.offeredPrice,
+                                status: o.status.id,
+                                subcategoryName: o.subcategoryName,
+                                expertises: o.expertises
+                                    .map((e) => Expertise(id: e.id, name: e.name))
+                                    .toList(),
+                                clientNIT: '',
+                                extraCosts: o.extraCosts,
+                                totalPrice: o.totalPrice,
+                                paymentStatus: '',
+                  
+                              ))
+                          .toList(),
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Lista de servicios en estado “in_progress” (socios que ya fueron aceptados).
+  static Widget inProgressList(
+    List<ServiceRequest> services,
+    List<Offer> offers,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    final UserData userData,
+    final ApiService apiService,
+    final ApiService2 apiService2,
+  ) {
+    final serviceDataFetcher = ServiceDataFetcher();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: ListView.builder(
+        itemCount: offers.length,
+        itemBuilder: (context, index) {
+          final offer = offers[index];
+          final service = services.firstWhere(
+            (s) => s.id == offer.serviceId,
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
+          );
+
+          return GestureDetector(
+            onTap: () async {
+              // 1) Traemos detalles del trabajador
+              final workerDetails =
+                  await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+              if (workerDetails == null) return;
+
+              // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+              final serviceModel = ServiceRequestModel(
+                id: service.id,
+                status: service.status.id,
+                date: service.serviceType.selectedDate,
+                time: service.serviceType.selectedTime,
+                description: service.description,
+                location: service.location,
+                images: service.images,
+                expertises: service.expertises
+                    .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                    .toList(),
+                rawOffers: [],
+                rawComments: [],
+                userId: service.userId,
+                workerId: service.workerId,
+                completionImageUrl: null,
+              );
+
+              // 3) Mapeamos Offer -> OfferModel
+              final offerModel = OfferModel(
+                id: offer.id,
+                serviceId: offer.serviceId,
+                workerId: offer.workerId,
+                offeredPrice: offer.offeredPrice,
+                status: offer.status.id,
+                subcategoryName: offer.subcategoryName,
+                expertises: offer.expertises
+                    .map((e) => Expertise(id: e.id, name: e.name))
+                    .toList(),
+                clientNIT: '',
+                extraCosts: offer.extraCosts,
+                totalPrice: offer.totalPrice,
+                paymentStatus: '',
+        
+              );
+
+              // 4) Navegamos al timeline del socio
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider<ServicePartnerProvider>(
+                    create: (_) {
+                      final prov = ServicePartnerProvider(
+                        serviceRequest: serviceModel,
+                        offer: offerModel,
+                        userData: userData,
+                        workerId: offer.workerId,
+                        offers: offers
+                            .map((o) => OfferModel(
+                                  id: o.id,
+                                  serviceId: o.serviceId,
+                                  workerId: o.workerId,
+                                  offeredPrice: o.offeredPrice,
+                                  status: o.status.id,
+                                  subcategoryName: o.subcategoryName,
+                                  expertises: o.expertises
+                                      .map((e) =>
+                                          Expertise(id: e.id, name: e.name))
+                                      .toList(),
+                                  clientNIT: '',
+                                  extraCosts: o.extraCosts,
+                                  totalPrice: o.totalPrice,
+                                  paymentStatus: '',
+                      
+                                ))
+                            .toList(),
+                        apiService: apiService,
+                        apiService2: apiService2,
+                        userId: service.userId,
+                      );
+                      return prov;
+                    },
+                    child: ServiceFormWithTimelineSocio(
+                      serviceRequest: serviceModel,
+                      offer: offerModel,
+                      userData: userData,
+                      workerId: offer.workerId,
+                      offers: offers
+                          .map((o) => OfferModel(
+                                id: o.id,
+                                serviceId: o.serviceId,
+                                workerId: o.workerId,
+                                offeredPrice: o.offeredPrice,
+                                status: o.status.id,
+                                subcategoryName: o.subcategoryName,
+                                expertises: o.expertises
+                                    .map((e) =>
+                                        Expertise(id: e.id, name: e.name))
+                                    .toList(),
+                                clientNIT: '',
+                                extraCosts: o.extraCosts,
+                                totalPrice: o.totalPrice,
+                                paymentStatus: '',
+                      
+                              ))
+                          .toList(),
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Lista de servicios “available” (sin ofertas aún).
+static Widget buildServiceListAvailable(
+  List<ServiceRequest> services,
+  List<Offer> allOffers,
+  double screenWidth,
+  double screenHeight,
+  String userId,           // este es tu userId (el socio que navega)
+  dynamic userData,        // tu UserData del socio
+  final ApiService apiService,
+  final ApiService2 apiService2,
+) {
+  final serviceDataFetcher = ServiceDataFetcher();
+  // Filtramos servicios que no tengan ninguna oferta
+  final offeredIds = allOffers.map((o) => o.serviceId).toSet();
+  final availableServices =
+      services.where((s) => !offeredIds.contains(s.id)).toList();
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    child: ListView.builder(
+      itemCount: availableServices.length,
+      itemBuilder: (context, index) {
+        final service = availableServices[index];
+
+        // Creamos un Offer “dummy” para poder navegar, aunque no exista oferta real
+        // Importante: aquí ponemos workerId = userData.userId, para que el provider
+        // reciba siempre un workerId válido.
+        final dummyOffer = OfferModel(
+          id: '',
+          serviceId: service.id,
+          workerId: userData.userId,    // <--- pongo el ID del socio actual
+          offeredPrice: 0.0,
+          status: '',
+          subcategoryName: '',
+          expertises: service.expertises
+              .map((e) => Expertise(id: e.id, name: e.name))
+              .toList(),
+          clientNIT: '',
+          extraCosts: 0.0,
+          totalPrice: 0.0,
+          paymentStatus: '',
+        );
+
+        return GestureDetector(
+          onTap: () async {
+            // 1) Traemos detalles del trabajador (opcional, puede ser nulo si aún no hay oferta)
+            final workerDetails =
+                await serviceDataFetcher.fetchWorkerDetails(userData.userId);
+                // <-- aquí pedimos los detalles de MI perfil de trabajador
+
+            // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+            final serviceModel = ServiceRequestModel(
+              id: service.id,
+              status: service.status.id,
+              date: service.serviceType.selectedDate,
+              time: service.serviceType.selectedTime,
+              description: service.description,
+              location: service.location,
+              images: service.images,
+              expertises: service.expertises
+                  .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                  .toList(),
+              rawOffers: [],
+              rawComments: [],
+              userId: service.userId,
+              workerId: userData.userId,   // <--- repito mi userId del socio
+              completionImageUrl: null,
+            );
+
+            // 3) Navegamos al formulario con provider. Fíjate que pasamos workerId=userData.userId
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    ChangeNotifierProvider<ServicePartnerProvider>(
+                  create: (_) {
+                    final prov = ServicePartnerProvider(
+                      serviceRequest: serviceModel,
+                      offer: dummyOffer,
+                      userData: userData,
+                      workerId: userData.userId,    // <--- ID del socio que oferta
+                      offers: allOffers
+                          .map((o) => OfferModel(
+                                id: o.id,
+                                serviceId: o.serviceId,
+                                workerId: o.workerId,
+                                offeredPrice: o.offeredPrice,
+                                status: o.status.id,
+                                subcategoryName: o.subcategoryName,
+                                expertises: o.expertises
+                                    .map((e) =>
+                                        Expertise(id: e.id, name: e.name))
+                                    .toList(),
+                                clientNIT: '',
+                                extraCosts: o.extraCosts,
+                                totalPrice: o.totalPrice,
+                                paymentStatus: '',
+                              ))
+                          .toList(),
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                    );
+                    return prov;
+                  },
+                  child: ServiceFormWithTimelineSocio(
+                    serviceRequest: serviceModel,
+                    offer: dummyOffer,
+                    userData: userData,
+                    workerId: userData.userId,   // <--- paso el mismo workerId aquí
+                    offers: allOffers
+                        .map((o) => OfferModel(
+                              id: o.id,
+                              serviceId: o.serviceId,
+                              workerId: o.workerId,
+                              offeredPrice: o.offeredPrice,
+                              status: o.status.id,
+                              subcategoryName: o.subcategoryName,
+                              expertises: o.expertises
+                                  .map((e) =>
+                                      Expertise(id: e.id, name: e.name))
+                                  .toList(),
+                              clientNIT: '',
+                              extraCosts: o.extraCosts,
+                              totalPrice: o.totalPrice,
+                              paymentStatus: '',
+                            ))
+                        .toList(),
+                    apiService: apiService,
+                    apiService2: apiService2,
+                    userId: service.userId,
+                    displayName: userData.displayName,
+                  ),
+                ),
+              ),
+            );
+          },
+          child: _buildServiceCard(service, screenWidth, screenHeight),
+        );
+      },
+    ),
+  );
+}
+
+
+  /// Lista de servicios “completed” (completados).
+  static Widget buildServiceListComplete(
+    List<ServiceRequest> services,
+    List<Offer> offers,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    final UserData userData,
+    final ApiService apiService,
+    final ApiService2 apiService2,
+  ) {
+    final serviceDataFetcher = ServiceDataFetcher();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      child: ListView.builder(
+        itemCount: offers.length,
+        itemBuilder: (context, index) {
+          final offer = offers[index];
+          final service = services.firstWhere(
+            (s) => s.id == offer.serviceId,
+            orElse: () => throw Exception(
+                'Servicio no encontrado para oferta ${offer.id}'),
+          );
+
+          return GestureDetector(
+            onTap: () async {
+              // 1) Traemos detalles del trabajador
+              final workerDetails =
+                  await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
+              if (workerDetails == null) return;
+
+              // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+              final serviceModel = ServiceRequestModel(
+                id: service.id,
+                status: service.status.id,
+                date: service.serviceType.selectedDate,
+                time: service.serviceType.selectedTime,
+                description: service.description,
+                location: service.location,
+                images: service.images,
+                expertises: service.expertises
+                    .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                    .toList(),
+                rawOffers: [],
+                rawComments: [],
+                userId: service.userId,
+                workerId: service.workerId,
+                completionImageUrl: null,
+              );
+
+              // 3) Mapeamos Offer -> OfferModel
+              final offerModel = OfferModel(
+                id: offer.id,
+                serviceId: offer.serviceId,
+                workerId: offer.workerId,
+                offeredPrice: offer.offeredPrice,
+                status: offer.status.id,
+                subcategoryName: offer.subcategoryName,
+                expertises: offer.expertises
+                    .map((e) => Expertise(id: e.id, name: e.name))
+                    .toList(),
+                clientNIT: '',
+                extraCosts: offer.extraCosts,
+                totalPrice: offer.totalPrice,
+                paymentStatus: '',
+             
+              );
+
+              // 4) Navegamos al timeline del socio
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider<ServicePartnerProvider>(
+                    create: (_) {
+                      final prov = ServicePartnerProvider(
+                        serviceRequest: serviceModel,
+                        offer: offerModel,
+                        userData: userData,
+                        workerId: offer.workerId,
+                        offers: offers
+                            .map((o) => OfferModel(
+                                  id: o.id,
+                                  serviceId: o.serviceId,
+                                  workerId: o.workerId,
+                                  offeredPrice: o.offeredPrice,
+                                  status: o.status.id,
+                                  subcategoryName: o.subcategoryName,
+                                  expertises: o.expertises
+                                      .map((e) =>
+                                          Expertise(id: e.id, name: e.name))
+                                      .toList(),
+                                  clientNIT: '',
+                                  extraCosts: o.extraCosts,
+                                  totalPrice: o.totalPrice,
+                                  paymentStatus: '',
+                
+                                ))
+                            .toList(),
+                        apiService: apiService,
+                        apiService2: apiService2,
+                        userId: service.userId,
+                      );
+                      return prov;
+                    },
+                    child: ServiceFormWithTimelineSocio(
+                      serviceRequest: serviceModel,
+                      offer: offerModel,
+                      userData: userData,
+                      workerId: offer.workerId,
+                      offers: offers
+                          .map((o) => OfferModel(
+                                id: o.id,
+                                serviceId: o.serviceId,
+                                workerId: o.workerId,
+                                offeredPrice: o.offeredPrice,
+                                status: o.status.id,
+                                subcategoryName: o.subcategoryName,
+                                expertises: o.expertises
+                                    .map((e) =>
+                                        Expertise(id: e.id, name: e.name))
+                                    .toList(),
+                                clientNIT: '',
+                                extraCosts: o.extraCosts,
+                                totalPrice: o.totalPrice,
+                                paymentStatus: '',
+                         
+                              ))
+                          .toList(),
+                      apiService: apiService,
+                      apiService2: apiService2,
+                      userId: service.userId,
+                      displayName: userData.displayName,
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Lista de servicios “cancelled” (cancelados).
+  static Widget buildServiceListCancelled(
+    List<ServiceRequest> services,
     double screenWidth,
     double screenHeight,
     String userId,
@@ -198,91 +609,88 @@ class ServiceListBuilder {
     final ApiService2 apiService2,
   ) {
     final serviceDataFetcher = ServiceDataFetcher();
-    // Filtrar servicios sin oferta
-    final offeredServiceIds = allOffers.map((o) => o.serviceId).toSet();
-    final availableServices =
-        services.where((s) => !offeredServiceIds.contains(s.id)).toList();
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
-        itemCount: availableServices.length,
+        itemCount: services.length,
         itemBuilder: (context, index) {
-          final service = availableServices[index];
-          final offerForService = allOffers.firstWhere(
-            (offer) => offer.serviceId == service.id,
-            orElse: () => Offer(
-              id: '',
-              serviceId: '',
-              offeredPrice: 0.0,
-              status: Status(id: '', name: ''),
-              subcategoryName: '',
-              expertises: [],
-              workerId: '',
-              extraCosts: 0.0,
-              totalPrice: 0.0,
-              hasOffer: false,
-              userToken: '',
-              createdAt: DateTime.now(),
-            ),
+          final service = services[index];
+          // Creamos un OfferModel “dummy” para la navegación
+          final dummyOffer = OfferModel(
+            id: '',
+            serviceId: service.id,
+            workerId: service.workerId,
+            offeredPrice: service.offeredPrice,
+            status: service.status.id,
+            subcategoryName: service.subcategoryName,
+            expertises: service.expertises
+                .map((e) => Expertise(id: e.id, name: e.name))
+                .toList(),
+            clientNIT: '',
+            extraCosts: 0.0,
+            totalPrice: 0.0,
+            paymentStatus: '',
+           
           );
+
           return GestureDetector(
             onTap: () async {
-              try {
-                final workerDetails = await serviceDataFetcher
-                    .fetchWorkerDetails(service.workerId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: service.serviceDateTime,
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: service.location,
-                        offeredPrice: service.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
+              // 1) Traemos detalles del trabajador
+              final workerDetails =
+                  await serviceDataFetcher.fetchWorkerDetails(service.workerId);
+              if (workerDetails == null) return;
+
+              // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+              final serviceModel = ServiceRequestModel(
+                id: service.id,
+                status: service.status.id,
+                date: service.serviceType.selectedDate,
+                time: service.serviceType.selectedTime,
+                description: service.description,
+                location: service.location,
+                images: service.images,
+                expertises: service.expertises
+                    .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                    .toList(),
+                rawOffers: [],
+                rawComments: [],
+                userId: service.userId,
+                workerId: service.workerId,
+                completionImageUrl: null,
+              );
+
+              // 3) Navegamos al timeline del socio
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider<ServicePartnerProvider>(
+                    create: (_) {
+                      final prov = ServicePartnerProvider(
+                        serviceRequest: serviceModel,
+                        offer: dummyOffer,
+                        userData: userData,
                         workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        CreatedAt: '',
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
+                        offers: [dummyOffer],
+                        apiService: apiService,
+                        apiService2: apiService2,
+                        userId: service.userId,
+                      );
+                      return prov;
+                    },
+                    child: ServiceFormWithTimelineSocio(
+                      serviceRequest: serviceModel,
+                      offer: dummyOffer,
                       userData: userData,
                       workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
+                      offers: [dummyOffer],
                       apiService: apiService,
                       apiService2: apiService2,
                       userId: service.userId,
                       displayName: userData.displayName,
-                      offer: offerForService,
                     ),
                   ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
+                ),
+              );
             },
             child: _buildServiceCard(service, screenWidth, screenHeight),
           );
@@ -291,195 +699,24 @@ class ServiceListBuilder {
     );
   }
 
-  static Widget buildServiceListComplete(
-  List<ServiceRequest> services,
-  List<Offer> offers,
-  double screenWidth,
-  double screenHeight,
-  String userId,
-  final UserData userData,
-  final ApiService apiService,
-  final ApiService2 apiService2,
-) {
-  final serviceDataFetcher = ServiceDataFetcher();
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-    child: ListView.builder(
-      itemCount: offers.length,
-      itemBuilder: (context, index) {
-        final offer = offers[index];
-
-        // Busca el ServiceRequest correspondiente a esta oferta
-        final service = services.firstWhere(
-          (s) => s.id == offer.serviceId,
-          orElse: () => throw Exception('Servicio no encontrado para oferta ${offer.id}'),
-        );
-
-        return GestureDetector(
-          onTap: () async {
-            try {
-              final workerDetails = await serviceDataFetcher.fetchWorkerDetails(offer.workerId);
-              if (workerDetails == null) return;
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ServiceFormWithTimeline(
-                    serviceRequest: ServiceRequest(
-                      id: offer.serviceId,
-                      serviceDateTime: '',
-                      devicesId: '',
-                      description: '',
-                      images: [],
-                      location: service.location,
-                      offeredPrice: offer.offeredPrice,
-                      serviceType: ServiceType(
-                          id: '',
-                          name: '',
-                          selectedDate: '',
-                          selectedTime: ''),
-                      workerId: offer.workerId,
-                      isFavorite: false,
-                      acceptedTerms: false,
-                      expertises: offer.expertises,
-                      status: Status(id: '', name: ''),
-                      subcategoryName: offer.subcategoryName,
-                      hasOffer: false,
-                      offers: [],
-                      workerDetails: workerDetails,
-                      userId: '',
-                      CreatedAt: '',
-                    ),
-                    initialStatus: offer.status.id,
-                    onComplete: (status) {
-                      print('Estado completado: $status');
-                    },
-                    onStatusChanged: (newStatus) {
-                      print('Estado cambiado a: $newStatus');
-                    },
-                    userData: userData,
-                    workerId: offer.workerId,
-                    workerDetails: workerDetails,
-                    offers: [],
-                    images: [],
-                    apiService: apiService,
-                    apiService2: apiService2,
-                    userId: service.userId,
-                    displayName: userData.displayName,
-                    offer: offer,
-                  ),
-                ),
-              );
-            } catch (e) {
-              print('Error al cargar los detalles del trabajador: $e');
-            }
-          },
-          child: _buildOfferCard(service, offer, screenWidth, screenHeight),
-        );
-      },
-    ),
-  );
-}
-
-
-  static Widget buildServiceListCancelled(
-      List<ServiceRequest> services,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      dynamic userData,
-      final ApiService apiService,
-      final ApiService2 apiService2) {
-    final serviceDataFetcher = ServiceDataFetcher();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: ListView.builder(
-        itemCount: services.length,
-        itemBuilder: (context, index) {
-          final service = services[index];
-          final offer = null; // Define offer as null
-          return GestureDetector(
-            onTap: () async {
-              try {
-                final workerDetails = await serviceDataFetcher
-                    .fetchWorkerDetails(service.workerId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: {},
-                        offeredPrice: service.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
-                        workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: service.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        CreatedAt: '',
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
-                      userData: userData,
-                      workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
-                      apiService: apiService,
-                      apiService2: apiService2,
-                      userId: service.userId,
-                      displayName: userData.displayName,
-                      offer: offer,
-                    ),
-                  ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
-            },
-            child: _buildOfferCard(service, offer, screenWidth, screenHeight),
-          );
-        },
-      ),
-    );
-  }
-
+  /// Constructor general si queremos una lista de servicios/​ofertas combinada.
   static Widget buildServiceList(
-      List<ServiceRequest> services,
-      List<Offer> offers,
-      double screenWidth,
-      double screenHeight,
-      String userId,
-      dynamic userData,
-      final ApiService apiService,
-      final ApiService2 apiService2) {
+    List<ServiceRequest> services,
+    List<Offer> offers,
+    double screenWidth,
+    double screenHeight,
+    String userId,
+    dynamic userData,
+    final ApiService apiService,
+    final ApiService2 apiService2,
+  ) {
     final serviceDataFetcher = ServiceDataFetcher();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: ListView.builder(
-        itemCount: services.length,
+        itemCount: offers.length,
         itemBuilder: (context, index) {
           final offer = offers[index];
-          // Busca el ServiceRequest correspondiente a esta oferta
           final service = services.firstWhere(
             (s) => s.id == offer.serviceId,
             orElse: () => throw Exception(
@@ -488,61 +725,116 @@ class ServiceListBuilder {
 
           return GestureDetector(
             onTap: () async {
-              try {
-                final workerDetails = await serviceDataFetcher
-                    .fetchWorkerDetails(service.workerId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceFormWithTimeline(
-                      serviceRequest: ServiceRequest(
-                        id: service.id,
-                        serviceDateTime: '',
-                        devicesId: '',
-                        description: '',
-                        images: [],
-                        location: service.location,
-                        offeredPrice: offer.offeredPrice,
-                        serviceType: ServiceType(
-                            id: '',
-                            name: '',
-                            selectedDate: '',
-                            selectedTime: ''),
+              // 1) Traemos detalles del trabajador
+              final workerDetails =
+                  await serviceDataFetcher.fetchWorkerDetails(service.workerId);
+              if (workerDetails == null) return;
+
+              // 2) Mapeamos ServiceRequest -> ServiceRequestModel
+              final serviceModel = ServiceRequestModel(
+                id: service.id,
+                status: service.status.id,
+                date: service.serviceType.selectedDate,
+                time: service.serviceType.selectedTime,
+                description: service.description,
+                location: service.location,
+                images: service.images,
+                expertises: service.expertises
+                    .map((e) => ExpertiseModel(id: e.id, name: e.name))
+                    .toList(),
+                rawOffers: [],
+                rawComments: [],
+                userId: service.userId,
+                workerId: service.workerId,
+                completionImageUrl: null,
+              );
+
+              // 3) Mapeamos Offer -> OfferModel
+              final offerModel = OfferModel(
+                id: offer.id,
+                serviceId: offer.serviceId,
+                workerId: offer.workerId,
+                offeredPrice: offer.offeredPrice,
+                status: offer.status.id,
+                subcategoryName: offer.subcategoryName,
+                expertises: offer.expertises
+                    .map((e) => Expertise(id: e.id, name: e.name))
+                    .toList(),
+                clientNIT: '',
+                extraCosts: offer.extraCosts,
+                totalPrice: offer.totalPrice,
+                paymentStatus: '',
+               
+              );
+
+              // 4) Navegamos al timeline
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider<ServicePartnerProvider>(
+                    create: (_) {
+                      final prov = ServicePartnerProvider(
+                        serviceRequest: serviceModel,
+                        offer: offerModel,
+                        userData: userData,
                         workerId: service.workerId,
-                        isFavorite: false,
-                        acceptedTerms: false,
-                        expertises: service.expertises,
-                        status: Status(id: '', name: ''),
-                        subcategoryName: offer.subcategoryName,
-                        hasOffer: false,
-                        offers: [],
-                        workerDetails: workerDetails,
-                        userId: '',
-                        CreatedAt: '',
-                      ),
-                      initialStatus: service.status.id,
-                      onComplete: (status) {
-                        print('Estado completado: $status');
-                      },
-                      onStatusChanged: (newStatus) {
-                        print('Estado cambiado a: $newStatus');
-                      },
+                        offers: offers
+                            .map((o) => OfferModel(
+                                  id: o.id,
+                                  serviceId: o.serviceId,
+                                  workerId: o.workerId,
+                                  offeredPrice: o.offeredPrice,
+                                  status: o.status.id,
+                                  subcategoryName: o.subcategoryName,
+                                  expertises: o.expertises
+                                      .map((e) =>
+                                          Expertise(id: e.id, name: e.name))
+                                      .toList(),
+                                  clientNIT: '',
+                                  extraCosts: o.extraCosts,
+                                  totalPrice: o.totalPrice,
+                                  paymentStatus: '',
+                         
+                                ))
+                            .toList(),
+                        apiService: apiService,
+                        apiService2: apiService2,
+                        userId: service.userId,
+                      );
+                      return prov;
+                    },
+                    child: ServiceFormWithTimelineSocio(
+                      serviceRequest: serviceModel,
+                      offer: offerModel,
                       userData: userData,
                       workerId: service.workerId,
-                      workerDetails: workerDetails,
-                      offers: [],
-                      images: [],
+                      offers: offers
+                          .map((o) => OfferModel(
+                                id: o.id,
+                                serviceId: o.serviceId,
+                                workerId: o.workerId,
+                                offeredPrice: o.offeredPrice,
+                                status: o.status.id,
+                                subcategoryName: o.subcategoryName,
+                                expertises: o.expertises
+                                    .map((e) =>
+                                        Expertise(id: e.id, name: e.name))
+                                    .toList(),
+                                clientNIT: '',
+                                extraCosts: o.extraCosts,
+                                totalPrice: o.totalPrice,
+                                paymentStatus: '',
+                    
+                              ))
+                          .toList(),
                       apiService: apiService,
                       apiService2: apiService2,
                       userId: service.userId,
                       displayName: userData.displayName,
-                      offer: offer,
                     ),
                   ),
-                );
-              } catch (e) {
-                print('Error al cargar los detalles del trabajador: $e');
-              }
+                ),
+              );
             },
             child: _buildOfferCard(service, offer, screenWidth, screenHeight),
           );
@@ -551,7 +843,8 @@ class ServiceListBuilder {
     );
   }
 
-  static Widget _buildOfferCard(ServiceRequest service, Offer offer,
+  static Widget _buildOfferCard(
+      ServiceRequest service, Offer offer,
       double screenWidth, double screenHeight) {
     return Container(
       margin: EdgeInsets.only(bottom: screenHeight * 0.02),
@@ -599,7 +892,8 @@ class ServiceListBuilder {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 30),
-                Text('Categoría:', style: MyTextStyles.drawerButtonTextStyle),
+                Text('Categoría:',
+                    style: MyTextStyles.drawerButtonTextStyle),
                 Text(category, style: MyTextStyles.drawerButtonTextStyle8),
                 SizedBox(height: screenHeight * 0.01),
                 Text('Servicio:', style: MyTextStyles.drawerButtonTextStyle),
@@ -610,7 +904,7 @@ class ServiceListBuilder {
               ],
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Align(
             alignment: Alignment.bottomLeft,
             child: Image.asset('assets/manito.png', width: 64, height: 64),
