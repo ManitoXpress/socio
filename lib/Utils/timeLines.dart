@@ -1,21 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:io'; // Para manejar archivos locales
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/jobComplete.dart';
-import 'package:socio/Screens/Chatscreen.dart';
+
+import 'package:socio/Screens/commentScreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/ServiceResponse/requestWorker.dart';
 import 'package:socio/Utils/authUtils.dart';
-import 'package:socio/Utils/fullMap.dart';
-import 'package:socio/Utils/proposal.dart';
 import 'package:socio/Utils/styles.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:socio/Controller/imagePreview.dart';
@@ -25,20 +20,6 @@ import 'package:socio/models/offer_models.dart';
 import 'package:socio/models/serviceRequest_models.dart';
 import 'package:socio/provider/service_partner_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-// lib/widgets/service_form_with_timeline_socio.dart
-
-import 'dart:io';
-
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-
 class ServiceFormWithTimelineSocio extends StatelessWidget {
   final ServiceRequestModel serviceRequest;
   final OfferModel offer;
@@ -755,7 +736,6 @@ class ServiceFormWithTimelineSocio extends StatelessWidget {
       },
     );
   }
-
   void _showCommentsModal(BuildContext context, ServicePartnerProvider provider) {
     showModalBottomSheet(
       context: context,
@@ -764,210 +744,9 @@ class ServiceFormWithTimelineSocio extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) {
-        return _CommentsBottomSheet(provider: provider);
+        return CommentsBottomSheet(provider: provider);
       },
     );
   }
 }
 
-/// Modal para mostrar y enviar comentarios en el servicio (lado socio).
-class _CommentsBottomSheet extends StatefulWidget {
-  final ServicePartnerProvider provider;
-
-  const _CommentsBottomSheet({Key? key, required this.provider})
-      : super(key: key);
-
-  @override
-  State<_CommentsBottomSheet> createState() => _CommentsBottomSheetState();
-}
-
-class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
-  final TextEditingController _comentarioController = TextEditingController();
-  bool _isSending = false;
-
-  /// Regex que detecta:
-  /// - cualquier cadena que empiece con “+591” seguido de dígitos
-  /// - o cualquier palabra que comience con “6” o “7” y tenga al menos 7 dígitos
-  final RegExp _phoneBlacklistRegex = RegExp(r'(\+591\d+|\b[67]\d{6,}\b)');
-
-  @override
-  void dispose() {
-    _comentarioController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = widget.provider;
-    final comentarios = provider.comments;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: DraggableScrollableSheet(
-        expand: false,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                Text(
-                  'Comentarios (${comentarios.length})',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Karla',
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: comentarios.length,
-                    itemBuilder: (ctx, i) {
-                      final c = comentarios[i];
-                      final isClient = c.rol == 'cliente';
-                      final alignment = isClient
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start;
-                      final color = isClient ? AppColors.secondary : AppColors.primary;
-                      final textAlign = isClient ? TextAlign.end : TextAlign.start;
-                      final nombre = isClient ? 'Cliente' : 'Trabajador';
-
-                      return ListTile(
-                        title: Row(
-                          mainAxisAlignment: alignment,
-                          children: [
-                            Text(
-                              nombre,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: color,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              c.hora,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ], 
-                        ),
-                        subtitle: Text(
-                          c.mensaje,
-                          textAlign: textAlign,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Divider(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _comentarioController,
-                          decoration: InputDecoration(
-                            hintText: 'Escribe un comentario...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _isSending
-                          ? const CircularProgressIndicator()
-                          : IconButton(
-                              icon: const Icon(Icons.send),
-                              onPressed: () async {
-                                final texto = _comentarioController.text.trim();
-                                if (texto.isEmpty) return;
-
-                                // 1) Validación contra la regex de teléfonos
-                                if (_phoneBlacklistRegex.hasMatch(texto)) {
-                                  // En lugar del SnackBar, mostramos un AlertDialog más visible
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text('Error'),
-                                      content: const Text(
-                                        'No se puede enviar números de teléfono en los comentarios.',
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.of(context).pop(),
-                                          child: const Text('Aceptar'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                // 2) Si no hay coincidencia, enviamos el comentario
-                                setState(() {
-                                  _isSending = true;
-                                });
-                                await provider.addComment(texto);
-                                if (provider.errorMessage != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(provider.errorMessage!),
-                                      backgroundColor: AppColors.primary,
-                                    ),
-                                  );
-                                }
-                                _comentarioController.clear();
-                                setState(() {
-                                  _isSending = false;
-                                });
-                              },
-                            ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-
-/// Visor fullscreen para imágenes.
-class ImageViewer extends StatelessWidget {
-  final String imageUrl;
-
-  const ImageViewer({Key? key, required this.imageUrl}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.transparent),
-      body: Center(
-        child: Hero(
-          tag: imageUrl,
-          child: CachedNetworkImage(
-            imageUrl: imageUrl,
-            fit: BoxFit.contain,
-            placeholder: (_, __) => const Center(child: CircularProgressIndicator()),
-            errorWidget: (_, __, ___) => const Icon(Icons.error),
-          ),
-        ),
-      ),
-    );
-  }
-}
