@@ -1,32 +1,28 @@
-// lib/providers/service_partner_provider.dart
-
 import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestLocation.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/ServiceResponse/requestWorker.dart';
-import 'package:socio/Utils/authUtils.dart';
-import 'package:socio/Utils/proposal.dart';
-import 'package:socio/constans/service_constans.dart';
-import 'package:socio/models/comments_models.dart';
-import 'package:socio/models/offer_models.dart';
-import 'package:socio/models/serviceRequest_models.dart';
-import 'package:socio/models/workerDetails_models.dart';
-
-
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/request.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestLocation.dart';
+import '../ServiceResponse/requestServiceType.dart';
+import '../ServiceResponse/requestStatus.dart';
+import '../ServiceResponse/requestUserData.dart';
+import '../ServiceResponse/requestWorker.dart';
+import '../Utils/authUtils.dart';
+import '../Utils/proposal.dart';
+import '../constans/service_constans.dart';
+import '../models/comments_models.dart';
+import '../models/offer_models.dart';
+import '../models/serviceRequest_models.dart';
+import '../models/workerDetails_models.dart';
 
 class ServicePartnerProvider extends ChangeNotifier {
   final ServiceRequestModel serviceRequest;
@@ -76,6 +72,9 @@ class ServicePartnerProvider extends ChangeNotifier {
     required this.apiService2,
     required this.userId,
   }) {
+    // Inicializar _serviceData con los datos que vienen de serviceList.dart
+    _serviceData = serviceRequest;
+
     _serviceStream = FirebaseFirestore.instance
         .collection('services')
         .doc(serviceRequest.id)
@@ -144,8 +143,44 @@ class ServicePartnerProvider extends ChangeNotifier {
   void _parseService(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     final nueva = ServiceRequestModel.fromDocument(snapshot);
 
+    // Preservar los rawOffers que ya tenemos (pasados desde serviceList.dart)
+    // ya que Firestore podría no tener la información de ofertas que necesitamos
+    final preservedRawOffers = _serviceData?.rawOffers ?? [];
+
     _serviceData = nueva;
     _currentStatus = nueva.status;
+
+    // Debug: Imprimir información del servicio
+    print('=== DEBUG PARSE SERVICE ===');
+    print('Service ID: ${nueva.id}');
+    print('Status: ${nueva.status}');
+    print('WorkerId: ${nueva.workerId}');
+    print('Firestore rawOffers length: ${nueva.rawOffers.length}');
+    print('Firestore rawOffers: ${nueva.rawOffers}');
+    print('Preserved rawOffers length: ${preservedRawOffers.length}');
+    print('Preserved rawOffers: ${preservedRawOffers}');
+    print('Current workerId: $workerId');
+
+    // Usar los rawOffers preservados si están disponibles, sino usar los de Firestore
+    final offersToUse =
+        preservedRawOffers.isNotEmpty ? preservedRawOffers : nueva.rawOffers;
+
+    // Actualizar el serviceData con los offers correctos
+    _serviceData = ServiceRequestModel(
+      id: nueva.id,
+      status: nueva.status,
+      date: nueva.date,
+      time: nueva.time,
+      description: nueva.description,
+      location: nueva.location,
+      images: nueva.images,
+      expertises: nueva.expertises,
+      rawOffers: offersToUse,
+      rawComments: nueva.rawComments,
+      userId: nueva.userId,
+      workerId: nueva.workerId,
+      completionImageUrl: nueva.completionImageUrl,
+    );
 
     // Posición inicial
     final lat = nueva.location['lat'] as double? ?? 0.0;
@@ -159,17 +194,22 @@ class ServicePartnerProvider extends ChangeNotifier {
 
     // Precio ofertado (si corresponde)
     if (workerId.isNotEmpty) {
-      final anyOffer = nueva.rawOffers.firstWhere(
+      final anyOffer = offersToUse.firstWhere(
         (o) => o['workerId'] == workerId,
         orElse: () => <String, dynamic>{},
       );
+      print('Found offer for workerId $workerId: $anyOffer');
       if (anyOffer.isNotEmpty) {
         final raw = anyOffer['offeredPrice'];
         _workerOfferedPrice =
             (raw is num) ? raw.toDouble() : double.tryParse(raw.toString());
+        print('Set workerOfferedPrice to: $_workerOfferedPrice');
       } else {
         _workerOfferedPrice = null;
+        print('No offer found, workerOfferedPrice set to null');
       }
+    } else {
+      print('workerId is empty, cannot find offer');
     }
 
     // Si antes no había workerDetails y ahora sí, recargar
@@ -177,6 +217,7 @@ class ServicePartnerProvider extends ChangeNotifier {
       _loadWorkerDetails();
     }
 
+    print('=== END DEBUG PARSE SERVICE ===');
     _notifyIfNeeded();
   }
 
@@ -220,8 +261,7 @@ class ServicePartnerProvider extends ChangeNotifier {
     _isSendingProposal = true;
     _notifyIfNeeded();
 
-    final offeredPrice =
-        double.tryParse(priceController.text.trim()) ?? 0.0;
+    final offeredPrice = double.tryParse(priceController.text.trim()) ?? 0.0;
     const extraCosts = 3.0;
 
     // Verificar workerId válido
@@ -234,8 +274,8 @@ class ServicePartnerProvider extends ChangeNotifier {
 
     // 1) Verificar en servidor/Firebase si ya existe
     try {
-      final alreadyExists = await ApiService()
-          .checkProposalExists(serviceRequest.id, workerId);
+      final alreadyExists =
+          await ApiService().checkProposalExists(serviceRequest.id, workerId);
       if (alreadyExists) {
         _setError('Ya existe una propuesta para este servicio');
         _isSendingProposal = false;
@@ -260,9 +300,9 @@ class ServicePartnerProvider extends ChangeNotifier {
       },
       offeredPrice: offeredPrice,
       serviceType: ServiceType(
-        id: '', 
-        name: '', 
-        selectedDate: serviceRequest.date, 
+        id: '',
+        name: '',
+        selectedDate: serviceRequest.date,
         selectedTime: serviceRequest.time,
       ),
       userId: serviceRequest.userId,
@@ -283,34 +323,34 @@ class ServicePartnerProvider extends ChangeNotifier {
       offers: serviceRequest.rawOffers
           .map((o) => Offer.fromMap(Map<String, dynamic>.from(o)))
           .toList(),
-      
-workerDetails: _workerDetails != null
-    ? WorkerDetails(
-        id: _workerDetails!.id,
-        displayName: _workerDetails!.displayName,
-        email: _workerDetails!.email,
-        imagePath: _workerDetails!.imagePath,
-        idDocumentImagePath: _workerDetails!.idDocumentImagePath,
-        expLevel: _workerDetails!.expLevel != null
-            ? [_workerDetails!.expLevel.toString()]
-            : [],
-        expertises: _workerDetails!.expertises
-            .map((e) => Expertise(id: e.id, name: e.name))
-            .toList(),
-        phoneNumber: _workerDetails!.phoneNumber,
-        // AHORA: instanciamos Location en lugar de pasar un Map
-        location: Location(
-          lat: _workerDetails!.location['lat'] ?? 0.0,
-          lng: _workerDetails!.location['lng'] ?? 0.0,
-        ),
-        // Resto de campos adicionales…
-        certificateImagePaths: _workerDetails!.certificateImagePaths,
-        criminalRecordImagePath: _workerDetails!.criminalRecordImagePath,
-        fcmToken: _workerDetails!.fcmToken,
-        verificationStatus: _workerDetails!.verificationStatus,
-        idCardNumber: _workerDetails!.idCardNumber,
-      )
-    : null,
+
+      workerDetails: _workerDetails != null
+          ? WorkerDetails(
+              id: _workerDetails!.id,
+              displayName: _workerDetails!.displayName,
+              email: _workerDetails!.email,
+              imagePath: _workerDetails!.imagePath,
+              idDocumentImagePath: _workerDetails!.idDocumentImagePath,
+              expLevel: _workerDetails!.expLevel != null
+                  ? [_workerDetails!.expLevel.toString()]
+                  : [],
+              expertises: _workerDetails!.expertises
+                  .map((e) => Expertise(id: e.id, name: e.name))
+                  .toList(),
+              phoneNumber: _workerDetails!.phoneNumber,
+              // AHORA: instanciamos Location en lugar de pasar un Map
+              location: Location(
+                lat: _workerDetails!.location['lat'] ?? 0.0,
+                lng: _workerDetails!.location['lng'] ?? 0.0,
+              ),
+              // Resto de campos adicionales…
+              certificateImagePaths: _workerDetails!.certificateImagePaths,
+              criminalRecordImagePath: _workerDetails!.criminalRecordImagePath,
+              fcmToken: _workerDetails!.fcmToken,
+              verificationStatus: _workerDetails!.verificationStatus,
+              idCardNumber: _workerDetails!.idCardNumber,
+            )
+          : null,
     );
 
     // 3) Enviar propuesta al servidor usando el objeto de dominio
@@ -396,15 +436,9 @@ workerDetails: _workerDetails != null
     }
   }
 
-  Future<void> submitCompletionImage() async {
-    // 1) Selección de imagen
-    XFile? picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-    if (picked == null) return;
-
-    _selectedImageFile = File(picked.path);
+  Future<void> submitCompletionImage(String imagePath) async {
+    // 1) Usar la imagen ya seleccionada
+    _selectedImageFile = File(imagePath);
     _notifyIfNeeded();
 
     // 2) Subir al backend
@@ -428,7 +462,7 @@ workerDetails: _workerDetails != null
 
       // Suponemos que la API nos devuelve la URL subida
       await apiService.uploadImageToBackend(
-        picked.path,
+        imagePath,
         serviceRequest.id,
         token,
       );
@@ -448,19 +482,41 @@ workerDetails: _workerDetails != null
     _notifyIfNeeded();
 
     try {
-      // 1) Obtener oferta desde backend
-      final remoteOffer = await apiService2.getOfferByServiceId(
-        serviceRequest.id,
+      // 1) Obtener todas las ofertas del servicio
+      final offersList = await apiService2.getOffers2(serviceRequest.id);
+      // Buscar la oferta del worker actual que esté en progreso
+      Map<String, dynamic>? workerOffer;
+      for (final offer in offersList) {
+        if (offer['workerId'] == workerId &&
+            (offer['status'] == 'in_progress' ||
+                offer['status'] == ServiceStatus.inProgress)) {
+          workerOffer = offer;
+          break;
+        }
+      }
+      // Si no hay ninguna en progreso, buscar la primera que no esté cancelada
+      workerOffer ??= offersList.firstWhere(
+        (offer) =>
+            offer['workerId'] == workerId && offer['status'] != 'cancelled',
+        orElse: () => <String, dynamic>{},
       );
-      final offerId = remoteOffer['id'] as String;
-      final raw = remoteOffer['offeredPrice'];
+      if (workerOffer == null) {
+        throw Exception(
+            'No se encontró una oferta válida para este trabajador.');
+      }
+      if (workerOffer.isEmpty) {
+        throw Exception(
+            'No se encontró una oferta válida para este trabajador.');
+      }
+      final offerId = workerOffer['id'] as String;
+      final raw = workerOffer['offeredPrice'];
       final offeredPrice = (raw is num)
           ? raw.toDouble()
           : double.tryParse(raw.toString()) ?? 0.0;
       const extraCosts = 3.0;
       final commission = offeredPrice * 0.10;
       final totalPrice = offeredPrice + extraCosts;
-      final clientNIT = remoteOffer['clientNIT'] as String? ?? '';
+      final clientNIT = workerOffer['clientNIT'] as String? ?? '';
       final paymentStatus = 'debe';
 
       // 2) Parchar oferta
@@ -476,7 +532,7 @@ workerDetails: _workerDetails != null
       };
       await apiService2.patchOffer(offerId, offerPayload);
 
-      // 3) Parchar servicio
+      // 3) Parchar servicio (el mismo que está en progreso)
       final servicePayload = {
         'commission': commission,
         'extraCosts': extraCosts,

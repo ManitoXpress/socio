@@ -74,6 +74,13 @@ class _HistorialScreenState extends State<HistorialScreen>
         token:    _token,
         deviceId: _deviceId,
       );
+
+      // 5) Iniciar polling automático
+      _historialProv.startAutoRefresh(
+        userId: _userId,
+        token: _token,
+        deviceId: _deviceId,
+      );
     });
   }
 
@@ -90,71 +97,71 @@ class _HistorialScreenState extends State<HistorialScreen>
   }
 
   void _showWelcomeDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext dialogContext) {                // 👈 usa aquí dialogContext
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15)),
-        title: Text('¡Bienvenido a ManitosXpress!',
-            style: MyTextStyles.welcomeTotheJungle1),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Gracias por unirte a ManitosXpress. Aquí podrás ofrecer tus habilidades y conectarte con clientes que necesitan tu ayuda.',
-              style: MyTextStyles.formServiceTextStyle,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
-              style: MyTextStyles.formServiceTextStyle,
-              textAlign: TextAlign.center,
-            ),
-            const Icon(Icons.build_rounded,
-                size: 60, color: Color(0xFF84090D)),
-            const SizedBox(height: 20),
-            Text(
-              '"Queremos recordarte que este mes los servicios serán libres de comisión, a partir del mes de Junio se cobrará el 10% de comisión por cada servicio realizado"',
-              style: MyTextStyles.inputTextStyle6,
-              textAlign: TextAlign.center,
-            ),
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {                // 👈 usa aquí dialogContext
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15)),
+          title: Text('¡Bienvenido a ManitosXpress!',
+              style: MyTextStyles.welcomeTotheJungle1),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Gracias por unirte a ManitosXpress. Aquí podrás ofrecer tus habilidades y conectarte con clientes que necesitan tu ayuda.',
+                style: MyTextStyles.formServiceTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Revisa los servicios disponibles y envía tus propuestas. ¡Tu próximo proyecto está a un clic de distancia!',
+                style: MyTextStyles.formServiceTextStyle,
+                textAlign: TextAlign.center,
+              ),
+              const Icon(Icons.build_rounded,
+                  size: 60, color: Color(0xFF84090D)),
+              const SizedBox(height: 20),
+              Text(
+                '"Aprovecha de utilizar la app y ampliar tu red de clientes! Manitos Xpress - Seguridad, Confianza y Tiempo"',
+                style: MyTextStyles.inputTextStyle6,
+                textAlign: TextAlign.center,
+              ),
 
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // 👇 navega o cierra usando dialogContext
-              Navigator.of(dialogContext).pop();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF84090D),
-              backgroundColor: const Color(0xFFE8E8E8),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-              side: const BorderSide(
-                  color: Color(0xFFE8E8E8), width: 1),
-            ),
-            child: Text("Comenzar", style: MyTextStyles.linkTextStyle),
+            ],
           ),
-        ],
-      );
-    },
-  );
-}
+          actions: [
+            TextButton(
+              onPressed: () {
+                // 👇 navega o cierra usando dialogContext
+                Navigator.of(dialogContext).pop();
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF84090D),
+                backgroundColor: const Color(0xFFE8E8E8),
+                padding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                side: const BorderSide(
+                    color: Color(0xFFE8E8E8), width: 1),
+              ),
+              child: Text("Comenzar", style: MyTextStyles.linkTextStyle),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   void dispose() {
     _tabController.dispose();
+    _historialProv.stopAutoRefresh();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 5) Abrimos el provider UNA sola vez con .value
     return ChangeNotifierProvider.value(
       value: _historialProv,
       child: Consumer<HistorialProvider>(
@@ -168,25 +175,19 @@ class _HistorialScreenState extends State<HistorialScreen>
                   color: Colors.white,
                   child: TabBar(
                     controller: _tabController,
-                    labelPadding:
-                    const EdgeInsets.symmetric(horizontal: 8),
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 8),
                     labelStyle: MyTextStyles.tabTextStyle,
-                    unselectedLabelStyle:
-                    MyTextStyles.unselectedTabTextStyle,
+                    unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
                     indicator: const UnderlineTabIndicator(
-                      borderSide:
-                      BorderSide(width: 3, color: Color(0xFF84090D)),
-                      insets:
-                      EdgeInsets.symmetric(horizontal: 20),
+                      borderSide: BorderSide(width: 3, color: Color(0xFF84090D)),
+                      insets: EdgeInsets.symmetric(horizontal: 20),
                     ),
                     tabs: [
                       Tab(
                         icon: const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.task_alt,
-                                color: Colors.black)),
-                        text:
-                        'Disponibles (${prov.availableCount})',
+                            child: Icon(Icons.task_alt, color: Colors.black)),
+                        text: 'Disponibles (${prov.availableCount})',
                       ),
                       Tab(
                         child: Column(
@@ -196,37 +197,26 @@ class _HistorialScreenState extends State<HistorialScreen>
                               clipBehavior: Clip.none,
                               children: [
                                 const Padding(
-                                    padding:
-                                    EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.local_offer,
-                                        color: Colors.black)),
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.local_offer, color: Colors.black)),
                                 if (prov.offerServiceCount > 0)
                                   Positioned(
                                     top: -10,
                                     right: -10,
                                     child: Container(
-                                      padding:
-                                      const EdgeInsets.all(5),
+                                      padding: const EdgeInsets.all(5),
                                       decoration: BoxDecoration(
-                                        color:
-                                        const Color(0xFF84090D),
-                                        borderRadius:
-                                        BorderRadius.circular(
-                                            12),
+                                        color: const Color(0xFF84090D),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                      constraints:
-                                      const BoxConstraints(
+                                      constraints: const BoxConstraints(
                                         minWidth: 20,
                                         minHeight: 20,
                                       ),
                                       child: Text(
-                                        prov.offerServiceCount
-                                            .toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10),
-                                        textAlign:
-                                        TextAlign.center,
+                                        prov.offerServiceCount.toString(),
+                                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
                                       ),
                                     ),
                                   ),
@@ -240,99 +230,118 @@ class _HistorialScreenState extends State<HistorialScreen>
                       Tab(
                         icon: const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.assignment_ind,
-                                color: Colors.black)),
-                        text:
-                        'Asignados (${prov.inProgressCount})',
+                            child: Icon(Icons.assignment_ind, color: Colors.black)),
+                        text: 'Asignados (${prov.inProgressCount})',
                       ),
                       Tab(
                         icon: const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.check_circle,
-                                color: Colors.black)),
-                        text:
-                        'Completados (${prov.completedCount})',
+                            child: Icon(Icons.check_circle, color: Colors.black)),
+                        text: 'Completados (${prov.completedCount})',
                       ),
                       Tab(
                         icon: const Padding(
                             padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.cancel,
-                                color: Colors.black)),
-                        text:
-                        'Cancelados (${prov.cancelledCount})',
+                            child: Icon(Icons.cancel, color: Colors.black)),
+                        text: 'Cancelados (${prov.cancelledCount})',
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            body: Column(
+            body: Stack(
               children: [
-                Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
-                  child: Row(
-                    children: [
-                      Text('Historial',
-                          style: MyTextStyles.buttonTextStyle3),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.refresh,
-                            color: Color(0xFF84090D)),
-                        onPressed: () => prov.refresh(
+                Column(
+                  children: [
+                    Container(
+                      color: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      child: Center(
+                        child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _ServiceListTab(
+                            status: 'available',
                             userId: _userId,
-                            token: _token,
-                            deviceId: _deviceId),
+                            userData: widget.userData,
+                            apiService: ApiService(),
+                            apiService2: ApiService2(),
+                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            isLoading: prov.isLoading,
+                          ),
+                          _ServiceListTab(
+                            status: 'offer',
+                            userId: _userId,
+                            userData: widget.userData,
+                            apiService: ApiService(),
+                            apiService2: ApiService2(),
+                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            isLoading: prov.isLoading,
+                          ),
+                          _ServiceListTab(
+                            status: 'in_progress',
+                            userId: _userId,
+                            userData: widget.userData,
+                            apiService: ApiService(),
+                            apiService2: ApiService2(),
+                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            isLoading: prov.isLoading,
+                          ),
+                          _ServiceListTab(
+                            status: 'completed',
+                            userId: _userId,
+                            userData: widget.userData,
+                            apiService: ApiService(),
+                            apiService2: ApiService2(),
+                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            isLoading: prov.isLoading,
+                          ),
+                          _ServiceListTab(
+                            status: 'cancelled',
+                            userId: _userId,
+                            userData: widget.userData,
+                            apiService: ApiService(),
+                            apiService2: ApiService2(),
+                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            isLoading: prov.isLoading,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const Divider(height: 1),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _ServiceListTab(
-                        status: 'available',
-                        userId: _userId,
-                        userData: widget.userData,
-                        apiService: ApiService(),
-                        apiService2: ApiService2(),
+                if (prov.isLoading)
+                  Container(
+                    color: Colors.black.withOpacity(0.2),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Cargando servicios...', style: TextStyle(fontSize: 16, color: Colors.black)),
+                        ],
                       ),
-                      _ServiceListTab(
-                        status: 'offer',
-                        userId: _userId,
-                        userData: widget.userData,
-                        apiService: ApiService(),
-                        apiService2: ApiService2(),
-                      ),
-                      _ServiceListTab(
-                        status: 'in_progress',
-                        userId: _userId,
-                        userData: widget.userData,
-                        apiService: ApiService(),
-                        apiService2: ApiService2(),
-                      ),
-                      _ServiceListTab(
-                        status: 'completed',
-                        userId: _userId,
-                        userData: widget.userData,
-                        apiService: ApiService(),
-                        apiService2: ApiService2(),
-                      ),
-                      _ServiceListTab(
-                        status: 'cancelled',
-                        userId: _userId,
-                        userData: widget.userData,
-                        apiService: ApiService(),
-                        apiService2: ApiService2(),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
               ],
             ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: prov.isLoading
+                  ? null
+                  : () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+              label: const Text('Actualizar'),
+              icon: const Icon(Icons.refresh),
+              backgroundColor: const Color(0xFF84090D),
+              foregroundColor: Colors.white,
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           );
         },
       ),
@@ -347,6 +356,8 @@ class _ServiceListTab extends StatefulWidget {
   final UserData userData;
   final ApiService apiService;
   final ApiService2 apiService2;
+  final Future<void> Function() onRefresh;
+  final bool isLoading;
 
   const _ServiceListTab({
     required this.status,
@@ -354,6 +365,8 @@ class _ServiceListTab extends StatefulWidget {
     required this.userData,
     required this.apiService,
     required this.apiService2,
+    required this.onRefresh,
+    required this.isLoading,
     Key? key,
   }) : super(key: key);
 
@@ -363,6 +376,34 @@ class _ServiceListTab extends StatefulWidget {
 
 class _ServiceListTabState extends State<_ServiceListTab>
     with AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final prov = context.read<HistorialProvider>();
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (prov.hasMore(widget.status) && !prov.isLoadingMore(widget.status)) {
+        prov.loadMore(
+          status: widget.status,
+          userId: widget.userId,
+          token: '', // Puedes pasar el token real si lo necesitas
+          deviceId: '', // Puedes pasar el deviceId real si lo necesitas
+        );
+      }
+    }
+  }
+
   @override
   bool get wantKeepAlive => true;
 
@@ -371,76 +412,215 @@ class _ServiceListTabState extends State<_ServiceListTab>
     super.build(context);
     final prov = context.watch<HistorialProvider>();
     final list = prov.list(widget.status);
+    final isLoadingMore = prov.isLoadingMore(widget.status);
+    final hasMore = prov.hasMore(widget.status);
 
-    if (prov.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (prov.errorMessage != null) {
-      return Center(child: Text('Error: ${prov.errorMessage}'));
-    }
-    if (list.isEmpty) {
-      return const Center(child: Text('No hay servicios.'));
-    }
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      child: Builder(
+        builder: (context) {
+          if (prov.errorMessage != null) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _scrollController,
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                Center(
+                  child: Text(
+                    'Error: ${prov.errorMessage}',
+                    style: const TextStyle(color: Colors.red, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            );
+          }
+          if (list.isEmpty && !widget.isLoading) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              controller: _scrollController,
+              children: [
+                SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                const Center(
+                  child: Text(
+                    'No hay servicios.',
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                ),
+              ],
+            );
+          }
 
-    final w = MediaQuery.of(context).size.width;
-    final h = MediaQuery.of(context).size.height;
+          // Skeleton loader
+          if (widget.isLoading && list.isEmpty) {
+            return ListView.builder(
+              controller: _scrollController,
+              itemCount: 6,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        margin: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 120,
+                                height: 14,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                width: 80,
+                                height: 12,
+                                color: Colors.grey[300],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
 
-    switch (widget.status) {
-      case 'available':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.buildServiceListAvailable(
-          list,
-          offers,
-          w, h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-          widget.apiService2,
-        );
-      case 'offer':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.buildOfferList(
-          list,
-          offers,
-          w, h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-          widget.apiService2,
-        );
-      case 'in_progress':
-        final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.inProgressList(
-          list,
-          offers,
-          w, h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-          widget.apiService2,
-        );
-      case 'completed':
-      final offers = list.expand((s) => s.offers).toList();
-        return ServiceListBuilder.buildServiceListComplete(
-          list,
-          offers,
-          w, h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-          widget.apiService2,
-        );
-      case 'cancelled':
-        return ServiceListBuilder.buildServiceListCancelled(
-          list,
-          w, h,
-          widget.userId,
-          widget.userData,
-          widget.apiService,
-          widget.apiService2,
-        );
-      default:
-        return const SizedBox.shrink();
-    }
+          final w = MediaQuery.of(context).size.width;
+          final h = MediaQuery.of(context).size.height;
+
+          Widget listWidget;
+          switch (widget.status) {
+            case 'available':
+              final offers = list.expand((s) => s.offers).toList();
+              listWidget = ServiceListBuilder.buildServiceListAvailable(
+                list,
+                offers,
+                w,
+                h,
+                widget.userId,
+                widget.userData,
+                widget.apiService,
+                widget.apiService2,
+              );
+              break;
+            case 'offer':
+              final offers = list.expand((s) => s.offers).toList();
+              listWidget = ServiceListBuilder.buildOfferList(
+                list,
+                offers,
+                w,
+                h,
+                widget.userId,
+                widget.userData,
+                widget.apiService,
+                widget.apiService2,
+              );
+              break;
+            case 'in_progress':
+              final offers = list.expand((s) => s.offers).toList();
+              listWidget = ServiceListBuilder.inProgressList(
+                list,
+                offers,
+                w,
+                h,
+                widget.userId,
+                widget.userData,
+                widget.apiService,
+                widget.apiService2,
+              );
+              break;
+            case 'completed':
+              final offers = list.expand((s) => s.offers).toList();
+              listWidget = ServiceListBuilder.buildServiceListComplete(
+                list,
+                offers,
+                w,
+                h,
+                widget.userId,
+                widget.userData,
+                widget.apiService,
+                widget.apiService2,
+              );
+              break;
+            case 'cancelled':
+              listWidget = ServiceListBuilder.buildServiceListCancelled(
+                list,
+                w,
+                h,
+                widget.userId,
+                widget.userData,
+                widget.apiService,
+                widget.apiService2,
+              );
+              break;
+            default:
+              listWidget = const SizedBox.shrink();
+          }
+
+          return Stack(
+            children: [
+              NotificationListener<ScrollNotification>(
+                onNotification: (scrollInfo) {
+                  if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200 &&
+                      hasMore &&
+                      !isLoadingMore) {
+                    prov.loadMore(
+                      status: widget.status,
+                      userId: widget.userId,
+                      token: '', // Puedes pasar el token real si lo necesitas
+                      deviceId: '', // Puedes pasar el deviceId real si lo necesitas
+                    );
+                  }
+                  return false;
+                },
+                child: listWidget,
+              ),
+              if (isLoadingMore)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Cargando más...', style: TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

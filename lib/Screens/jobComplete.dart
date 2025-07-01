@@ -298,17 +298,11 @@ class _PhotoStepState extends State<PhotoStep> {
               capturedImages.map((image) => image.path).toList()));
 
       widget.registrationController.updateRegistrationData(
-        jobCompletePath: capturedImages.isNotEmpty ? capturedImages.last.path : '',
-        jobCompletePaths:
-            capturedImages.map((image) => image.path).toList(),
         idDocumentImagePath: '',
         workerType: '',
         idDocumentImagePath2: '',
         certificateImagePaths: [],
-        criminalRecordImagePath: '',
-        referralCode: '',
-        medicalLicenseImagePath: '', // Provide the appropriate value here
-        professionalTitleImagePath: '', // Provide the appropriate value here
+        criminalRecordImagePath: '', referralCode: '', medicalLicenseImagePath: '', professionalTitleImagePath: '', jobCompletePath: image.path, jobCompletePaths: [],
       );
     } catch (e) {
       print("Error al tomar la foto: $e");

@@ -20,11 +20,11 @@ class ServiceRepositoryComplete {
 
   // Función pública que permite filtrar servicios por estado desde Firestore
   Future<List<ServiceRequest>> fetchServicesByComplete(
-    String status,
-    String userId,
-    String column,
-    String token,
-  ) async {
+      String status,
+      String userId,
+      String column,
+      String token,
+      ) async {
     // Obtener la lista de estados válidos desde Firestore
     List<String> validStatuses = await _getValidStatusesFromFirestore();
 
@@ -35,14 +35,14 @@ class ServiceRepositoryComplete {
 
     // Llamar al método privado para realizar la lógica principal
     return await _fetchServicesByStatus(status, column, userId, token, );
-   
+
   }
 
   // Método privado para obtener los estados válidos desde Firestore
   Future<List<String>> _getValidStatusesFromFirestore() async {
     try {
       QuerySnapshot querySnapshot =
-          await firestore.collection('services').get();
+      await firestore.collection('services').get();
 
       Set<String> statusSet = {};
 
@@ -91,7 +91,7 @@ class ServiceRepositoryComplete {
 
       // 1. Filtrar servicios por estado
       final filteredServices = servicesData.where((item) =>
-          item['status'] == 'completed').toList();
+      item['status'] == 'completed').toList();
 
       // 2. Mapear a objetos ServiceRequest
       List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
@@ -230,5 +230,5 @@ class ServiceRepositoryComplete {
       return value.toDouble();
     }
     return 0.0;
-  }
+    }
 }

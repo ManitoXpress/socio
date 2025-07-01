@@ -6,6 +6,7 @@ import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/ServiceResponse/requestWorker.dart';
+
 class Offer {
   final String id;
   final String serviceId;
@@ -20,8 +21,6 @@ class Offer {
   List<Expertise> expertises;
   final String subcategoryName;
   WorkerDetails? workerDetails;
-  
-  
 
   Offer({
     required this.id,
@@ -51,7 +50,8 @@ class Offer {
       'status': status.toMap(),
       'hasOffer': hasOffer,
       'userToken': userToken,
-      'createdAt': createdAt.toIso8601String(),  // Usar toIso8601String para formato de fecha
+      'createdAt': createdAt
+          .toIso8601String(), // Usar toIso8601String para formato de fecha
       'expertises': expertises.map((e) => e.toMap()).toList(),
       'subcategoryName': subcategoryName,
       'workerDetails': workerDetails?.toMap(),
@@ -82,13 +82,12 @@ class Offer {
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
           : null,
-      
-      
-      
     );
   }
 }
+
 class ServiceRequest {
+  String CreatedAt;
   String serviceDateTime;
   String devicesId;
   String id;
@@ -109,7 +108,9 @@ class ServiceRequest {
   bool hasOffer;
   List<Offer> offers;
   WorkerDetails? workerDetails;
-  String CreatedAt;
+  
+  // NUEVO: Campo para el badge "Nuevo"
+  bool isNew;
 
   // Constructor principal
   ServiceRequest({
@@ -134,6 +135,7 @@ class ServiceRequest {
     required this.hasOffer,
     required this.offers,
     this.workerDetails,
+    this.isNew = false,
   });
 
   // Factory constructor para instancia vacía
@@ -161,7 +163,9 @@ class ServiceRequest {
       subcategoryName: '',
       hasOffer: false,
       offers: [],
-      workerDetails: null, CreatedAt: '',
+      workerDetails: null,
+      CreatedAt: '',
+      isNew: false,
     );
   }
 
@@ -228,7 +232,9 @@ class ServiceRequest {
           : [],
       workerDetails: map['workerDetails'] != null
           ? WorkerDetails.fromMap(map['workerDetails'])
-          : null, CreatedAt: map['CreatedAt'] ?? '',
+          : null,
+      CreatedAt: map['createdAt'] ?? '',
+      isNew: false,
     );
   }
 

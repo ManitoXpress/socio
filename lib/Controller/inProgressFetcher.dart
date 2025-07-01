@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,7 +15,8 @@ class ServiceRepositoryInProgress {
   final FirebaseFirestore firestore;
   final String baseUrl = ApiConfiguration.baseUrl;
 
-  ServiceRepositoryInProgress({required this.apiService, required this.firestore});
+  ServiceRepositoryInProgress(
+      {required this.apiService, required this.firestore});
 
   Future<List<ServiceRequest>> fetchServicesByInProgress(
     String status,
@@ -35,7 +35,8 @@ class ServiceRepositoryInProgress {
 
   Future<List<String>> _getValidStatusesFromFirestore() async {
     try {
-      QuerySnapshot querySnapshot = await firestore.collection('services').get();
+      QuerySnapshot querySnapshot =
+          await firestore.collection('services').get();
       Set<String> statusSet = {};
 
       for (var doc in querySnapshot.docs) {
@@ -58,16 +59,15 @@ class ServiceRepositoryInProgress {
     String token,
   ) async {
     try {
-      final cachedRequest = await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null &&
-          (cachedRequest.status.id == 'in_progress' ||
-              cachedRequest.status.id == 'pending_confirmation' ||
-              cachedRequest.status.id == 'pending_confirmation2')) {
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(userId);
+      if (cachedRequest != null && (cachedRequest.status.id == 'in_progress')) {
         return [cachedRequest];
       }
 
       final deviceId = await obtenerDeviceId();
-      final response = await apiService.getAllServices(token, column, userId, status);
+      final response =
+          await apiService.getAllServices(token, column, userId, status);
 
       if (response.statusCode != 200) {
         return [];
@@ -77,55 +77,58 @@ class ServiceRepositoryInProgress {
           List<Map<String, dynamic>>.from(json.decode(response.body));
 
       // 1. Filtrar servicios por estado
-      final filteredServices = servicesData.where((item) =>
-          item['status'] == 'in_progress' ||
-          item['status'] == 'pending_confirmation' ||
-          item['status'] == 'pending_confirmation2').toList();
+      final filteredServices = servicesData
+          .where((item) => item['status'] == 'in_progress')
+          .toList();
 
       // 2. Mapear a objetos ServiceRequest
-      List<ServiceRequest> serviceRequestsList = filteredServices.map((item) {
-        final statusName = (item['status'] as String?) ?? 'in_progress';
-        if (statusName != 'in_progress' &&
-            statusName != 'pending_confirmation' &&
-            statusName != 'pending_confirmation2') {
-          return null;
-        }
+      List<ServiceRequest> serviceRequestsList = filteredServices
+          .map((item) {
+            final statusName = (item['status'] as String?) ?? 'in_progress';
+            if (statusName != 'in_progress') {
+              return null;
+            }
 
-        return ServiceRequest(
-          id: item['id']?.toString() ?? '',
-          serviceDateTime: item['serviceDateTime']?.toString() ?? '',
-          description: item['description']?.toString() ?? '',
-          expertises: _extractExpertises(item),
-          images: (item['images'] as List<dynamic>?)
-                  ?.map((e) => e?.toString() ?? '')
-                  .toList() ??
-              [],
-          location: Map<String, double>.from(
-            (item['location'] as Map<String, dynamic>?)?.map((key, value) =>
-                MapEntry(key, (value as num).toDouble())) ??
-                {},
-          ),
-          offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-          userId: item['userId']?.toString() ?? '',
-          workerId: '',
-          status: Status(
-            id: statusName,
-            name: Status.getNameById(statusName),
-          ),
-          devicesId: '',
-          serviceType: ServiceType(
-            name: item['serviceType']?['name']?.toString() ?? '',
-            id: item['serviceType']?['id']?.toString() ?? '',
-            selectedDate: item['serviceType']?['selectedDate']?.toString() ?? '',
-            selectedTime: item['serviceType']?['selectedTime']?.toString() ?? '',
-          ),
-          isFavorite: item['isFavorite'] as bool? ?? false,
-          acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-          subcategoryName: item['subcategoryName']?.toString() ?? '',
-          hasOffer: false,
-          offers: [], CreatedAt: item['CreatedAt'] ?? '',
-        );
-      }).whereType<ServiceRequest>().toList();
+            return ServiceRequest(
+              id: item['id']?.toString() ?? '',
+              serviceDateTime: item['serviceDateTime']?.toString() ?? '',
+              description: item['description']?.toString() ?? '',
+              expertises: _extractExpertises(item),
+              images: (item['images'] as List<dynamic>?)
+                      ?.map((e) => e?.toString() ?? '')
+                      .toList() ??
+                  [],
+              location: Map<String, double>.from(
+                (item['location'] as Map<String, dynamic>?)?.map((key, value) =>
+                        MapEntry(key, (value as num).toDouble())) ??
+                    {},
+              ),
+              offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+              userId: item['userId']?.toString() ?? '',
+              workerId: '',
+              status: Status(
+                id: statusName,
+                name: Status.getNameById(statusName),
+              ),
+              devicesId: '',
+              serviceType: ServiceType(
+                name: item['serviceType']?['name']?.toString() ?? '',
+                id: item['serviceType']?['id']?.toString() ?? '',
+                selectedDate:
+                    item['serviceType']?['selectedDate']?.toString() ?? '',
+                selectedTime:
+                    item['serviceType']?['selectedTime']?.toString() ?? '',
+              ),
+              isFavorite: item['isFavorite'] as bool? ?? false,
+              acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+              subcategoryName: item['subcategoryName']?.toString() ?? '',
+              hasOffer: false,
+              offers: [],
+              CreatedAt: item['CreatedAt'] ?? '',
+            );
+          })
+          .whereType<ServiceRequest>()
+          .toList();
 
       // 3. Obtener especialidades del trabajador
       final workerExpertises = await apiService.getWorkerExpertises();
@@ -134,47 +137,53 @@ class ServiceRepositoryInProgress {
           .toSet();
 
       // 4. Filtrar por coincidencia de especialidad
-      serviceRequestsList = serviceRequestsList.where((service) =>
-          expertiseNames.contains(service.subcategoryName.toLowerCase().trim()))
+      serviceRequestsList = serviceRequestsList
+          .where((service) => expertiseNames
+              .contains(service.subcategoryName.toLowerCase().trim()))
           .toList();
 
       // Para cada servicio, se solicitan las ofertas correspondientes.
       List<ServiceRequest> validServices = [];
-      List<Future> offerRequests = serviceRequestsList.map((serviceRequest) async {
+      List<Future> offerRequests =
+          serviceRequestsList.map((serviceRequest) async {
         print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
         try {
-          final List<ServiceRequest> offerResponses = await apiService.getOffers(
-            'workerId',   // Columna por la que se filtra en la base de datos
-            userId,       // Valor: el id del trabajador autenticado
-            'offer',      // Tipo (o estado) de la oferta
+          final List<ServiceRequest> offerResponses =
+              await apiService.getOffers(
+            'workerId', // Columna por la que se filtra en la base de datos
+            userId, // Valor: el id del trabajador autenticado
+            'offer', // Tipo (o estado) de la oferta
             deviceId,
-            [serviceRequest],   // Se pasa la lista con el servicio actual
+            [serviceRequest], // Se pasa la lista con el servicio actual
             status,
           );
 
           // Filtrar las ofertas para conservar solo las que tengan workerId igual a userId
-          List<Offer> filteredOffers = offerResponses.map((serviceOffer) {
-            final statusName = serviceOffer.status.id;
-            final statusObject = Status(
-              id: statusName,
-              name: Status.getNameById(statusName),
-            );
+          List<Offer> filteredOffers = offerResponses
+              .map((serviceOffer) {
+                final statusName = serviceOffer.status.id;
+                final statusObject = Status(
+                  id: statusName,
+                  name: Status.getNameById(statusName),
+                );
 
-            return Offer(
-              id: serviceOffer.id,
-              workerId: serviceOffer.workerId,
-              offeredPrice: serviceOffer.offeredPrice,
-              hasOffer: serviceOffer.hasOffer,
-              serviceId: serviceRequest.id,
-              extraCosts: 0.0,
-              totalPrice: serviceOffer.offeredPrice,
-              status: statusObject,
-              userToken: '',
-              createdAt: DateTime.now(),
-              expertises: serviceOffer.expertises,
-              subcategoryName: serviceOffer.subcategoryName,
-            );
-          }).where((offer) => offer.workerId == userId).toList();
+                return Offer(
+                  id: serviceOffer.id,
+                  workerId: serviceOffer.workerId,
+                  offeredPrice: serviceOffer.offeredPrice,
+                  hasOffer: serviceOffer.hasOffer,
+                  serviceId: serviceRequest.id,
+                  extraCosts: 0.0,
+                  totalPrice: serviceOffer.offeredPrice,
+                  status: statusObject,
+                  userToken: '',
+                  createdAt: DateTime.now(),
+                  expertises: serviceOffer.expertises,
+                  subcategoryName: serviceOffer.subcategoryName,
+                );
+              })
+              .where((offer) => offer.workerId == userId)
+              .toList();
 
           if (filteredOffers.isNotEmpty) {
             serviceRequest.workerId = filteredOffers.first.workerId;

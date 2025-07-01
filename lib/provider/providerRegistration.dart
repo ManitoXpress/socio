@@ -1,17 +1,22 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:image/image.dart' as img;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Home.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+import '../Screens/Home.dart';
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/requestUserData.dart';
+
+import 'package:image/image.dart' as img;
+
+
 
 class RegistrationProvider extends ChangeNotifier {
   final RegistrationController registrationController;
@@ -219,8 +224,7 @@ class RegistrationProvider extends ChangeNotifier {
     if (image == null) return file;
     final resized = img.copyResize(image, width: 800);
     final tempDir = await getTemporaryDirectory();
-    final targetPath =
-        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_cmp.jpg';
+    final targetPath = '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}_cmp.jpg';
     final jpg = img.encodeJpg(resized, quality: 85);
     final compressedFile = File(targetPath)..writeAsBytesSync(jpg);
     return compressedFile;
@@ -244,16 +248,14 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<String>> uploadMultipleCertificates(
-      List<String> localPaths, String uid) async {
+  Future<List<String>> uploadMultipleCertificates(List<String> localPaths, String uid) async {
     final List<String> urls = [];
     for (final path in localPaths) {
       final file = File(path);
       if (!file.existsSync()) continue;
       try {
         final compressed = await compressAndResizeImage(file);
-        final url =
-            await apiService.uploadImageToFirebaseStorage4(compressed, uid);
+        final url = await apiService.uploadImageToFirebaseStorage4(compressed, uid);
         if (url.isNotEmpty) urls.add(url);
       } catch (e) {
         debugPrint('Error subiendo certificado $path: $e');
@@ -316,8 +318,7 @@ class RegistrationProvider extends ChangeNotifier {
         final pdfFile = File(registrationData.criminalRecordImagePath);
         if (pdfFile.existsSync()) {
           try {
-            final pdfUrl =
-                await apiService.uploadImageToFirebaseStorage5(pdfFile, uid);
+            final pdfUrl = await apiService.uploadImageToFirebaseStorage5(pdfFile, uid);
             if (pdfUrl.isNotEmpty) {
               registrationData.criminalRecordImagePath = pdfUrl;
             }
@@ -332,8 +333,7 @@ class RegistrationProvider extends ChangeNotifier {
         final file = File(registrationData.professionalTitleImagePath);
         if (file.existsSync()) {
           final compressed = await compressAndResizeImage(file);
-          final titleUrl =
-              await apiService.uploadImageToFirebaseStorage4(compressed, uid);
+          final titleUrl = await apiService.uploadImageToFirebaseStorage4(compressed, uid);
           if (titleUrl.isNotEmpty) {
             registrationData.professionalTitleImagePath = titleUrl;
           }
@@ -345,18 +345,16 @@ class RegistrationProvider extends ChangeNotifier {
         await FirebaseFirestore.instance
             .collection('workers')
             .doc(userData.referrerWorkerId)
-            .update({'points': FieldValue.increment(10)});
+            .update({ 'points': FieldValue.increment(10) });
       }
 
       // Obtener puntos actualizados
-      final doc =
-          await FirebaseFirestore.instance.collection('workers').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('workers').doc(uid).get();
       registrationData.points = doc.data()?['points'] ?? 0;
 
       // Llamada final a API
       final token = await user.getIdToken();
-      final response =
-          await apiService.updateUser(uid, registrationData, token!);
+      final response = await apiService.updateUser(uid, registrationData, token!);
 
       if (response.statusCode == 200) {
         Navigator.pushReplacement(

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 /// Estados válidos de un ServiceRequest (coinciden con Firestore).
@@ -9,8 +8,6 @@ class ServiceStatus {
   static const String completed = 'completed';
   static const String cancelled = 'cancelled';
   static const String blocked = 'blocked';
-  static const String pendingConfirmation = 'pending_confirmation';
-  static const String pendingConfirmation2 = 'pending_confirmation2';
 }
 
 /// Etiquetas para mostrar en pantalla según el estado.
@@ -21,8 +18,6 @@ const Map<String, String> statusNames = {
   ServiceStatus.completed: 'Completado',
   ServiceStatus.cancelled: 'Cancelado',
   ServiceStatus.blocked: 'Bloqueado',
-  ServiceStatus.pendingConfirmation: 'Esperando confirmación',
-  ServiceStatus.pendingConfirmation2: 'Esperando confirmación',
 };
 
 /// Colores comunes usados en toda la app.

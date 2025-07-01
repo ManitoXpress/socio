@@ -11,19 +11,10 @@ import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
+
 class ApiService2 {
-  String? getToken;
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
-  Future<void> _initializeToken() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      getToken = await user.getIdToken(true);
-    } else {
-      getToken = null;
-    }
-  }
-
 
   Future<Map<String, dynamic>> fetchSingleService(
     String workerColumn,
@@ -59,11 +50,15 @@ class ApiService2 {
     String serviceId,
     List<Map<String, String>> commentsList,
   ) async {
-    await _initializeToken();
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
     final resp = await http.patch(
       Uri.parse('$baseUrl/services/$serviceId'),
       headers: {
-        'Authorization': 'Bearer $getToken',
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
       body: json.encode({'comments': commentsList}),
@@ -75,13 +70,17 @@ class ApiService2 {
   }
   // 1) GET /offers?serviceId={id}
   Future<Map<String, dynamic>> getOfferByServiceId(String serviceId) async {
-    await _initializeToken();
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
     final url = Uri.parse('$baseUrl/offers/$serviceId');
     print('🎯 GET Offer URL: $url');
     final resp = await http.get(
       url,
       headers: {
-        'Authorization': 'Bearer $getToken',
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
@@ -101,12 +100,16 @@ class ApiService2 {
   }
 
   // 2) PATCH /offers/{offerId}
-Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
+  Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
     debugPrint('▶️ patchOffer iniciado para offerId=$offerId');
     debugPrint('   • Payload body: ${json.encode(body)}');
 
-    await _initializeToken();
-    debugPrint('   • Token tras inicializar: $getToken');
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    debugPrint('   • Token tras inicializar: $token');
 
     final url = Uri.parse('$baseUrl/offers/$offerId');
     debugPrint('   • URL PATCH → $url');
@@ -114,7 +117,7 @@ Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
     final resp = await http.patch(
       url,
       headers: {
-        'Authorization': 'Bearer $getToken',
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
       body: json.encode(body),
@@ -144,14 +147,20 @@ Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
     }
   }
 
+
+
   // 3) PATCH /services/{serviceId}
   Future<void> patchService(String serviceId, Map<String, dynamic> body) async {
-    await _initializeToken();
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
     final url = Uri.parse('$baseUrl/services/$serviceId');
     final resp = await http.patch(
       url,
       headers: {
-        'Authorization': 'Bearer $getToken',
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
       body: json.encode(body),
@@ -205,18 +214,18 @@ Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
     }
   }
 
-  /// 1) Obtener el servicio completo (incluye array comments)
+  /// 1) Obtener el servicio completo (incluye array `comments`)
   Future<Map<String, dynamic>> getService(String serviceId) async {
-    await _initializeToken(); // <--- ESTA LÍNEA ES CRUCIAL
-
-    if (getToken == null) {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
       throw Exception('Token de autenticación no disponible');
     }
 
     final url = Uri.parse('$baseUrl/services/$serviceId');
     final response = await http.get(url, headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $getToken',
+      'Authorization': 'Bearer $token',
     });
 
     if (response.statusCode != 200) {
@@ -227,34 +236,25 @@ Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
   }
 
   Future<List<Map<String, dynamic>>> getOffers2(String offerId) async {
-    // Asegúrate de tener el token más reciente
-
-    if (getToken == null) {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
       throw Exception('Token de autenticación no disponible');
     }
-
     final url = Uri.parse('$baseUrl/offers/$offerId');
     final response = await http.get(
       url,
       headers: {
-        'Authorization': 'Bearer $getToken',
+        'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
-
-    print('getOffers2 status: ${response.statusCode}, body: ${response.body}');
-
+    print('getOffers2 status: [32m[1m[4m${response.statusCode}[0m, body: ${response.body}');
     if (response.statusCode == 200) {
-      // Suponemos que el backend devuelve un array JSON
       final List<dynamic> data = json.decode(response.body);
-      // Convertimos cada elemento a Map<String, dynamic>
-      return data
-          .map<Map<String, dynamic>>(
-              (item) => Map<String, dynamic>.from(item as Map))
-          .toList();
+      return data.map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item as Map)).toList();
     } else {
-      throw Exception(
-          'Error cargando oferta $offerId: ${response.statusCode} ${response.body}');
+      throw Exception('Error cargando oferta $offerId: ${response.statusCode} ${response.body}');
     }
   }
 
@@ -657,7 +657,118 @@ Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
     print('Error: ${response.statusCode}');
     print('Mensaje de error: ${response.body}');
   }
+
+  // Obtiene todas las ofertas de un worker
+  Future<List<Map<String, dynamic>>> getOffersByWorkerId(String workerId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    // 1. Obtener todos los servicios del worker
+    final servicesUrl = Uri.parse('$baseUrl/services/byUserId?workerId=$workerId');
+    final servicesResp = await http.get(
+      servicesUrl,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (servicesResp.statusCode != 200) {
+      throw Exception('Error al cargar servicios del worker: \\${servicesResp.statusCode}');
+    }
+    final List services = json.decode(servicesResp.body) as List;
+    List<Map<String, dynamic>> allOffers = [];
+
+    // 2. Por cada servicio, obtener sus ofertas
+    for (final service in services) {
+      final serviceId = service['id'];
+      final offersUrl = Uri.parse('$baseUrl/offers/$serviceId');
+      final offersResp = await http.get(
+        offersUrl,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (offersResp.statusCode == 200) {
+        final List offers = json.decode(offersResp.body) as List;
+        allOffers.addAll(offers.map((e) => Map<String, dynamic>.from(e)));
+      }
+      // Si no hay ofertas para ese servicio, simplemente sigue
+    }
+    return allOffers;
+  }
+
+  // Obtiene las ofertas hechas por un worker específico (para Wallet)
+  Future<List<Map<String, dynamic>>> getWorkerOffers(String workerId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    try {
+      // Usar un endpoint más específico que filtre por workerId en las ofertas
+      final offersUrl = Uri.parse('$baseUrl/offers/byWorker?workerId=$workerId');
+      final offersResp = await http.get(
+        offersUrl,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      if (offersResp.statusCode == 200) {
+        final List offers = json.decode(offersResp.body) as List;
+        return offers.map((e) => Map<String, dynamic>.from(e)).toList();
+      } else {
+        // Si el endpoint específico no existe, usar el método anterior pero filtrar
+        print('Endpoint específico no disponible, usando método alternativo');
+        return await _getWorkerOffersAlternative(workerId);
+      }
+    } catch (e) {
+      print('Error al obtener ofertas del worker: $e');
+      // Fallback al método anterior
+      return await _getWorkerOffersAlternative(workerId);
+    }
+  }
+
+  // Método alternativo para obtener ofertas del worker
+  Future<List<Map<String, dynamic>>> _getWorkerOffersAlternative(String workerId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    List<Map<String, dynamic>> workerOffers = [];
+
+    try {
+      // Obtener todas las ofertas y filtrar por workerId
+      final allOffersUrl = Uri.parse('$baseUrl/offers');
+      final allOffersResp = await http.get(
+        allOffersUrl,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (allOffersResp.statusCode == 200) {
+        final List allOffers = json.decode(allOffersResp.body) as List;
+        // Filtrar solo las ofertas hechas por este worker
+        workerOffers = allOffers
+            .where((offer) => offer['workerId'] == workerId)
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    } catch (e) {
+      print('Error en método alternativo: $e');
+    }
+
+    return workerOffers;
+  }
 }
+
 class ServiceResponse {
   final String id;
   final String name;

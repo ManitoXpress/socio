@@ -23,6 +23,7 @@ import 'menu/Loading.dart';
 import 'menu/login.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
@@ -83,15 +84,18 @@ void main() async {
     ),
   );
 }
+
 Future<void> requestTrackingPermission() async {
   if (Platform.isIOS) {
     final status = await AppTrackingTransparency.trackingAuthorizationStatus;
     if (status == TrackingStatus.notDetermined) {
-      final result = await AppTrackingTransparency.requestTrackingAuthorization();
+      final result =
+          await AppTrackingTransparency.requestTrackingAuthorization();
       print("Estado de ATT: \$result");
     }
   }
 }
+
 Future<void> requestNotificationPermissions() async {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
@@ -103,7 +107,6 @@ Future<void> requestNotificationPermissions() async {
 
   print('User granted permission: ${settings.authorizationStatus}');
 }
-
 
 Future<String> obtenerDeviceId() async {
   try {
@@ -133,22 +136,21 @@ class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
 }
+
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool isLoading = true;
   bool isLoggedIn = false;
   UserData? userData;
   RegistrationData? registrationData;
 
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-  requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
-  _checkLoginStatus();
-});
-
+      requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
+      _checkLoginStatus();
+    });
 
     isLoading = true;
     _checkLoginStatus(); // Llama directamente a la función
@@ -196,40 +198,48 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Manitos Xpress Socio',
-        theme: ThemeData(
-          primarySwatch: MaterialColor(
-            0xFF1A819A,
-            <int, Color>{
-              50: Color(0xFF84090D),
-              100: Color.fromARGB(255, 127, 108, 109),
-              200: Color(0xFF84090D),
-              300: Color(0xFF84090D),
-              400: Color(0xFF84090D),
-              500: Color(0xFF84090D),
-              600: Color(0xFF84090D),
-              700: Color(0xFF84090D),
-              800: Color(0xFF84090D),
-              900: Color(0xFF84090D),
-            },
-          ),
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            secondary: Colors.grey,
-            background: Colors.white,
-            onBackground: Colors.grey,
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF84090D),
-          ),
+      debugShowCheckedModeBanner: false,
+      title: 'Manitos Xpress Socio',
+      theme: ThemeData(
+        primarySwatch: MaterialColor(
+          0xFF1A819A,
+          <int, Color>{
+            50: Color(0xFF84090D),
+            100: Color.fromARGB(255, 127, 108, 109),
+            200: Color(0xFF84090D),
+            300: Color(0xFF84090D),
+            400: Color(0xFF84090D),
+            500: Color(0xFF84090D),
+            600: Color(0xFF84090D),
+            700: Color(0xFF84090D),
+            800: Color(0xFF84090D),
+            900: Color(0xFF84090D),
+          },
         ),
-        initialRoute: '/',
-        routes: {
-          '/': (context) => isLoading ? LoadingScreen() : (isLoggedIn ? HomeScreen(userData: userData!, registrationData: registrationData!) : LoginScreen(deviceId: widget.deviceId)),
-          '/home': (context) => HomeScreen(userData: userData!, registrationData: registrationData!),  // Ruta definida para 'HomeScreen'
-        },
-        );
-    }
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          secondary: Colors.grey,
+          background: Colors.white,
+          onBackground: Colors.grey,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF84090D),
+        ),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => isLoading
+            ? LoadingScreen()
+            : (isLoggedIn && userData != null && registrationData != null
+                ? HomeScreen(
+                    userData: userData!, registrationData: registrationData!)
+                : LoginScreen(deviceId: widget.deviceId)),
+        '/home': (context) => (userData != null && registrationData != null)
+            ? HomeScreen(
+                userData: userData!, registrationData: registrationData!)
+            : LoginScreen(deviceId: widget.deviceId),
+      },
+    );
+  }
 }
 
 // Ejemplo de función para obtener los datos del usuario
@@ -278,10 +288,12 @@ Future<UserData> fetchUserData(String userId) async {
       certificateImagePaths: [],
       referralCode: '',
       points: 0,
-      codeReferral: '', verificationStatus: '',
+      codeReferral: '',
+      verificationStatus: '',
     ),
     referrerWorkerId: '',
     referralCode: '',
-    points: 0, verificationStatus: '',
+    points: 0,
+    verificationStatus: '',
   );
 }

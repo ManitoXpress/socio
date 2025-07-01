@@ -1,7 +1,12 @@
+// Modelo de Provider extendido para manejar múltiples imágenes
+import 'package:flutter/material.dart';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:socio/Controller/RegisController.dart';
+
+
 class ImageStateProvider extends ChangeNotifier {
   // Imágenes de perfil
   File? _profileImage;

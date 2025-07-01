@@ -119,35 +119,55 @@ class CompleteJobDialog {
         // Obtener la referencia del documento de la oferta
         final offerDocRef = offerQuerySnapshot.docs.first.reference;
 
-        // Preparar lote de actualizaciones
-        WriteBatch batch = FirebaseFirestore.instance.batch();
-
-        // Actualizar el estado de la oferta
-        batch.update(offerDocRef, {
-          'status': 'pending_confirmation',
-        });
-
         // Obtener referencia del servicio
         final serviceDocRef = FirebaseFirestore.instance
             .collection('services')
             .doc(serviceRequest.id);
 
-        // Actualizar el estado del servicio
-        batch.update(serviceDocRef, {
-          'status': 'pending_confirmation',
-        });
-
         // Obtener token de autenticación
         String? token = await FirebaseAuth.instance.currentUser!.getIdToken();
 
-        // Subir imagen al backend
-        await apiService.uploadImageToBackend(_selectedImageUrl!, serviceRequest.id, token!);
+        // Usar una transacción para asegurar consistencia
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          // Verificar que los documentos aún existen
+          final offerDoc = await transaction.get(offerDocRef);
+          final serviceDoc = await transaction.get(serviceDocRef);
 
-        // Confirmar actualizaciones en lote
-        await batch.commit();
+          if (!offerDoc.exists) {
+            throw Exception('La oferta ya no existe');
+          }
+
+          if (!serviceDoc.exists) {
+            throw Exception('El servicio ya no existe');
+          }
+
+          // Actualizar el estado de la oferta
+          transaction.update(offerDocRef, {
+            'status': 'completed',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          // Actualizar el estado del servicio
+          transaction.update(serviceDocRef, {
+            'status': 'completed',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+
+          print('Transacción de Firestore completada exitosamente');
+        });
+
+        // Subir imagen al backend después de la transacción
+        try {
+          await apiService.uploadImageToBackend(_selectedImageUrl!, serviceRequest.id, token!);
+          print('Imagen subida al backend exitosamente');
+        } catch (imageError) {
+          print('Error al subir imagen al backend: $imageError');
+          // No lanzamos la excepción aquí para no revertir la transacción
+          // Solo mostramos un warning
+        }
 
         // Notificar cambio de estado
-        onStatusChanged('pending_confirmation');
+        onStatusChanged('completed');
 
         // Cerrar diálogos de carga
         Navigator.of(context).pop(); // Cerrar indicador de carga
@@ -156,9 +176,34 @@ class CompleteJobDialog {
         // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Trabajo completado y esperando confirmación del cliente'),
+            content: Text('Trabajo completado exitosamente'),
+            backgroundColor: Colors.green,
           ),
         );
+
+        // Verificación adicional para iOS
+        if (Platform.isIOS) {
+          // Esperar un momento y verificar que los cambios se aplicaron
+          await Future.delayed(Duration(seconds: 2));
+          
+          try {
+            final verifyOffer = await offerDocRef.get();
+            final verifyService = await serviceDocRef.get();
+            
+            print('Verificación iOS - Estado de oferta: ${verifyOffer.data()?['status']}');
+            print('Verificación iOS - Estado de servicio: ${verifyService.data()?['status']}');
+            
+            if (verifyOffer.data()?['status'] != 'completed' || 
+                verifyService.data()?['status'] != 'completed') {
+              print('Advertencia: Los estados no se actualizaron correctamente en iOS');
+              // Intentar actualización manual como fallback
+              await _retryUpdateForIOS(offerDocRef, serviceDocRef);
+            }
+          } catch (verifyError) {
+            print('Error en verificación iOS: $verifyError');
+          }
+        }
+
       } catch (e) {
         // Cerrar diálogo de carga en caso de error
         Navigator.of(context).pop();
@@ -166,10 +211,20 @@ class CompleteJobDialog {
         // Imprimir error
         print('Error al completar el trabajo: $e');
 
-        // Mostrar mensaje de error
+        // Mostrar mensaje de error específico
+        String errorMessage = 'Error al completar el trabajo.';
+        if (e.toString().contains('permission-denied')) {
+          errorMessage = 'Error de permisos. Verifica tu autenticación.';
+        } else if (e.toString().contains('not-found')) {
+          errorMessage = 'El servicio o la oferta no se encontraron.';
+        } else if (e.toString().contains('unavailable')) {
+          errorMessage = 'Servicio temporalmente no disponible. Intenta de nuevo.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al completar el trabajo. Por favor, intenta de nuevo.'),
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -184,9 +239,27 @@ class CompleteJobDialog {
     }
   }
 
-
-
-
+  // Método de retry específico para iOS
+  Future<void> _retryUpdateForIOS(DocumentReference offerRef, DocumentReference serviceRef) async {
+    try {
+      print('Intentando actualización manual para iOS...');
+      
+      // Actualización individual sin transacción
+      await offerRef.update({
+        'status': 'completed',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      await serviceRef.update({
+        'status': 'completed',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      print('Actualización manual para iOS completada');
+    } catch (retryError) {
+      print('Error en retry iOS: $retryError');
+    }
+  }
 
   // Llamar a este método cuando el estado sea pending_confirmation2
   void show() {
