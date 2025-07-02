@@ -1961,7 +1961,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _sendDebtSummaryToWhatsApp() async {
-    const phoneNumber = '+59165884846';
+    const phoneNumber = '+59173666393';
 
     // Crear mensaje detallado
     final serviceIds = _selectedDebtIds.join(', ');
