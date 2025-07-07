@@ -13,16 +13,14 @@ class ImagesCarouselSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(20.0),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-            color: const Color(0xFF84090D).withOpacity(0.1), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF84090D).withOpacity(0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -36,23 +34,22 @@ class ImagesCarouselSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10.0),
                 decoration: BoxDecoration(
-                  color: Colors.purple[600]!.withOpacity(0.1),
+                  color: const Color(0xFF830A09)!.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 child: Icon(
                   Icons.photo_library,
-                  color: Colors.purple[600]!,
-                  size: 24,
+                  color: const Color(0xFF830A09)!,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 16),
               Text(
-                'GALERÍA DE IMÁGENES',
-                style: GoogleFonts.karla(
-                  fontSize: 14,
+                'Galeria de Imagenes',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                  letterSpacing: 0.5,
+                  color: Color(0xFF830A09),
                 ),
               ),
             ],

@@ -10,16 +10,14 @@ class DescriptionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(20.0),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-            color: const Color(0xFF84090D).withOpacity(0.1), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF84090D).withOpacity(0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -31,43 +29,44 @@ class DescriptionSection extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10.0),
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.blue[600]!.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12.0),
+                  color: const Color(0xFF830A09).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  Icons.description,
-                  color: Colors.blue[600]!,
-                  size: 24,
+                child: const Icon(
+                  Icons.description_rounded,
+                  color: Color(0xFF830A09),
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Text(
-                'DESCRIPCIÓN DEL SERVICIO',
-                style: GoogleFonts.karla(
-                  fontSize: 14,
+                'Descripción del Servicio',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                  letterSpacing: 0.5,
+                  color: const Color(0xFF830A09),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: const Color(0xFF830A09).withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!, width: 1),
+              border: Border.all(
+                color: const Color(0xFF830A09).withOpacity(0.1),
+              ),
             ),
             child: Text(
               description,
-              style: GoogleFonts.karla(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
                 color: Colors.black87,
                 height: 1.5,
               ),

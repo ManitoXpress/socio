@@ -35,16 +35,14 @@ class ActionButtonsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = prov.currentStatus;
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(20.0),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-            color: const Color(0xFF84090D).withOpacity(0.1), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF84090D).withOpacity(0.08),
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -58,23 +56,22 @@ class ActionButtonsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10.0),
                 decoration: BoxDecoration(
-                  color: Colors.indigo[600]!.withOpacity(0.1),
+                  color: const Color(0xFF830A09)!.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.0),
                 ),
                 child: Icon(
                   Icons.touch_app,
-                  color: Colors.indigo[600]!,
-                  size: 24,
+                  color: const Color(0xFF830A09)!,
+                  size: 20,
                 ),
               ),
               const SizedBox(width: 16),
               Text(
-                'ACCIONES DISPONIBLES',
-                style: GoogleFonts.karla(
-                  fontSize: 14,
+                'Acciones Disponibles',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                  letterSpacing: 0.5,
+                  color: Color(0xFF830A09),
                 ),
               ),
             ],
@@ -98,7 +95,7 @@ class ActionButtonsSection extends StatelessWidget {
             const SizedBox(height: 16),
             _buildModernButton(
               onPressed: () => _showCommentsModal(context, prov),
-              icon: Icons.comment,
+              icon: Icons.chat_bubble_rounded,
               label: 'Comentarios ($commentCount)',
               backgroundColor: Colors.black87,
               textColor: Colors.white,
@@ -112,7 +109,7 @@ class ActionButtonsSection extends StatelessWidget {
                   onPressed: () => _showUploadCompletionDialog(context, prov),
                   icon: Icons.work,
                   label: "Completar trabajo",
-                  backgroundColor: Colors.green[600]!,
+                  backgroundColor: const Color(0xFF1A819A)!,
                   textColor: Colors.white,
                   iconColor: Colors.white,
                 ),
@@ -121,7 +118,7 @@ class ActionButtonsSection extends StatelessWidget {
                   onPressed: () => _showNoParticipationDialog(context, prov),
                   icon: Icons.dangerous,
                   label: "No Participar",
-                  backgroundColor: Colors.red[600]!,
+                  backgroundColor: const Color(0xFF830A09)!,
                   textColor: Colors.white,
                   iconColor: Colors.white,
                 ),
@@ -248,12 +245,12 @@ class ActionButtonsSection extends StatelessWidget {
   }) {
     return Container(
       width: double.infinity,
-      height: 56,
+      height: 48,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: backgroundColor.withOpacity(0.3),
+            color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -266,7 +263,7 @@ class ActionButtonsSection extends StatelessWidget {
           foregroundColor: textColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
@@ -342,7 +339,7 @@ class ActionButtonsSection extends StatelessWidget {
                     style: GoogleFonts.karla(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                      color: const Color(0xFF000000),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -360,7 +357,7 @@ class ActionButtonsSection extends StatelessWidget {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
-                            color: Color(0xFF84090D), width: 2),
+                            color: Color(0xFF000000), width: 2),
                       ),
                       prefixIcon: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -378,12 +375,18 @@ class ActionButtonsSection extends StatelessWidget {
                 ],
               ),
               actions: [
-                TextButton(
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF84090D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: _sending ? null : () => Navigator.of(ctx).pop(),
                   child: Text(
                     "Cancelar",
                     style: GoogleFonts.karla(
-                      color: Colors.grey[600],
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -449,10 +452,10 @@ class ActionButtonsSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: const Color(0xFF830A09).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.dangerous, color: Colors.red),
+                child: const Icon(Icons.dangerous, color: Color(0xFF830A09)),
               ),
               const SizedBox(width: 12),
               Text(
@@ -460,7 +463,7 @@ class ActionButtonsSection extends StatelessWidget {
                 style: GoogleFonts.karla(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red,
+                  color: const Color(0xFF830A09),
                 ),
               ),
             ],
@@ -489,7 +492,7 @@ class ActionButtonsSection extends StatelessWidget {
                 Navigator.of(ctx).pop();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: const Color(0xFF830A09),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -526,10 +529,11 @@ class ActionButtonsSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: const Color(0xFF1A819A).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.work, color: Colors.green, size: 24),
+                    child: Icon(Icons.work,
+                        color: const Color(0xFF1A819A), size: 24),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -537,7 +541,7 @@ class ActionButtonsSection extends StatelessWidget {
                     style: GoogleFonts.karla(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green[800],
+                      color: const Color(0xFF1A819A),
                     ),
                   ),
                 ],
@@ -610,7 +614,7 @@ class ActionButtonsSection extends StatelessWidget {
                       child: Text(
                         'Imagen seleccionada',
                         style: GoogleFonts.karla(
-                          color: Colors.green[700],
+                          color: const Color(0xFF1A819A),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -650,7 +654,7 @@ class ActionButtonsSection extends StatelessWidget {
                           Navigator.of(ctx2).pop();
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
+                    backgroundColor: const Color(0xFF1A819A),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

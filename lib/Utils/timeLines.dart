@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:socio/Screens/commentScreen.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/authUtils.dart';
 import 'package:socio/Utils/service_details_card.dart';
@@ -27,7 +28,6 @@ import 'timeline_widgets/expertises_section.dart';
 import 'timeline_widgets/location_map_section.dart';
 import 'timeline_widgets/financial_breakdown_section.dart';
 import 'timeline_widgets/action_buttons_section.dart';
-
 class ServiceFormWithTimelineSocio extends StatefulWidget {
   final ServiceRequestModel serviceRequest;
   final OfferModel offer;
@@ -178,6 +178,9 @@ class _ServiceFormWithTimelineSocioState
           final workerOfferedPrice = prov.workerOfferedPrice;
           final hasExistingProposal = prov.hasExistingProposal;
 
+          // Define tu API KEY aquí (reemplaza por la tuya real)
+          const String googleMapsApiKey = 'AIzaSyBRj4mtlIsxekbQOnGcwWSWuNVaGi3-hIM';
+
           return Scaffold(
             appBar: AppBar(
               iconTheme: const IconThemeData(color: Colors.white),
@@ -197,7 +200,7 @@ class _ServiceFormWithTimelineSocioState
                       padding: const EdgeInsets.all(16.0),
                       decoration: BoxDecoration(
                         border:
-                            Border.all(color: AppColors.primary, width: 2.0),
+                        Border.all(color: AppColors.primary, width: 2.0),
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: Column(
@@ -233,7 +236,10 @@ class _ServiceFormWithTimelineSocioState
                           const SizedBox(height: 16),
 
                           // ── Mapa (marca la ubicación del cliente)
-                          LocationMapSection(location: initialPos),
+                          LocationMapSection(
+                            location: initialPos,
+                            status: Status(id: currentStatus, name: Status.getNameById(currentStatus)),
+                          ),
                           const SizedBox(height: 16),
 
                           // ── Desglose financiero para servicios completados
