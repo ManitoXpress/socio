@@ -17,10 +17,10 @@ class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
   Future<http.Response> updateFcmToken(
-    String userId,
-    String authToken,
-    String fcmToken,
-  ) async {
+      String userId,
+      String authToken,
+      String fcmToken,
+      ) async {
     try {
       final body = jsonEncode({'fcmToken': fcmToken});
 
@@ -46,28 +46,28 @@ class ApiService {
     }
   }
   Future<bool> deleteWorker(String userId, String authToken) async {
-  try {
-    final url = Uri.parse('$baseUrl/workers/$userId');
-    final response = await http.delete(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      },
-    );
+    try {
+      final url = Uri.parse('$baseUrl/workers/$userId');
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 204) {
-      debugPrint('✅ Worker eliminado correctamente');
-      return true;
-    } else {
-      debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        debugPrint('✅ Worker eliminado correctamente');
+        return true;
+      } else {
+        debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Excepción al eliminar worker: $e');
       return false;
     }
-  } catch (e) {
-    debugPrint('❌ Excepción al eliminar worker: $e');
-    return false;
   }
-}
 
 
 
@@ -129,28 +129,33 @@ class ApiService {
 
   Future<bool> checkProposalExists(String serviceId, String workerId) async {
     try {
-      // Intentar obtener un token actualizado
       String token = await FirebaseAuth.instance.currentUser?.getIdToken(true) ?? '';
-
       if (token.isEmpty) {
         print('Error: No se pudo renovar el token de autenticación.');
         throw Exception('No se ha proporcionado un token de autenticación válido.');
       }
 
-      // Asegúrate de que tu endpoint retorne correctamente las ofertas filtradas
       final response = await http.get(
-        Uri.parse('$baseUrl/offers?serviceId=$serviceId&workerId=$workerId'),
+        Uri.parse('$baseUrl/offers/$serviceId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
+      print('DEBUG: checkProposalExists - response.statusCode:  [${response.statusCode}]');
+      print('DEBUG: checkProposalExists - response.body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('Respuesta de verificación: $data'); // Para depuración
+        print('DEBUG: checkProposalExists - data: $data');
+        // Si el backend retorna una lista de ofertas:
         List<dynamic> offers = data is List ? data : (data['offers'] ?? []);
-        return offers.isNotEmpty;
+        print('DEBUG: checkProposalExists - offers: $offers');
+        // Filtra por workerId
+        final exists = offers.any((offer) => offer['workerId'] == workerId);
+        print('DEBUG: checkProposalExists - exists for workerId: $exists');
+        return exists;
       }
       return false;
     } catch (e) {
@@ -704,16 +709,16 @@ class FormData {
 
   Map<String, dynamic> toMap() {
     return {
-    'dateTime': dateTime,
-    'description': description,
-    'images': images,
-    'location': {
-    'lat': location['lat'],
-    'lng': location['lng'],
-    },
-    'offeredPrice': offeredPrice,
-    'serviceType': serviceType, // Usar la cadena en lugar de un objeto ServiceType
-    'userId': userId,
-      };
-    }
+      'dateTime': dateTime,
+      'description': description,
+      'images': images,
+      'location': {
+        'lat': location['lat'],
+        'lng': location['lng'],
+      },
+      'offeredPrice': offeredPrice,
+      'serviceType': serviceType, // Usar la cadena en lugar de un objeto ServiceType
+      'userId': userId,
+    };
+  }
 }

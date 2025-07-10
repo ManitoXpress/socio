@@ -24,6 +24,7 @@ import '../models/offer_models.dart';
 import '../models/serviceRequest_models.dart';
 import '../models/workerDetails_models.dart';
 
+
 class ServicePartnerProvider extends ChangeNotifier {
   final ServiceRequestModel serviceRequest;
   final OfferModel offer;
@@ -242,13 +243,26 @@ class ServicePartnerProvider extends ChangeNotifier {
 
   Future<void> _checkExistingProposal() async {
     try {
-      final existing = await ProposalService.checkExistingProposal(
+      // Verificar con ProposalService
+      final existingLocal = await ProposalService.checkExistingProposal(
         serviceRequestId: serviceRequest.id,
         workerId: workerId,
       );
+      
+      // Verificar con ApiService (backend)
+      final existingBackend = await ApiService().checkProposalExists(
+        serviceRequest.id, 
+        workerId
+      );
+      
+      // Si existe en cualquiera de los dos, marcar como existente
+      final existing = existingLocal || existingBackend;
       _hasExistingProposal = existing;
       _proposalSent = existing;
+      
+      print('DEBUG: _checkExistingProposal - existingLocal: $existingLocal, existingBackend: $existingBackend, final: $existing');
     } catch (e) {
+      print('DEBUG: Error en _checkExistingProposal: $e');
       // Si hay error, asumimos que no existe aún
       _hasExistingProposal = false;
       _proposalSent = false;
@@ -257,7 +271,17 @@ class ServicePartnerProvider extends ChangeNotifier {
   }
 
   Future<bool> sendProposal() async {
-    if (_isSendingProposal || _proposalSent) return false;
+    // Validación inicial más estricta
+    if (_isSendingProposal) {
+      _setError('Ya se está enviando una propuesta');
+      return false;
+    }
+    
+    if (_proposalSent || _hasExistingProposal) {
+      _setError('Ya existe una propuesta para este servicio');
+      return false;
+    }
+
     _isSendingProposal = true;
     _notifyIfNeeded();
 
@@ -272,7 +296,7 @@ class ServicePartnerProvider extends ChangeNotifier {
       return false;
     }
 
-    // 1) Verificar en servidor/Firebase si ya existe
+    // 1) Verificar en servidor si ya existe (más robusto)
     try {
       final alreadyExists =
           await ApiService().checkProposalExists(serviceRequest.id, workerId);
@@ -283,10 +307,34 @@ class ServicePartnerProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      // Continuamos si hay error en verificación remota
+      // Si hay error en verificación, NO continuamos
+      _setError('Error al verificar propuestas existentes: $e');
+      _isSendingProposal = false;
+      _notifyIfNeeded();
+      return false;
     }
 
-    // 2) Convertir ServiceRequestModel -> ServiceRequest (dominio) usando todos sus campos
+    // 2) Verificación adicional con ProposalService
+    try {
+      final existingProposal = await ProposalService.checkExistingProposal(
+        serviceRequestId: serviceRequest.id,
+        workerId: workerId,
+      );
+      if (existingProposal) {
+        _setError('Ya existe una propuesta para este servicio');
+        _isSendingProposal = false;
+        _notifyIfNeeded();
+        return false;
+      }
+    } catch (e) {
+      // Si hay error en verificación local, NO continuamos
+      _setError('Error al verificar propuestas existentes: $e');
+      _isSendingProposal = false;
+      _notifyIfNeeded();
+      return false;
+    }
+
+    // 3) Convertir ServiceRequestModel -> ServiceRequest (dominio) usando todos sus campos
     final domainService = ServiceRequest(
       CreatedAt: '', // tu lógica para CreatedAt
       serviceDateTime: '${serviceRequest.date} ${serviceRequest.time}',
@@ -353,7 +401,7 @@ class ServicePartnerProvider extends ChangeNotifier {
           : null,
     );
 
-    // 3) Enviar propuesta al servidor usando el objeto de dominio
+    // 4) Enviar propuesta al servidor usando el objeto de dominio
     try {
       await ApiService().sendProposalToServer(
         domainService,
@@ -362,10 +410,16 @@ class ServicePartnerProvider extends ChangeNotifier {
         extraCosts,
         workerId,
       );
+      
+      // Actualizar estado inmediatamente después del envío exitoso
       _workerOfferedPrice = offeredPrice;
       _proposalSent = true;
+      _hasExistingProposal = true;
       _proposalsSentForServiceIds.add(serviceRequest.id);
-
+      
+      // Refresca el estado consultando el backend para confirmar
+      await _checkExistingProposal();
+      
       _isSendingProposal = false;
       _notifyIfNeeded();
       return true;
