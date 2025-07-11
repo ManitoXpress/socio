@@ -7,6 +7,11 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../Utils/styles.dart';
 import '../ServiceResponse/get.dart';
+import 'wallet_totals_summary.dart';
+import 'wallet_filters.dart';
+import 'wallet_offer_list.dart';
+import 'wallet_income_list.dart';
+import 'wallet_dialogs.dart';
 
 class WalletScreen extends StatefulWidget {
   WalletScreen({Key? key}) : super(key: key);
@@ -227,8 +232,8 @@ class _WalletScreenState extends State<WalletScreen> {
                   FloatingActionButton.extended(
                     onPressed: _selectedDebtIds.isEmpty
                         ? null
-                        : () => _showDebtSummaryWithData(
-                            _getSelectedDebtDetails(_getCurrentOffers())),
+                        : () => WalletDialogs.showDebtSummaryDialog(
+                            context, _selectedDebtIds, _getCurrentOffers()),
                     label: Text(
                         'Pagar ${_selectedDebtIds.length} deuda${_selectedDebtIds.length == 1 ? '' : 's'}',
                         style: TextStyle(
@@ -285,7 +290,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   print(
                       '[DEBUG] StreamBuilder - No data or empty docs, returning empty summary');
-                  return _buildTotalsSummary(
+                  return WalletTotalsSummary(
                       adeudado: 0, ingresos: 0, pagado: 0);
                 }
                 final offers = snapshot.data!.docs;
@@ -361,7 +366,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ? income
                         : double.tryParse(income.toString()) ?? 0.0)
                     .toList();
-                return _buildTotalsSummary(
+                return WalletTotalsSummary(
                   adeudado: adeudado,
                   ingresos:
                       ingresos.fold<double>(0.0, (sum, income) => sum + income),
@@ -394,7 +399,27 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             ),
             // Filtros rápidos
-            _buildFilters(),
+            WalletFilters(
+              searchController: _searchController,
+              searchQuery: _searchQuery,
+              selectedStatus: _selectedStatus,
+              selectedDateRange: _selectedDateRange,
+              onSearchChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              onStatusChanged: (value) {
+                setState(() {
+                  _selectedStatus = value;
+                });
+              },
+              onDateRangeChanged: (value) {
+                setState(() {
+                  _selectedDateRange = value;
+                });
+              },
+            ),
             // Título
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10.0),
@@ -522,11 +547,43 @@ class _WalletScreenState extends State<WalletScreen> {
 
                     return TabBarView(
                       children: [
-                        _buildFilteredOfferList(
-                            context, adeudado, 'Adeudado', offers),
-                        _buildFilteredIncomeList(context, ingresos, offers),
-                        _buildFilteredOfferList(
-                            context, pagado, 'Pagado', offers),
+                        WalletOfferList(
+                          offers: adeudado,
+                          title: 'Adeudado',
+                          allOffers: offers,
+                          isSelectionMode: _isSelectionMode,
+                          selectedDebtIds: _selectedDebtIds,
+                          onToggleDebtSelection: _toggleDebtSelection,
+                          onShowOfferDetails: (data) =>
+                              _showOfferDetails(context, data),
+                        ),
+                        WalletIncomeList(
+                          ingresos: ingresos,
+                          services: offers,
+                          selectedIncomePeriod: _selectedIncomePeriod,
+                          monthlyIncome: _monthlyIncome,
+                          totalIncome: _totalIncome,
+                          averageIncome: _averageIncome,
+                          bestMonthIncome: _bestMonthIncome,
+                          bestMonth: _bestMonth,
+                          onPeriodChanged: (value) {
+                            setState(() {
+                              _selectedIncomePeriod = value ?? '6';
+                            });
+                          },
+                          onShowIncomeDetails: (data) =>
+                              _showIncomeDetails(context, data),
+                        ),
+                        WalletOfferList(
+                          offers: pagado,
+                          title: 'Pagado',
+                          allOffers: offers,
+                          isSelectionMode: false,
+                          selectedDebtIds: _selectedDebtIds,
+                          onToggleDebtSelection: _toggleDebtSelection,
+                          onShowOfferDetails: (data) =>
+                              _showOfferDetails(context, data),
+                        ),
                       ],
                     );
                   },
@@ -537,108 +594,6 @@ class _WalletScreenState extends State<WalletScreen> {
         ),
       ),
     ));
-  }
-
-  Widget _buildTotalsSummary(
-      {required double adeudado,
-      required double ingresos,
-      required double pagado}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          Expanded(
-            child: _buildTotalCard(
-                'Adeudado',
-                '\Bs ${adeudado.toStringAsFixed(2)}',
-                Color(0xFF84090D),
-                Icons.warning),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildTotalCard(
-                'Ingresos',
-                '\Bs ${ingresos.toStringAsFixed(2)}',
-                Colors.black87,
-                Icons.trending_up),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildTotalCard('Pagado', '\Bs ${pagado.toStringAsFixed(2)}',
-                Color(0xFF4CAF50), Icons.check_circle),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTotalCard(
-      String label, String value, Color color, IconData icon) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
-      color: Colors.white,
-      shadowColor: color.withOpacity(0.08),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon,
-                color: label == 'Adeudado'
-                    ? Color(0xFF84090D)
-                    : (label == 'Pagado' ? Color(0xFF4CAF50) : Colors.black87),
-                size: 24),
-            const SizedBox(height: 2),
-            Text(label,
-                style: TextStyle(
-                    color: label == 'Adeudado'
-                        ? Color(0xFF84090D)
-                        : (label == 'Pagado'
-                            ? Color(0xFF4CAF50)
-                            : Colors.black87),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13)),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: label == 'Adeudado'
-                      ? Color(0xFF84090D)
-                      : (label == 'Pagado'
-                          ? Color(0xFF4CAF50)
-                          : Colors.black87),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilters() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Expanded(child: _buildSearchField()),
-          const SizedBox(width: 8),
-          OutlinedButton.icon(
-            onPressed: _showDateRangePicker,
-            icon: const Icon(Icons.date_range, size: 18),
-            label: const Text('Fechas'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildSkeletonLoader() {
@@ -727,772 +682,18 @@ class _WalletScreenState extends State<WalletScreen> {
                         fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                 )
-              : _buildOfferList(context, filteredOffers, title, allOffers),
+              : WalletOfferList(
+                  offers: filteredOffers,
+                  title: title,
+                  allOffers: allOffers,
+                  isSelectionMode: _isSelectionMode,
+                  selectedDebtIds: _selectedDebtIds,
+                  onToggleDebtSelection: _toggleDebtSelection,
+                  onShowOfferDetails: (data) =>
+                      _showOfferDetails(context, data),
+                ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFilteredIncomeList(BuildContext context, List<double> ingresos,
-      List<QueryDocumentSnapshot> services) {
-    print(
-        '[DEBUG] _buildFilteredIncomeList - Building with ${ingresos.length} ingresos and ${services.length} services');
-
-    // Filtrar solo servicios completados
-    final completedServices = services.where((service) {
-      final status = (service.data() as Map<String, dynamic>)['status']
-          ?.toString()
-          .trim()
-          .toLowerCase();
-      return status == 'completed';
-    }).toList();
-
-    print(
-        '[DEBUG] _buildFilteredIncomeList - Completed services: ${completedServices.length}');
-
-    // Calcular estadísticas mensuales
-    _calculateMonthlyIncome(completedServices);
-
-    final filteredServices = completedServices.where((offer) {
-      final matchesSearch = offer['serviceId']
-          .toString()
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase());
-      final matchesDate =
-          _selectedDateRange == null || _dateInRange(offer['createdAt']);
-      return matchesSearch && matchesDate;
-    }).toList();
-
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Selector de período
-          _buildPeriodSelector(),
-          // Estadísticas principales
-          _buildIncomeStatistics(),
-          // Gráfico de barras mensual
-          _buildMonthlyChart(),
-          // Lista de transacciones
-          _buildIncomeTransactionsList(context, filteredServices),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodSelector() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, color: Color(0xFF84090D), size: 20),
-          const SizedBox(width: 8),
-          Text('Período:',
-              style: TextStyle(
-                  fontWeight: FontWeight.w600, color: Color(0xFF84090D))),
-          const SizedBox(width: 12),
-          Expanded(
-            child: DropdownButton<String>(
-              value: _selectedIncomePeriod,
-              isExpanded: true,
-              underline: Container(),
-              items: [
-                DropdownMenuItem(value: '3', child: Text('Últimos 3 meses')),
-                DropdownMenuItem(value: '6', child: Text('Últimos 6 meses')),
-                DropdownMenuItem(value: '12', child: Text('Últimos 12 meses')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _selectedIncomePeriod = value ?? '6';
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIncomeStatistics() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Responsive: en pantallas pequeñas, mostrar en columna
-          if (constraints.maxWidth < 600) {
-            return Column(
-              children: [
-                _buildStatCard(
-                  'Total',
-                  'Bs ${_totalIncome.toStringAsFixed(2)}',
-                  Icons.account_balance_wallet,
-                  Color(0xFF4CAF50),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        'Promedio',
-                        'Bs ${_averageIncome.toStringAsFixed(2)}',
-                        Icons.trending_up,
-                        Color(0xFF2196F3),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildStatCard(
-                        'Mejor mes',
-                        _bestMonth.isNotEmpty ? _bestMonth : 'N/A',
-                        Icons.star,
-                        Color(0xFFFF9800),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
-
-          // En pantallas grandes, mostrar en fila
-          return Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'Total',
-                  'Bs ${_totalIncome.toStringAsFixed(2)}',
-                  Icons.account_balance_wallet,
-                  Color(0xFF4CAF50),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatCard(
-                  'Promedio',
-                  'Bs ${_averageIncome.toStringAsFixed(2)}',
-                  Icons.trending_up,
-                  Color(0xFF2196F3),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildStatCard(
-                  'Mejor mes',
-                  _bestMonth.isNotEmpty ? _bestMonth : 'N/A',
-                  Icons.star,
-                  Color(0xFFFF9800),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Flexible(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthlyChart() {
-    if (_monthlyIncome.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            'No hay datos de ingresos para mostrar',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ),
-      );
-    }
-
-    // Filtrar solo meses con ingresos mayores a 0
-    final monthsWithIncome =
-        _monthlyIncome.entries.where((entry) => entry.value > 0).toList();
-
-    if (monthsWithIncome.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            'No hay ingresos registrados en este período',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ),
-      );
-    }
-
-    final maxIncome =
-        monthsWithIncome.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final sortedMonths = monthsWithIncome.map((e) => e.key).toList()..sort();
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bar_chart, color: Color(0xFF84090D)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Historial de Ingresos',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF84090D),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final chartHeight = constraints.maxWidth < 400 ? 100.0 : 120.0;
-              final barWidth = constraints.maxWidth < 400 ? 16.0 : 20.0;
-
-              return SizedBox(
-                height: chartHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: sortedMonths.map((month) {
-                    final income = _monthlyIncome[month] ?? 0.0;
-                    // Solo mostrar barras si hay ingreso
-                    if (income <= 0) {
-                      return Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 1),
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  width: barWidth,
-                                  // Barra invisible para mantener el espacio
-                                  color: Colors.transparent,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                DateFormat('MMM', 'es').format(
-                                    DateFormat('MMM yyyy', 'es').parse(month)),
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.grey[400],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              Text(
-                                'Bs0',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[400],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    // Calcular altura proporcional al ingreso
-                    final height = maxIncome > 0 ? (income / maxIncome) : 0.0;
-                    final isCurrentMonth = month ==
-                        DateFormat('MMM yyyy', 'es').format(DateTime.now());
-
-                    return Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 1),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                width: barWidth,
-                                decoration: BoxDecoration(
-                                  color: isCurrentMonth
-                                      ? Color(0xFF84090D)
-                                      : Color(0xFF4CAF50),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: FractionallySizedBox(
-                                  alignment: Alignment.bottomCenter,
-                                  heightFactor: height,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isCurrentMonth
-                                          ? Color(0xFF84090D)
-                                          : Color(0xFF4CAF50),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              DateFormat('MMM', 'es').format(
-                                  DateFormat('MMM yyyy', 'es').parse(month)),
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            Text(
-                              'Bs${income.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF84090D),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIncomeTransactionsList(
-      BuildContext context, List<QueryDocumentSnapshot> services) {
-    if (services.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(40),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.receipt_long, size: 60, color: Colors.grey[400]),
-              const SizedBox(height: 16),
-              Text(
-                'No hay transacciones de ingresos',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              'Transacciones (${services.length})',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Color(0xFF84090D),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 300, // Altura fija para evitar overflow
-            child: ListView.builder(
-              itemCount: services.length,
-              padding: EdgeInsets.zero,
-              itemBuilder: (context, index) {
-                final service = services[index];
-                final commission = service['commission'] ?? 0.0;
-                final offeredPrice = service['offeredPrice'] ?? 0.0;
-                final netIncome = offeredPrice - commission;
-                final serviceId = service['serviceId'] ?? 'Sin ID';
-                final status = service['status'] ?? 'Desconocido';
-                final createdAtData = service['createdAt'];
-
-                DateTime createdAt;
-                if (createdAtData is Timestamp) {
-                  createdAt = createdAtData.toDate();
-                } else if (createdAtData is String) {
-                  createdAt =
-                      DateTime.tryParse(createdAtData) ?? DateTime.now();
-                } else if (createdAtData is Map &&
-                    createdAtData['_seconds'] != null) {
-                  // Firestore timestamp format
-                  createdAt = DateTime.fromMillisecondsSinceEpoch(
-                    (createdAtData['_seconds'] as int) * 1000,
-                  );
-                } else {
-                  createdAt = DateTime.now();
-                }
-
-                final isNew =
-                    DateTime.now().difference(createdAt).inMinutes < 10;
-                final monthName =
-                    DateFormat('MMM yyyy', 'es').format(createdAt);
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(12),
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF4CAF50).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Icon(
-                        Icons.attach_money,
-                        color: Color(0xFF4CAF50),
-                        size: 20,
-                      ),
-                    ),
-                    title: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Bs${netIncome.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Color(0xFF4CAF50),
-                            ),
-                          ),
-                        ),
-                        if (isNew)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Color(0xFFFDE8E9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'NUEVO',
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF84090D),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(
-                          'Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(createdAt)}',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 10),
-                        ),
-                        Text(
-                          'Mes: $monthName',
-                          style: TextStyle(
-                            color: Color(0xFF84090D),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 10,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Color(0xFFE8F5E9),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'INGRESO',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF4CAF50),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                status.toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    onTap: () => _showIncomeDetails(
-                        context, service.data() as Map<String, dynamic>),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showIncomeDetails(BuildContext context, Map<String, dynamic> service) {
-    final commission = service['commission'] ?? 0.0;
-    final offeredPrice = service['offeredPrice'] ?? 0.0;
-    final netIncome = offeredPrice - commission;
-    final serviceId = service['serviceId'] ?? 'No disponible';
-    final status = service['status'] ?? 'Desconocido';
-    final createdAtData = service['createdAt'];
-
-    DateTime createdAt;
-    if (createdAtData is Timestamp) {
-      createdAt = createdAtData.toDate();
-    } else if (createdAtData is String) {
-      createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
-    } else if (createdAtData is Map && createdAtData['_seconds'] != null) {
-      // Firestore timestamp format
-      createdAt = DateTime.fromMillisecondsSinceEpoch(
-        (createdAtData['_seconds'] as int) * 1000,
-      );
-    } else {
-      createdAt = DateTime.now();
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF4CAF50).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.attach_money,
-                          color: Color(0xFF4CAF50), size: 24),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Detalles del Ingreso',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Color(0xFF84090D),
-                            ),
-                          ),
-                          Text(
-                            DateFormat('dd/MM/yyyy HH:mm').format(createdAt),
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildDetailRow('Ingreso Neto',
-                    'Bs${netIncome.toStringAsFixed(2)}', Color(0xFF4CAF50)),
-                _buildDetailRow('Precio Ofertado',
-                    'Bs${offeredPrice.toStringAsFixed(2)}', Colors.black87),
-                _buildDetailRow('Comisión (10%)',
-                    'Bs${commission.toStringAsFixed(2)}', Colors.red),
-                const Divider(),
-                _buildDetailRow('Servicio ID', serviceId, Colors.black87),
-                _buildDetailRow('Estado', status, Colors.blue),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF84090D),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Cerrar'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, Color valueColor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1517,314 +718,6 @@ class _WalletScreenState extends State<WalletScreen> {
             .isBefore(_selectedDateRange!.end.add(const Duration(days: 1)));
   }
 
-  Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      cursorColor: Colors.black,
-      decoration: InputDecoration(
-        labelText: 'Buscar por ID o cliente',
-        labelStyle: const TextStyle(color: Colors.black),
-        prefixIcon: const Icon(Icons.search, color: Colors.black),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.black),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.black),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.black),
-        ),
-      ),
-      style: const TextStyle(color: Colors.black),
-      onChanged: (value) {
-        setState(() {
-          _searchQuery = value;
-        });
-      },
-    );
-  }
-
-  Widget _buildOfferList(
-      BuildContext context,
-      List<QueryDocumentSnapshot> offers,
-      String title,
-      List<QueryDocumentSnapshot> allOffers) {
-    return ListView.builder(
-      itemCount: offers.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemBuilder: (context, index) {
-        final offer = offers[index];
-        final offerId =
-            offer is QueryDocumentSnapshot ? offer.id : (offer['id'] ?? '');
-        final commission = offer['commission'] ?? 0.0;
-        final extraCosts = offer['extraCosts'] ?? 0.0;
-        final offeredPrice = offer['offeredPrice'] ?? 0.0;
-        final total = commission + extraCosts;
-        final paymentStatus = offer['paymentStatus'] ?? 'Desconocido';
-        final serviceId = offer['serviceId'] ?? 'Sin ID';
-        final status = offer['status'] ?? 'Desconocido';
-        final createdAtData = offer['createdAt'];
-        DateTime createdAt;
-        if (createdAtData is Timestamp) {
-          createdAt = createdAtData.toDate();
-        } else if (createdAtData is String) {
-          createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
-        } else if (createdAtData is Map && createdAtData['_seconds'] != null) {
-          // Firestore timestamp format
-          createdAt = DateTime.fromMillisecondsSinceEpoch(
-            (createdAtData['_seconds'] as int) * 1000,
-          );
-        } else {
-          createdAt = DateTime.now();
-        }
-        final isNew = DateTime.now().difference(createdAt).inMinutes < 10;
-
-        // Si es la sección de adeudado, mostrar desglose detallado
-        if (title == 'Adeudado') {
-          return Card(
-            color: _isSelectionMode && _selectedDebtIds.contains(offerId)
-                ? Color(0xFFFDE8E9)
-                : Colors.white,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: _isSelectionMode && _selectedDebtIds.contains(offerId)
-                  ? BorderSide(color: Color(0xFF84090D), width: 2)
-                  : BorderSide.none,
-            ),
-            elevation: 3,
-            child: InkWell(
-              onTap: _isSelectionMode
-                  ? () => _toggleDebtSelection(offerId)
-                  : () => _showOfferDetails(
-                      context, offer.data() as Map<String, dynamic>),
-              borderRadius: BorderRadius.circular(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    leading: _isSelectionMode
-                        ? Checkbox(
-                            value: _selectedDebtIds.contains(offerId),
-                            onChanged: (value) => _toggleDebtSelection(offerId),
-                            activeColor: Color(0xFF84090D),
-                          )
-                        : CircleAvatar(
-                            backgroundColor: Color(0xFF84090D),
-                            child:
-                                const Icon(Icons.warning, color: Colors.white),
-                          ),
-                    title: Text('Adeudado: \Bs${total.toStringAsFixed(2)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('Fecha: ${createdAt.toLocal()}',
-                        style: const TextStyle(color: Colors.grey)),
-                    trailing: isNew
-                        ? Chip(
-                            label: const Text('Nuevo'),
-                            backgroundColor: Color(0xFFFDE8E9),
-                            labelStyle: TextStyle(
-                              color: Color(0xFF84090D),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
-                  ),
-                  if (!_isSelectionMode)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Desglose del adeudado:',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(
-                              'Precio ofertado: \Bs${offeredPrice.toStringAsFixed(2)}',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w500)),
-                          Text(
-                              '+ Comisión (10%): \Bs${commission.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Color(0xFF84090D))),
-                          Text(
-                              '+ Costos extras: \Bs${extraCosts.toStringAsFixed(2)}',
-                              style: const TextStyle(color: Color(0xFF84090D))),
-                          const Divider(),
-                          Text(
-                              '= Total que nos debe: \Bs${total.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF84090D),
-                                  fontSize: 16)),
-                          const SizedBox(height: 8),
-                          Text('Detalles adicionales:',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text('Estado del pago: $paymentStatus'),
-                          Text('Estado: $status'),
-                          Text('Service ID: $serviceId'),
-                          const SizedBox(height: 8),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        // Para pagado, mantener el diseño original
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 2,
-          color: Colors.white,
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: paymentStatus == 'pagado'
-                  ? Color(0xFF4CAF50)
-                  : Color(0xFF84090D),
-              child: Icon(
-                paymentStatus == 'pagado' ? Icons.check : Icons.warning,
-                color: Colors.white,
-              ),
-            ),
-            title: Text('Servicio: $serviceId',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Fecha: ${createdAt.toLocal()}'),
-                Row(
-                  children: [
-                    Chip(
-                      label: Text(paymentStatus == 'pagado' ? 'PAGADO' : 'DEBE',
-                          style: TextStyle(
-                              color: paymentStatus == 'pagado'
-                                  ? Color(0xFF4CAF50)
-                                  : Color(0xFF84090D),
-                              fontWeight: FontWeight.bold)),
-                      backgroundColor: paymentStatus == 'pagado'
-                          ? Color(0xFFE8F5E9)
-                          : Color(0xFFFDE8E9),
-                    ),
-                    if (isNew)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Chip(
-                          label: const Text('Nuevo'),
-                          backgroundColor: Color(0xFFFDE8E9),
-                          labelStyle: TextStyle(
-                            color: Color(0xFF84090D),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-            trailing: Text(
-              '\Bs${total.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: paymentStatus == 'pagado'
-                    ? Color(0xFF4CAF50)
-                    : Color(0xFF84090D),
-                fontSize: 18,
-              ),
-            ),
-            onTap: () => _showOfferDetails(
-                context, offer.data() as Map<String, dynamic>),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showOfferDetails(BuildContext context, Map<String, dynamic> offer) {
-    final commission = offer['commission'] ?? 0.0;
-    final extraCosts = offer['extraCosts'] ?? 0.0;
-    final total = commission + extraCosts;
-    final serviceId = offer['serviceId'] ?? 'No disponible';
-    final completionImageUrl = offer['completionImageUrl'] ?? '';
-    final paymentStatus = offer['paymentStatus'] ?? 'Desconocido';
-    final createdAtData = offer['createdAt'];
-    DateTime createdAt;
-    if (createdAtData is Timestamp) {
-      createdAt = createdAtData.toDate();
-    } else if (createdAtData is String) {
-      createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
-    } else if (createdAtData is Map && createdAtData['_seconds'] != null) {
-      // Firestore timestamp format
-      createdAt = DateTime.fromMillisecondsSinceEpoch(
-        (createdAtData['_seconds'] as int) * 1000,
-      );
-    } else {
-      createdAt = DateTime.now();
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Detalles de la oferta',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Text('Comisión: \Bs${commission.toStringAsFixed(2)}'),
-                  Text('Costos extras: \Bs${extraCosts.toStringAsFixed(2)}'),
-                  Text('Total: \Bs${total.toStringAsFixed(2)}'),
-                  Text('Service ID: $serviceId'),
-                  Text('Estado del pago: $paymentStatus'),
-                  Text('Fecha: ${createdAt.toLocal()}'),
-                  const SizedBox(height: 16),
-                  if (completionImageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        completionImageUrl,
-                        height: 150,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text('Cerrar'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _enterSelectionMode() {
     setState(() {
       _isSelectionMode = true;
@@ -1839,222 +732,34 @@ class _WalletScreenState extends State<WalletScreen> {
     });
   }
 
-  void _toggleDebtSelection(String debtId) {
+  void _toggleDebtSelection(String offerId) {
     setState(() {
-      if (_selectedDebtIds.contains(debtId)) {
-        _selectedDebtIds.remove(debtId);
+      if (_selectedDebtIds.contains(offerId)) {
+        _selectedDebtIds.remove(offerId);
       } else {
-        _selectedDebtIds.add(debtId);
+        _selectedDebtIds.add(offerId);
       }
     });
   }
 
-  void _showDebtSummaryWithData(Map<String, dynamic> debtDetails) {
-    if (_selectedDebtIds.isEmpty) return;
-
-    final selectedDebts = debtDetails['debts'] as List<Map<String, dynamic>>;
-    final totalAmount = debtDetails['totalAmount'] as double;
-    final serviceIds = debtDetails['serviceIds'] as List<String>;
-
+  void _showOfferDetails(BuildContext context, Map<String, dynamic> offer) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.payment, color: Color(0xFF84090D)),
-            const SizedBox(width: 8),
-            Text('Resumen de Pagos',
-                style: TextStyle(
-                    color: Color(0xFF84090D), fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Deudas seleccionadas: ${_selectedDebtIds.length}',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              Text('Detalle de servicios:'),
-              const SizedBox(height: 4),
-              ...selectedDebts.map((debt) => Padding(
-                    padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• ${debt['serviceId']}',
-                            style: TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w500)),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                              '  Comisión: Bs${debt['commission'].toStringAsFixed(2)}',
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.grey[600])),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                              '  Extras: Bs${debt['extraCosts'].toStringAsFixed(2)}',
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.grey[600])),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                              '  Total: Bs${debt['total'].toStringAsFixed(2)}',
-                              style: TextStyle(
-                                  fontSize: 11, fontWeight: FontWeight.w600)),
-                        ),
-                      ],
-                    ),
-                  )),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color(0xFFFDE8E9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Color(0xFF84090D)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Total a pagar:',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF84090D))),
-                    Text('Bs ${totalAmount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF84090D))),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text('¿Deseas enviar esta información por WhatsApp?',
-                  style: TextStyle(fontSize: 14)),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancelar', style: TextStyle(color: Color(0xFF84090D))),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _sendDebtSummaryToWhatsAppWithData(debtDetails);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Enviar por WhatsApp'),
-          ),
-        ],
-      ),
+      builder: (context) {
+        // Aquí va el contenido del diálogo de detalles de la oferta
+        return WalletDialogs.buildOfferDetailsDialog(context, offer);
+      },
     );
   }
 
-  void _sendDebtSummaryToWhatsApp() async {
-    const phoneNumber = '+59173666393';
-
-    // Crear mensaje detallado
-    final serviceIds = _selectedDebtIds.join(', ');
-    final message = Uri.encodeFull(
-        "Hola, quisiera solicitar el código QR para realizar el pago de las siguientes deudas:\n\n"
-        "Servicios: $serviceIds\n"
-        "Total de deudas seleccionadas: ${_selectedDebtIds.length}\n\n"
-        "Por favor, envíame el código QR correspondiente.");
-
-    final whatsappUrl = "https://wa.me/$phoneNumber?text=$message";
-
-    if (await canLaunch(whatsappUrl)) {
-      await launch(whatsappUrl);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
-      );
-    }
-
-    // Salir del modo selección
-    _cancelSelection();
-  }
-
-  void _sendDebtSummaryToWhatsAppWithData(
-      Map<String, dynamic> debtDetails) async {
-    const phoneNumber = '+59165884846';
-
-    final selectedDebts = debtDetails['debts'] as List<Map<String, dynamic>>;
-    final totalAmount = debtDetails['totalAmount'] as double;
-    final serviceIds = debtDetails['serviceIds'] as List<String>;
-
-    // Crear mensaje detallado
-    final serviceIdsText = serviceIds.join(', ');
-    final debtDetailsText = selectedDebts
-        .map((debt) =>
-            '• ${debt['serviceId']}: Bs${debt['total'].toStringAsFixed(2)}')
-        .join('\n');
-
-    final message = Uri.encodeFull(
-        "Hola, quisiera solicitar el código QR para realizar el pago de las siguientes deudas:\n\n"
-        "Servicios: $serviceIdsText\n"
-        "Total de deudas seleccionadas: ${selectedDebts.length}\n\n"
-        "Detalle:\n$debtDetailsText\n\n"
-        "Total a pagar: Bs${totalAmount.toStringAsFixed(2)}\n\n"
-        "Por favor, envíame el código QR correspondiente.");
-
-    final whatsappUrl = "https://wa.me/$phoneNumber?text=$message";
-
-    if (await canLaunch(whatsappUrl)) {
-      await launch(whatsappUrl);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
-      );
-    }
-
-    // Salir del modo selección
-    _cancelSelection();
-  }
-
-  Map<String, dynamic> _getSelectedDebtDetails(
-      List<QueryDocumentSnapshot> allOffers) {
-    final selectedDebts = <Map<String, dynamic>>[];
-    double totalAmount = 0.0;
-    final serviceIds = <String>[];
-
-    for (final debtId in _selectedDebtIds) {
-      try {
-        final offer = allOffers.firstWhere(
-          (offer) => offer.id == debtId,
-        );
-        final commission = offer['commission'] ?? 0.0;
-        final extraCosts = offer['extraCosts'] ?? 0.0;
-        final serviceId = offer['serviceId'] ?? 'Sin ID';
-        final debtAmount = commission + extraCosts;
-        totalAmount += debtAmount;
-        serviceIds.add(serviceId);
-        selectedDebts.add({
-          'serviceId': serviceId,
-          'commission': commission,
-          'extraCosts': extraCosts,
-          'total': debtAmount,
-        });
-      } catch (e) {
-        print('Documento no encontrado para debtId: $debtId');
-        continue;
-      }
-    }
-    return {
-      'debts': selectedDebts,
-      'totalAmount': totalAmount,
-      'serviceIds': serviceIds,
-    };
+  void _showIncomeDetails(BuildContext context, Map<String, dynamic> service) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        // Aquí va el contenido del diálogo de detalles de ingresos
+        return WalletDialogs.buildIncomeDetailsDialog(context, service);
+      },
+    );
   }
 
   List<QueryDocumentSnapshot> _getCurrentOffers() {
