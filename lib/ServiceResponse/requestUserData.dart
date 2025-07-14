@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../controllers/RegisController.dart';
 class UserData {
   String userId;
   String displayName;

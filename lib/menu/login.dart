@@ -6,8 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Controller/loginController.dart';
+
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
@@ -22,6 +21,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../controllers/loginController.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({Key? key, required String deviceId}) : super(key: key);

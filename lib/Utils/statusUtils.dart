@@ -1,5 +1,6 @@
 
-import 'package:socio/ServiceResponse/requestStatus.dart';
+
+import '../ServiceResponse/requestStatus.dart';
 
 class StatusUtils {
   static Status getStatusById(String id) {

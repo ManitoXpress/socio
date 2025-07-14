@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:location/location.dart' as location;
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
+
+import '../controllers/RegisController.dart';
 class LocationAndFavoritesWizard extends StatefulWidget {
   final Function(LatLng)
   onLocationSelected; // Callback para seleccionar ubicación

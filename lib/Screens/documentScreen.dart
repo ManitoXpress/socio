@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Screens/updaloadDocument.dart';
-import 'package:socio/Utils/Colors.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:socio/menu/profilescreen.dart';
-import 'package:socio/provider/providerRegistration.dart';
+
+
+import '../Utils/Colors.dart';
+import '../Utils/styles.dart';
+import '../menu/profilescreen.dart';
+import '../provider/providerRegistration.dart';
+import 'uploadDocument.dart';
 class DocumentsScreen extends StatelessWidget {
   final RegistrationProvider provider;
   final ProfileData profileData;
@@ -19,7 +21,6 @@ class DocumentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-  
       body: DocumentsDialog(
         provider: provider,
         profileData: profileData,

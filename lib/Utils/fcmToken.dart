@@ -1,16 +1,18 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:socio/ServiceResponse/post.dart';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
-
+import '../ServiceResponse/post.dart';
 class FCMService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin();
 
   /// Inicializa permisos y listeners de notificación (foreground/background).
   Future<void> init() async {
@@ -68,7 +70,7 @@ class FCMService {
 
   Future<void> _initLocalNotifications() async {
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    AndroidInitializationSettings('@mipmap/ic_launcher');
     final DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -113,10 +115,10 @@ class FCMService {
   }
 
   Future<void> showLocalNotification(
-    String title,
-    String body, {
-    String? payload,
-  }) async {
+      String title,
+      String body, {
+        String? payload,
+      }) async {
     const androidDetails = AndroidNotificationDetails(
       'high_importance_channel',
       'High Importance Notifications',
@@ -136,11 +138,11 @@ class FCMService {
     );
 
     await _flutterLocalNotificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformDetails,
-      payload: payload,
-    );
-  }
+        0,
+        title,
+        body,
+        platformDetails,
+        payload: payload,
+        );
+    }
 }

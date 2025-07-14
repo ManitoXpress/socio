@@ -1,15 +1,19 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/Utils/Colors.dart';
-import 'package:socio/Utils/serviceCategories.dart';
-import 'package:socio/Utils/serviceType.dart';
-import 'package:socio/Utils/styles.dart';
 
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:socio/Utils/styles.dart';
+import 'package:socio/controllers/RegisController.dart';
+
+
+
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
 import '../ServiceResponse/requestExpertise.dart';
+import '../Utils/Colors.dart';
+import '../Utils/serviceCategories.dart';
+import '../Utils/serviceType.dart';
 
 class EditProfileDialog extends StatefulWidget {
   final String displayName;
@@ -62,7 +66,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         // Obtener datos actuales del usuario
         final userData = await ApiService2().fetchUserData(user.uid, token!);
 
-        // Convertir la lista de Expertises a una lista de mapas para actualizar
+        // Convertir la lista de `Expertises` a una lista de mapas para actualizar
         List<Expertise> expertisesList = widget.expertises
             .map((e) => Expertise(id: e.id, name: e.name))
             .toList();
@@ -92,7 +96,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
           criminalRecordImagePath: userData.criminalRecordImagePath,
           certificateImagePaths: userData.certificateImagePaths,
           devicesId: '',
-          fcmToken: '', referralCode: '', points: userData.points, codeReferral: userData.referralCode, verificationStatus: userData.verificationStatus,
+          fcmToken: '', referralCode: '', points: 0, codeReferral: '', verificationStatus: '',
         );
 
         final response = await apiService.updateUser(

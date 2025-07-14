@@ -2,7 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_wizard/flutter_wizard.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
+
+import '../ServiceResponse/requestExpertise.dart';
+
 class RegistrationController {
   RegistrationData registrationData = RegistrationData(
     userId: '',

@@ -1,8 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/request.dart';
+import '../ServiceResponse/requestUserData.dart';
+
+
+
+
 class ProposalService {
   final BuildContext context;
   final ServiceRequest serviceRequest;
@@ -18,7 +23,6 @@ class ProposalService {
     required this.token,
   });
 
-  // Método estático para verificar propuestas existentes
   static Future<bool> checkExistingProposal({
     required String serviceRequestId,
     required String workerId,
@@ -34,42 +38,34 @@ class ProposalService {
     }
   }
 
-  Future<void> sendProposal({
+  /// Devuelve true si envía la propuesta, false si ya existía o falló.
+  Future<bool> sendProposal({
     required double offeredPrice,
     required double extraCosts,
-    required Function(String) onStatusChanged,
-    required TextEditingController priceController,
-    required Function(double) setFetchedOfferedPrice,
   }) async {
-    // Mostrar un indicador de carga
+    // 1) loader de verificación
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
-      // Verificar si el worker ya envió una propuesta
-      bool alreadyExists = await ApiService().checkProposalExists(
+      // 2) verifico existencia
+      final alreadyExists = await ApiService().checkProposalExists(
         serviceRequest.id,
         workerId,
       );
-
-      // Cerrar el indicador de carga de la verificación
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // cierro verificación
 
       if (alreadyExists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ya has enviado una propuesta para este servicio'),
-          ),
+          const SnackBar(content: Text('Ya has enviado una propuesta para este servicio')),
         );
-        return;
+        return false;
       }
 
-      // Llamar al servicio API para enviar la propuesta, usando el token pasado
+      // 3) envío real
       await ApiService().sendProposalToServer(
         serviceRequest,
         token,
@@ -78,22 +74,17 @@ class ProposalService {
         workerId,
       );
 
-      // Actualizar el estado local después de enviar la propuesta
-      setFetchedOfferedPrice(offeredPrice);
-      priceController.text = offeredPrice.toString();
-
-      // Cerrar indicadores y diálogos
-      Navigator.of(context).pop(); // Cerrar loader
-      Navigator.of(context).pop(); // Cerrar diálogo de propuesta
-    } catch (e) {
-      debugPrint('Error al enviar la propuesta: $e');
-      Navigator.of(context).pop(); // Cerrar loader
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al enviar la propuesta: $e'),
-        ),
+        const SnackBar(content: Text('Propuesta enviada exitosamente')),
       );
+      return true;
+    } catch (e) {
+      Navigator.of(context).pop(); // cierro loader
+      debugPrint('Error al enviar la propuesta: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar la propuesta: $e')),
+      );
+      return false;
     }
   }
 }

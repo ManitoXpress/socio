@@ -10,14 +10,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socio/Screens/Home.dart';
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/Utils/debt_blocker_wrapper.dart';
 import 'package:socio/Utils/fcmToken.dart';
 import 'package:socio/provider/providerImage.dart';
 import 'package:socio/provider/providerRegistration.dart';
 import 'package:socio/provider/providerService.dart';
 
+import 'controllers/RegisController.dart';
 import 'firebase_options.dart';
 import 'menu/Loading.dart';
 import 'menu/login.dart';
@@ -205,7 +207,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           0xFF1A819A,
           <int, Color>{
             50: Color(0xFF84090D),
-            100: Color.fromARGB(255, 127, 108, 109),
+            100: Color(0xFF84090D),
             200: Color(0xFF84090D),
             300: Color(0xFF84090D),
             400: Color(0xFF84090D),
@@ -225,23 +227,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           backgroundColor: Color(0xFF84090D),
         ),
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => isLoading
-            ? LoadingScreen()
-            : (isLoggedIn && userData != null && registrationData != null
-                ? HomeScreen(
-                    userData: userData!, registrationData: registrationData!)
-                : LoginScreen(deviceId: widget.deviceId)),
-        '/home': (context) => (userData != null && registrationData != null)
-            ? HomeScreen(
-                userData: userData!, registrationData: registrationData!)
-            : LoginScreen(deviceId: widget.deviceId),
-      },
+      home: isLoading
+          ? LoadingScreen()
+          : isLoggedIn
+              ? DebtBlockerWrapper(
+                  child: HomeScreen(
+                      userData: userData!, registrationData: registrationData!),
+                )
+              : LoginScreen(deviceId: widget.deviceId),
     );
   }
 }
-
 // Ejemplo de función para obtener los datos del usuario
 Future<UserData> fetchUserData(String userId) async {
   // Aquí debes implementar la lógica para obtener los datos del usuario

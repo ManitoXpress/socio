@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:socio/provider/providerImage.dart';
 
 import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String imagePath) onImageSelected;

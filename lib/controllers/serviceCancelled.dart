@@ -1,16 +1,16 @@
-
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:socio/ServiceResponse/baseurl.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:socio/Utils/cacheLocal.dart';
-import 'package:socio/main.dart';
+
+import '../ServiceResponse/baseurl.dart';
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestServiceType.dart';
+import '../ServiceResponse/requestStatus.dart';
+import '../main.dart';
+
 
 class ServiceRepositoryCancelled {
   final ApiService2 apiService;

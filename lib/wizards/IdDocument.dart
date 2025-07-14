@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/provider/providerImage.dart';
 
 import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
 
 class IdCardImageStep extends StatefulWidget {
   final RegistrationController registrationController;

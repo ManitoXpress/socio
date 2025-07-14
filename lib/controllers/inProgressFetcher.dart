@@ -1,14 +1,15 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:socio/ServiceResponse/baseurl.dart';
-import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/Utils/cacheLocal.dart';
-import 'package:socio/main.dart';
+
+import '../ServiceResponse/baseurl.dart';
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestServiceType.dart';
+import '../ServiceResponse/requestStatus.dart';
+import '../Utils/cacheLocal.dart';
+import '../main.dart';
 
 class ServiceRepositoryInProgress {
   final ApiService2 apiService;
@@ -61,7 +62,10 @@ class ServiceRepositoryInProgress {
     try {
       final cachedRequest =
           await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null && (cachedRequest.status.id == 'in_progress')) {
+      if (cachedRequest != null &&
+          (cachedRequest.status.id == 'in_progress' ||
+              cachedRequest.status.id == 'pending_confirmation' ||
+              cachedRequest.status.id == 'pending_confirmation2')) {
         return [cachedRequest];
       }
 
@@ -78,14 +82,19 @@ class ServiceRepositoryInProgress {
 
       // 1. Filtrar servicios por estado
       final filteredServices = servicesData
-          .where((item) => item['status'] == 'in_progress')
+          .where((item) =>
+              item['status'] == 'in_progress' ||
+              item['status'] == 'pending_confirmation' ||
+              item['status'] == 'pending_confirmation2')
           .toList();
 
       // 2. Mapear a objetos ServiceRequest
       List<ServiceRequest> serviceRequestsList = filteredServices
           .map((item) {
             final statusName = (item['status'] as String?) ?? 'in_progress';
-            if (statusName != 'in_progress') {
+            if (statusName != 'in_progress' &&
+                statusName != 'pending_confirmation' &&
+                statusName != 'pending_confirmation2') {
               return null;
             }
 
@@ -124,7 +133,7 @@ class ServiceRepositoryInProgress {
               subcategoryName: item['subcategoryName']?.toString() ?? '',
               hasOffer: false,
               offers: [],
-              CreatedAt: item['CreatedAt'] ?? '',
+              CreatedAt: item['createdAt'] ?? '',
             );
           })
           .whereType<ServiceRequest>()

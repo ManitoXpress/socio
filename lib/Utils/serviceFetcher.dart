@@ -1,27 +1,22 @@
-
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:http/http.dart' as http;
-import 'package:socio/ServiceResponse/baseurl.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/Utils/cacheLocal.dart';
-import 'package:socio/main.dart';
-import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:socio/main.dart';
-import 'package:http/http.dart' as http;
+import '../ServiceResponse/baseurl.dart';
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/request.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestServiceType.dart';
+import '../ServiceResponse/requestStatus.dart';
+import '../main.dart';
+import 'cacheLocal.dart';
+
 
 class ServiceRepository {
   final ApiService apiService;
@@ -30,28 +25,14 @@ class ServiceRepository {
 
   ServiceRepository({required this.apiService, required this.firestore});
 
-  /// Obtiene el workerId del usuario autenticado
-  String? getAuthenticatedWorkerId() {
-    final user = FirebaseAuth.instance.currentUser;
-    return user?.uid;
-  }
-
   // Función pública que permite filtrar servicios por estado desde Firestore
   Future<List<ServiceRequest>> fetchServicesByStatus(
     String status,
-    String userId, // Nota: este parámetro debería ser reemplazado o interpretado según tu lógica
+    String userId,
     String column,
     String token,
     List<Offer> offers, // Agregado el parámetro de ofertas
   ) async {
-    // Obtener el workerId autenticado
-    final workerId = getAuthenticatedWorkerId();
-    if (workerId == null || workerId.isEmpty) {
-      print('Error: No se encontró un usuario autenticado.');
-      throw Exception('Usuario no autenticado');
-    }
-    print('Usuario autenticado, workerId: $workerId');
-
     // Obtener la lista de estados válidos desde Firestore
     List<String> validStatuses = await _getValidStatusesFromFirestore();
 
@@ -60,14 +41,15 @@ class ServiceRepository {
       throw ArgumentError('Estado no válido: $status');
     }
 
-    // Llamar al método privado para realizar la lógica principal usando el workerId autenticado
-    return await _fetchServicesByStatus(status, column, workerId, token, offers);
+    // Llamar al método privado para realizar la lógica principal
+    return await _fetchServicesByStatus(status, column, userId, token, offers);
   }
 
   // Método privado para obtener los estados válidos desde Firestore
   Future<List<String>> _getValidStatusesFromFirestore() async {
     try {
-      QuerySnapshot querySnapshot = await firestore.collection('services').get();
+      QuerySnapshot querySnapshot =
+          await firestore.collection('services').get();
 
       Set<String> statusSet = {};
 
@@ -92,12 +74,13 @@ class ServiceRepository {
   Future<List<ServiceRequest>> _fetchServicesByStatus(
     String type,
     String column,
-    String workerId, // Se asume que es el workerId autenticado
+    String userId,
     String token,
     List<Offer> offers,
   ) async {
     try {
-      final cachedRequest = await LocalCacheService.getCachedServiceRequest(workerId);
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(userId);
       if (cachedRequest != null) {
         if (cachedRequest.status.id == 'available') {
           print('Datos del caché encontrados y filtrados por available...');
@@ -111,7 +94,7 @@ class ServiceRepository {
 
         print('Parámetro type: $type');
         print('Parámetro column: $column');
-        print('Parámetro workerId: $workerId');
+        print('Parámetro userId: $userId');
         print('Parámetro deviceId: $deviceId');
 
         // 1. Obtener especialidades del trabajador
@@ -121,7 +104,8 @@ class ServiceRepository {
             .toSet();
 
         // 2. Obtener servicios del API
-        final response = await ApiService2().getAllServices(token, "status", type, "services");
+        final response = await ApiService2()
+            .getAllServices(token, "status", type, "services");
 
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
@@ -130,44 +114,17 @@ class ServiceRepository {
           if (servicesData.isNotEmpty) {
             try {
               // 3. Filtrar servicios
-              // 3. Filtrar servicios
               final List<ServiceRequest> serviceRequestsList = servicesData
                   .map((item) => _mapToServiceRequest(item))
-                  .where((service) {
-                    // Se recorre la lista de ofertas, proveniente de la colección 'offer'
-                    // Para cada oferta, se compara que el id del servicio coincida y que el workerId
-                    // de la oferta sea el del trabajador autenticado.
-                    final existeOfertaDelWorker = offers.any((offer) {
-                      final coincide = offer.serviceId == service.id && offer.workerId == workerId;
-                      if (coincide) {
-                        print('Oferta encontrada para el servicio ${service.id}: '
-                            'offer.workerId = ${offer.workerId}, workerId esperado = $workerId');
-                      } else {
-                        if (offer.serviceId == service.id) {
-                          print('Oferta encontrada para el servicio ${service.id} pero con otro workerId: '
-                              'offer.workerId = ${offer.workerId}, workerId esperado = $workerId');
-                        }
-                      }
-                      return coincide;
-                    });
-
-                    if (existeOfertaDelWorker) {
-                      print('Se descarta el servicio ${service.id} porque ya existe una oferta del worker $workerId');
-                    } else {
-                      print('Se mantiene el servicio ${service.id} ya que no tiene oferta del worker $workerId');
-                    }
-                    
-                    // Se retorna el servicio sólo si está 'available', la especialidad coincide y no hay oferta del worker.
-                    return service.status.id == 'available' &&
-                        expertiseNames.contains(service.subcategoryName.toLowerCase().trim()) &&
-                        !existeOfertaDelWorker;
-                  })
+                  .where((service) =>
+                      service.status.id == 'available' &&
+                      expertiseNames.contains(
+                          service.subcategoryName.toLowerCase().trim()))
                   .toList();
 
-
-              print('Servicios filtrados: ${serviceRequestsList.length}');
-              // Cachear resultados
-              serviceRequestsList.forEach(LocalCacheService.cacheServiceRequest);
+              // 4. Cachear resultados
+              serviceRequestsList
+                  .forEach(LocalCacheService.cacheServiceRequest);
 
               return serviceRequestsList;
             } catch (e) {
@@ -189,7 +146,7 @@ class ServiceRepository {
     }
   }
 
-  // Función auxiliar para mapear los datos del servicio
+// Función auxiliar para mapear los datos del servicio
   ServiceRequest _mapToServiceRequest(Map<String, dynamic> item) {
     final statusName = item['status'] as String? ?? 'available';
     final statusObject = Status(
@@ -198,7 +155,8 @@ class ServiceRepository {
     );
 
     final expertisesArray = item['expertises'] as List<dynamic>? ?? [];
-    final expertiseItem = expertisesArray.isNotEmpty ? expertisesArray.first : {};
+    final expertiseItem =
+        expertisesArray.isNotEmpty ? expertisesArray.first : {};
 
     return ServiceRequest(
       expertises: [
@@ -235,7 +193,8 @@ class ServiceRepository {
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: item['subcategoryName'] ?? '', CreatedAt: item['CreatedAt'] ?? '',
+      subcategoryName: item['subcategoryName'] ?? '',
+      CreatedAt: item['createdAt'] ?? '',
     );
   }
 

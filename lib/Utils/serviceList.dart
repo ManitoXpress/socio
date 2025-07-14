@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Screens/customtickets.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:socio/Utils/timeLines.dart';
-import 'package:socio/Utils/workerDetails.dart';
-import 'package:socio/models/expertise_models.dart';
-import 'package:socio/models/offer_models.dart';
-import 'package:socio/models/serviceRequest_models.dart';
 
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:socio/provider/service_partner_provider.dart';
+
+import '../Screens/customtickets.dart';
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/request.dart';
+import '../ServiceResponse/requestExpertise.dart';
+
+import '../ServiceResponse/requestUserData.dart';
+import '../models/expertise_models.dart';
+import '../models/offer_models.dart';
+import '../models/serviceRequest_models.dart';
+import '../provider/service_partner_provider.dart';
+import 'styles.dart';
+import 'timeLines.dart';
+import 'workerDetails.dart';
 class ServiceListBuilder {
   /// Lista de servicios en estado "offer" (ofertas hechas por el socio).
   static Widget buildOfferList(

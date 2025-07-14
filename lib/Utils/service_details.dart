@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Home.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+
+import '../Screens/Home.dart';
+import '../ServiceResponse/requestUserData.dart';
+import '../controllers/RegisController.dart';
+
 class ServiceRequest extends StatefulWidget {
   final String buttonText;
 
@@ -117,8 +119,6 @@ class _ServiceRequestState extends State<ServiceRequest> {
       criminalRecordImagePath: '',
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
-      medicalLicenseImagePath: '',
-      professionalTitleImagePath: '',
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],
@@ -151,7 +151,7 @@ class _ServiceRequestState extends State<ServiceRequest> {
       ),
       referrerWorkerId: '',
       referralCode: '',
-      points: 0, verificationStatus: '',
+      points: 0, verificationStatus: '', medicalLicenseImagePath: '', professionalTitleImagePath: '',
     );
   }
 

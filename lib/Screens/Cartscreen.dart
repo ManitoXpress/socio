@@ -1,26 +1,28 @@
 import 'dart:async';
-
-import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:provider/provider.dart';
-import 'package:socio/ServiceResponse/post.dart';
 
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/notification.dart';
-import 'package:socio/Utils/serviceFetcher.dart';
-import 'package:socio/Utils/serviceList.dart';
-import 'package:socio/Utils/workerDetails.dart';
-import 'package:socio/provider/providerService.dart';
 
 import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
 import '../ServiceResponse/request.dart';
 
+import '../ServiceResponse/requestUserData.dart';
+import '../Utils/serviceList.dart';
 import '../Utils/styles.dart';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+
+import '../provider/providerService.dart';
+
 class HistorialScreen extends StatefulWidget {
   final UserData userData;
   const HistorialScreen({Key? key, required this.userData}) : super(key: key);
@@ -34,8 +36,8 @@ class _HistorialScreenState extends State<HistorialScreen>
   late final TabController _tabController;
   late final HistorialProvider _historialProv;
 
-  String _userId   = '';
-  String _token    = '';
+  String _userId = '';
+  String _token = '';
   String _deviceId = '';
   bool _welcomeShown = false;
 
@@ -52,13 +54,13 @@ class _HistorialScreenState extends State<HistorialScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final token    = await user.getIdToken();
+      final token = await user.getIdToken();
       final deviceId = await _fetchDeviceId();
 
       if (!mounted) return;
       setState(() {
-        _userId   = user.uid;
-        _token    = token ?? '';
+        _userId = user.uid;
+        _token = token ?? '';
         _deviceId = deviceId;
       });
 
@@ -70,8 +72,8 @@ class _HistorialScreenState extends State<HistorialScreen>
 
       // 4) Carga inicial de TODO el historial
       await _historialProv.loadAll(
-        userId:   _userId,
-        token:    _token,
+        userId: _userId,
+        token: _token,
         deviceId: _deviceId,
       );
 
@@ -99,10 +101,11 @@ class _HistorialScreenState extends State<HistorialScreen>
   void _showWelcomeDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) {                // 👈 usa aquí dialogContext
+      builder: (BuildContext dialogContext) {
+        // 👈 usa aquí dialogContext
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           title: Text('¡Bienvenido a ManitosXpress!',
               style: MyTextStyles.welcomeTotheJungle1),
           content: Column(
@@ -127,7 +130,6 @@ class _HistorialScreenState extends State<HistorialScreen>
                 style: MyTextStyles.inputTextStyle6,
                 textAlign: TextAlign.center,
               ),
-
             ],
           ),
           actions: [
@@ -140,11 +142,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                 foregroundColor: const Color(0xFF84090D),
                 backgroundColor: const Color(0xFFE8E8E8),
                 padding:
-                const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
-                side: const BorderSide(
-                    color: Color(0xFFE8E8E8), width: 1),
+                side: const BorderSide(color: Color(0xFFE8E8E8), width: 1),
               ),
               child: Text("Comenzar", style: MyTextStyles.linkTextStyle),
             ),
@@ -153,6 +154,7 @@ class _HistorialScreenState extends State<HistorialScreen>
       },
     );
   }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -169,8 +171,11 @@ class _HistorialScreenState extends State<HistorialScreen>
           return Scaffold(
             appBar: AppBar(
               automaticallyImplyLeading: false,
+              backgroundColor: Colors.white,
+              elevation: 0,
+              toolbarHeight: 60,
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(18),
+                preferredSize: const Size.fromHeight(1),
                 child: Container(
                   color: Colors.white,
                   child: TabBar(
@@ -179,15 +184,50 @@ class _HistorialScreenState extends State<HistorialScreen>
                     labelStyle: MyTextStyles.tabTextStyle,
                     unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
                     indicator: const UnderlineTabIndicator(
-                      borderSide: BorderSide(width: 3, color: Color(0xFF84090D)),
+                      borderSide:
+                          BorderSide(width: 3, color: Color(0xFF84090D)),
                       insets: EdgeInsets.symmetric(horizontal: 20),
                     ),
                     tabs: [
                       Tab(
-                        icon: const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.task_alt, color: Colors.black)),
-                        text: 'Disponibles (${prov.availableCount})',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.task_alt,
+                                        color: Colors.black)),
+                                if (prov.availableCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF84090D),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.availableCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Disponibles'),
+                          ],
+                        ),
                       ),
                       Tab(
                         child: Column(
@@ -198,7 +238,8 @@ class _HistorialScreenState extends State<HistorialScreen>
                               children: [
                                 const Padding(
                                     padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.local_offer, color: Colors.black)),
+                                    child: Icon(Icons.local_offer,
+                                        color: Colors.black)),
                                 if (prov.offerServiceCount > 0)
                                   Positioned(
                                     top: -10,
@@ -215,7 +256,8 @@ class _HistorialScreenState extends State<HistorialScreen>
                                       ),
                                       child: Text(
                                         prov.offerServiceCount.toString(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
@@ -228,22 +270,124 @@ class _HistorialScreenState extends State<HistorialScreen>
                         ),
                       ),
                       Tab(
-                        icon: const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.assignment_ind, color: Colors.black)),
-                        text: 'Asignados (${prov.inProgressCount})',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.assignment_ind,
+                                        color: Colors.black)),
+                                if (prov.inProgressCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF84090D),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.inProgressCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Asignados'),
+                          ],
+                        ),
                       ),
                       Tab(
-                        icon: const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.check_circle, color: Colors.black)),
-                        text: 'Completados (${prov.completedCount})',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.check_circle,
+                                        color: Colors.black)),
+                                if (prov.completedCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF84090D),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.completedCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Completados'),
+                          ],
+                        ),
                       ),
                       Tab(
-                        icon: const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Icon(Icons.cancel, color: Colors.black)),
-                        text: 'Cancelados (${prov.cancelledCount})',
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Padding(
+                                    padding: EdgeInsets.only(bottom: 4),
+                                    child: Icon(Icons.cancel,
+                                        color: Colors.black)),
+                                if (prov.cancelledCount > 0)
+                                  Positioned(
+                                    top: -10,
+                                    right: -10,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF84090D),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 20,
+                                        minHeight: 20,
+                                      ),
+                                      child: Text(
+                                        prov.cancelledCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 10),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text('Cancelados'),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -256,9 +400,11 @@ class _HistorialScreenState extends State<HistorialScreen>
                   children: [
                     Container(
                       color: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
                       child: Center(
-                        child: Text('Historial', style: MyTextStyles.buttonTextStyle3),
+                        child: Text('Historial',
+                            style: MyTextStyles.buttonTextStyle3),
                       ),
                     ),
                     const Divider(height: 1),
@@ -272,7 +418,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                             userData: widget.userData,
                             apiService: ApiService(),
                             apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            onRefresh: () => prov.refresh(
+                                userId: _userId,
+                                token: _token,
+                                deviceId: _deviceId),
                             isLoading: prov.isLoading,
                           ),
                           _ServiceListTab(
@@ -281,7 +430,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                             userData: widget.userData,
                             apiService: ApiService(),
                             apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            onRefresh: () => prov.refresh(
+                                userId: _userId,
+                                token: _token,
+                                deviceId: _deviceId),
                             isLoading: prov.isLoading,
                           ),
                           _ServiceListTab(
@@ -290,7 +442,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                             userData: widget.userData,
                             apiService: ApiService(),
                             apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            onRefresh: () => prov.refresh(
+                                userId: _userId,
+                                token: _token,
+                                deviceId: _deviceId),
                             isLoading: prov.isLoading,
                           ),
                           _ServiceListTab(
@@ -299,7 +454,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                             userData: widget.userData,
                             apiService: ApiService(),
                             apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            onRefresh: () => prov.refresh(
+                                userId: _userId,
+                                token: _token,
+                                deviceId: _deviceId),
                             isLoading: prov.isLoading,
                           ),
                           _ServiceListTab(
@@ -308,7 +466,10 @@ class _HistorialScreenState extends State<HistorialScreen>
                             userData: widget.userData,
                             apiService: ApiService(),
                             apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                            onRefresh: () => prov.refresh(
+                                userId: _userId,
+                                token: _token,
+                                deviceId: _deviceId),
                             isLoading: prov.isLoading,
                           ),
                         ],
@@ -325,7 +486,9 @@ class _HistorialScreenState extends State<HistorialScreen>
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 16),
-                          Text('Cargando servicios...', style: TextStyle(fontSize: 16, color: Colors.black)),
+                          Text('Cargando servicios...',
+                              style:
+                                  TextStyle(fontSize: 16, color: Colors.black)),
                         ],
                       ),
                     ),
@@ -335,13 +498,15 @@ class _HistorialScreenState extends State<HistorialScreen>
             floatingActionButton: FloatingActionButton.extended(
               onPressed: prov.isLoading
                   ? null
-                  : () => prov.refresh(userId: _userId, token: _token, deviceId: _deviceId),
+                  : () => prov.refresh(
+                      userId: _userId, token: _token, deviceId: _deviceId),
               label: const Text('Actualizar'),
               icon: const Icon(Icons.refresh),
               backgroundColor: const Color(0xFF84090D),
               foregroundColor: Colors.white,
             ),
-            floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerFloat,
           );
         },
       ),
@@ -392,7 +557,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
 
   void _onScroll() {
     final prov = context.read<HistorialProvider>();
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (prov.hasMore(widget.status) && !prov.isLoadingMore(widget.status)) {
         prov.loadMore(
           status: widget.status,
@@ -457,7 +623,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
               controller: _scrollController,
               itemCount: 6,
               itemBuilder: (context, index) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Container(
                   height: 80,
                   decoration: BoxDecoration(
@@ -580,14 +747,16 @@ class _ServiceListTabState extends State<_ServiceListTab>
             children: [
               NotificationListener<ScrollNotification>(
                 onNotification: (scrollInfo) {
-                  if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200 &&
+                  if (scrollInfo.metrics.pixels >=
+                          scrollInfo.metrics.maxScrollExtent - 200 &&
                       hasMore &&
                       !isLoadingMore) {
                     prov.loadMore(
                       status: widget.status,
                       userId: widget.userId,
                       token: '', // Puedes pasar el token real si lo necesitas
-                      deviceId: '', // Puedes pasar el deviceId real si lo necesitas
+                      deviceId:
+                          '', // Puedes pasar el deviceId real si lo necesitas
                     );
                   }
                   return false;
@@ -611,7 +780,8 @@ class _ServiceListTabState extends State<_ServiceListTab>
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                           SizedBox(width: 12),
-                          Text('Cargando más...', style: TextStyle(fontSize: 14)),
+                          Text('Cargando más...',
+                              style: TextStyle(fontSize: 14)),
                         ],
                       ),
                     ),

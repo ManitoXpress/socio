@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:socio/models/serviceRequest_models.dart';
+
+import '../../models/serviceRequest_models.dart';
 
 class FinancialBreakdownSection extends StatelessWidget {
   final String workerId;

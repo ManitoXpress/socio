@@ -1,15 +1,15 @@
-
-
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/Utils/cacheLocal.dart';
-import 'package:socio/Utils/workerDetails.dart';
+
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestServiceType.dart';
+import '../ServiceResponse/requestStatus.dart';
+import '../Utils/cacheLocal.dart';
+import '../Utils/workerDetails.dart';
+
 
 class OfferRepository {
   final ApiService2 apiService2;
@@ -54,11 +54,13 @@ class OfferRepository {
       status: Status(id: status, name: Status.getNameById(status)),
       isFavorite: false,
       acceptedTerms: false,
-      serviceType: ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
+      serviceType:
+          ServiceType(name: '', id: '', selectedDate: '', selectedTime: ''),
       devicesId: '',
       hasOffer: false,
       offers: [],
-      subcategoryName: '', CreatedAt: '',
+      subcategoryName: '',
+      CreatedAt: '',
     );
 
     // Se invoca la función que obtiene los servicios y, para cada uno, sus ofertas filtradas.
@@ -99,12 +101,14 @@ class OfferRepository {
   ) async {
     try {
       // Si existe un servicio en caché para este trabajador, lo retornamos.
-      final cachedRequest = await LocalCacheService.getCachedServiceRequest(workerId);
+      final cachedRequest =
+          await LocalCacheService.getCachedServiceRequest(workerId);
       if (cachedRequest != null) {
         print('Datos del caché encontrados.');
         return [cachedRequest];
       } else {
-        print('Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
+        print(
+            'Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
 
         // Se llama a la API para obtener los servicios. Nota: puede que el filtro
         // "workerId" no funcione a nivel de servicio, ya que estos pueden estar "disponibles"
@@ -114,7 +118,6 @@ class OfferRepository {
           "workerId", // filtro (revisar si es el correcto en tu API)
           workerId,
           type,
-         
         );
 
         print('token=$token');
@@ -148,9 +151,12 @@ class OfferRepository {
                               .toList() ??
                           [],
                       location: Map<String, double>.from(
-                        (item['location'] as Map<String, dynamic>?)?.map((key, value) {
-                          return MapEntry(key, (value is int) ? value.toDouble() : value);
-                        }) ?? {},
+                        (item['location'] as Map<String, dynamic>?)
+                                ?.map((key, value) {
+                              return MapEntry(key,
+                                  (value is int) ? value.toDouble() : value);
+                            }) ??
+                            {},
                       ),
                       offeredPrice: _parseOfferedPrice(item['offeredPrice']),
                       userId: item['userId'] ?? '',
@@ -167,7 +173,8 @@ class OfferRepository {
                       devicesId: '',
                       hasOffer: false,
                       offers: [],
-                      subcategoryName: item['subcategoryName'] ?? '', CreatedAt: item['CreatedAt'] ?? '',
+                      subcategoryName: item['subcategoryName'] ?? '',
+                      CreatedAt: '',
                     );
                   })
                   .where((service) => service.status.id == 'available')
@@ -179,47 +186,54 @@ class OfferRepository {
               }
 
               // Para cada servicio, se solicitan las ofertas correspondientes.
-              List<Future> offerRequests = serviceRequestsList.map((serviceRequest) async {
-                print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
+              List<Future> offerRequests =
+                  serviceRequestsList.map((serviceRequest) async {
+                print(
+                    'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
                 try {
                   final offerResponses = await apiService2.getOffers(
-                    "workerId",   // Filtrar por la columna "workerId"
-                    workerId,     // Valor del trabajador autenticado
-                    "offer",      // Tipo de filtro (ajusta según tu lógica)
+                    "workerId", // Filtrar por la columna "workerId"
+                    workerId, // Valor del trabajador autenticado
+                    "offer", // Tipo de filtro (ajusta según tu lógica)
                     deviceId,
                     [serviceRequest],
                     "offer",
                   );
 
                   // Mapeamos las ofertas y filtramos solo aquellas cuyo workerId coincide con el usuario autenticado.
-                  List<Offer> filteredOffers = offerResponses.map((serviceOffer) {
-                    final statusName = serviceOffer.status.id;
-                    final statusObject = Status(
-                      id: statusName,
-                      name: Status.getNameById(statusName),
-                    );
+                  List<Offer> filteredOffers = offerResponses
+                      .map((serviceOffer) {
+                        final statusName = serviceOffer.status.id;
+                        final statusObject = Status(
+                          id: statusName,
+                          name: Status.getNameById(statusName),
+                        );
 
-                    return Offer(
-                      id: serviceOffer.id,
-                      workerId: serviceOffer.workerId,
-                      offeredPrice: serviceOffer.offeredPrice,
-                      hasOffer: serviceOffer.hasOffer,
-                      serviceId: serviceRequest.id,
-                      extraCosts: 0.0,
-                      totalPrice: serviceOffer.offeredPrice,
-                      status: statusObject,
-                      userToken: '',
-                      createdAt: DateTime.now(),
-                      expertises: serviceOffer.expertises,
-                      subcategoryName: serviceOffer.subcategoryName,
-                    );
-                  }).where((offer) => offer.workerId == workerId).toList();
+                        return Offer(
+                          id: serviceOffer.id,
+                          workerId: serviceOffer.workerId,
+                          offeredPrice: serviceOffer.offeredPrice,
+                          hasOffer: serviceOffer.hasOffer,
+                          serviceId: serviceRequest.id,
+                          extraCosts: 0.0,
+                          totalPrice: serviceOffer.offeredPrice,
+                          status: statusObject,
+                          userToken: '',
+                          createdAt: DateTime.now(),
+                          expertises: serviceOffer.expertises,
+                          subcategoryName: serviceOffer.subcategoryName,
+                        );
+                      })
+                      .where((offer) => offer.workerId == workerId)
+                      .toList();
 
                   // Se asignan las ofertas filtradas al servicio correspondiente.
                   serviceRequest.offers = filteredOffers;
-                  print('Ofertas obtenidas para el servicio ${serviceRequest.id}: ${filteredOffers.length}');
+                  print(
+                      'Ofertas obtenidas para el servicio ${serviceRequest.id}: ${filteredOffers.length}');
                 } catch (e) {
-                  print('Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
+                  print(
+                      'Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
                 }
               }).toList();
 
@@ -228,8 +242,9 @@ class OfferRepository {
 
               // Ahora, se filtran los servicios para conservar solo aquellos que tengan
               // al menos una oferta del trabajador autenticado.
-              List<ServiceRequest> finalServiceRequests =
-                  serviceRequestsList.where((sr) => sr.offers.isNotEmpty).toList();
+              List<ServiceRequest> finalServiceRequests = serviceRequestsList
+                  .where((sr) => sr.offers.isNotEmpty)
+                  .toList();
 
               return finalServiceRequests;
             } catch (e) {

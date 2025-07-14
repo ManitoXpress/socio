@@ -4,8 +4,8 @@ import 'dart:io';
 
 
 import 'package:flutter/foundation.dart';
-import 'package:socio/Controller/RegisController.dart';
 
+import '../controllers/RegisController.dart';
 
 class ImageStateProvider extends ChangeNotifier {
   // Imágenes de perfil

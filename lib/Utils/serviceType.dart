@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/ServiceResponse/requestCategory.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/Utils/styles.dart';
+
+
+import '../ServiceResponse/requestCategory.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../controllers/RegisController.dart';
+import 'styles.dart';
 
 class ServiceTypeListScreen extends StatefulWidget {
   final RegistrationController registrationController;

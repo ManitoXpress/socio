@@ -6,21 +6,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthUtils {
   static Future<String?> getToken() async {
     User? user = FirebaseAuth.instance.currentUser;
-    print('[AuthUtils.getToken] Usuario actual: ' + (user?.uid ?? 'null'));
     if (user != null) {
       try {
         String? idToken = await user.getIdToken();
-        print('[AuthUtils.getToken] Token obtenido: ' + (idToken ?? 'null'));
         return idToken;
       } catch (e) {
-        print('[AuthUtils.getToken] Error al obtener el token: $e');
+        print('Error al obtener el token: $e');
         return null;
       }
     }
-    print('[AuthUtils.getToken] Usuario es null, no autenticado');
     return null;
   }
-
   static Future<String?> getDeviceId() async {
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
     String? deviceId;

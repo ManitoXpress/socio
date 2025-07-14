@@ -1,14 +1,20 @@
 import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:socio/Screens/Home.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:socio/menu/profilescreen.dart';
-import 'package:socio/provider/providerRegistration.dart';
+
+import '../Utils/styles.dart';
+import '../menu/profilescreen.dart';
+import '../provider/providerRegistration.dart';
+
+import 'package:file_picker/file_picker.dart';
+
+import 'Home.dart';
+
+
 class DocumentsDialog extends StatefulWidget {
   final RegistrationProvider provider;
   final ProfileData profileData;

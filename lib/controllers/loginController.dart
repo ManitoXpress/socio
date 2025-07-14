@@ -3,21 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Home.dart';
-import 'package:socio/ServiceResponse/post.dart';
-
-
-
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/menu/welcome.dart';
 
+import '../Screens/Home.dart';
+import '../ServiceResponse/post.dart';
+import 'RegisController.dart';
+
+
+import '../ServiceResponse/requestUserData.dart';
 class LoginScreenController {
   static final ApiService apiService = ApiService();
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;

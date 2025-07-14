@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../ServiceResponse/requestStatus.dart';
+
 
 class LocationMapSection extends StatelessWidget {
   final LatLng location;

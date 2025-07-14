@@ -19,20 +19,94 @@ class ServiceDetailsSection extends StatelessWidget {
     required this.location,
     this.address,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Estado del servicio
+        _buildStatusSection(),
+
+        // Fecha y Hora
+        _buildDateTimeSection(),
+
+        // Descripción
+      ],
+    );
+  }
+
+  Widget _buildStatusSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      padding: const EdgeInsets.all(20.0),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.0),
-        border: Border.all(
-            color: const Color(0xFF84090D).withOpacity(0.1), width: 1.5),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF830A09), Color(0xFF580606)],
+        ),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF84090D).withOpacity(0.08),
+            color: const Color(0xFF830A09).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.info_outline_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Estado del Servicio',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  status,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimeSection() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -44,115 +118,100 @@ class ServiceDetailsSection extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10.0),
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: _getStatusColor(status).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12.0),
+                  color: const Color(0xFF830A09).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  _getStatusIcon(status),
-                  color: _getStatusColor(status),
-                  size: 24,
+                child: const Icon(
+                  Icons.schedule_rounded,
+                  color: Color(0xFF830A09),
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ESTADO DEL SERVICIO',
-                      style: GoogleFonts.karla(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      status,
-                      style: GoogleFonts.karla(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _getStatusColor(status),
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 12),
+              Text(
+                'Fecha y Hora del Servicio',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF830A09),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _buildInfoItem(
-                  icon: Icons.calendar_today,
-                  iconColor: Colors.blue[600]!,
-                  title: 'Fecha',
-                  value: date,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildInfoItem(
-                  icon: Icons.access_time,
-                  iconColor: Colors.orange[600]!,
-                  title: 'Hora',
-                  value: time,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.build,
-                    color: Colors.purple[600],
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Tipos de Servicio',
-                    style: GoogleFonts.karla(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF830A09).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF830A09).withOpacity(0.1),
                     ),
                   ),
-                ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Fecha',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF830A09),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        date,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: serviceTypes
-                    .map((type) => Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF84090D).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF84090D).withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            type,
-                            style: GoogleFonts.karla(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF84090D),
-                            ),
-                          ),
-                        ))
-                    .toList(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF830A09).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF830A09).withOpacity(0.1),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hora',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF830A09),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        time,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -236,7 +295,7 @@ class ServiceDetailsSection extends StatelessWidget {
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'disponible':
-        return Icons.check_circle;
+        return Icons.info_outline_rounded;
       case 'ofertado':
         return Icons.local_offer;
       case 'en curso':

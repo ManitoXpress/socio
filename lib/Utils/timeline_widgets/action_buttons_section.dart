@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/imagePreview.dart';
-import 'package:socio/Screens/commentScreen.dart';
-import 'package:socio/Utils/authUtils.dart';
-import 'package:socio/models/serviceRequest_models.dart';
-import 'package:socio/provider/service_partner_provider.dart';
 import 'package:socio/constans/service_constans.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+
+import '../../Screens/commentScreen.dart';
+
+import '../../models/serviceRequest_models.dart';
+import '../../provider/service_partner_provider.dart';
+import '../authUtils.dart';
 
 class ActionButtonsSection extends StatelessWidget {
   final BuildContext context;

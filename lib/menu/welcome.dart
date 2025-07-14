@@ -1,12 +1,16 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:socio/ServiceResponse/post.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 
-import '../Controller/RegisController.dart';
+
 import '../Screens/Validations.dart';
 import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
 import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
+
+
 class FirstTimeLoginScreen extends StatelessWidget {
   final RegistrationController registrationController;
   final UserData userData; // 👉 Agregado

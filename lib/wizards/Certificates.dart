@@ -9,7 +9,6 @@ import 'package:image/image.dart' as img;
 import 'package:provider/provider.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/provider/providerImage.dart';
-import '../Controller/RegisController.dart';
 
 import 'package:flutter/cupertino.dart';
 
@@ -20,6 +19,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
 class CertificateImageStep extends StatefulWidget {
   final RegistrationController registrationController;
   /// Ahora recibe lista de rutas

@@ -1,27 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Cartscreen.dart';
-import 'package:socio/Screens/buttonDocument.dart';
-import 'package:socio/Screens/maps.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/Utils/fcmToken.dart';
-import 'package:socio/Utils/homeData.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:socio/menu/help.dart';
-import 'package:socio/menu/profilescreen.dart';
-import 'package:socio/menu/referidos.dart';
-import 'package:persistent_bottom_nav_bar/persistent_bottom_nav_bar.dart';
-import 'package:socio/provider/providerRegistration.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
+import '../ServiceResponse/get.dart';
 import '../ServiceResponse/requestUserData.dart';
+import '../Utils/fcmToken.dart';
+import '../Utils/debt_blocker_wrapper.dart';
+import '../Utils/maps.dart';
+import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
+import '../menu/help.dart';
+import '../menu/profilescreen.dart';
+import '../menu/referidos.dart';
+import 'Cartscreen.dart';
+import 'documentScreen.dart';
+import 'homeData.dart';
+import 'dart:async';
+
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../provider/providerRegistration.dart';
+
 class HomeScreen extends StatefulWidget {
   final RegistrationData registrationData;
   final UserData userData;
@@ -206,72 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Pantalla de bloqueo solicitando cambio de nombre
-  Widget _buildNameChangeBlockedScreen(
-    BuildContext context, UserData remoteUser) {
-  final name = Uri.encodeComponent(remoteUser.displayName);
-  final supportUrl =
-      'https://wa.me/59173666393?text=Hola%20Soy%20$name,%20Necesito%20soporte%20';
-  
-  return WillPopScope(
-    // Evita que el usuario retroceda usando el botón físico o el gesto de swipe
-    onWillPop: () async => false,
-    child: Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false, // Quita el botón de “atrás”
-        title: const Text(
-          'Acceso Restringido',
-          style: MyTextStyles.buttonTextStyle,
-        ),
-        backgroundColor: const Color(0xFF830A09),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.lock_outline,
-                size: 80,
-                color: Colors.grey.shade700,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Necesita cambiar de nombre',
-                style: MyTextStyles.formServiceTextStyle.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Tu nombre de perfil actual no es válido para continuar. '
-                'Por favor edita tu perfil y elige un nombre diferente.',
-                style: MyTextStyles.formServiceTextStyle,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => _abrirEnlace(supportUrl),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: customColor,
-                ),
-                child: const Text(
-                  'Editar Perfil',
-                  style: MyTextStyles.buttonTextStyle,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-
   List<Widget> _buildScreens() => [
         HistorialScreen(userData: widget.userData),
         WalletScreen(),
@@ -384,7 +320,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildSocialButton(
                     icon: Icons.facebook,
-                    url: 'https://www.facebook.com/ManitosXpress'),
+                    url:
+                        'fb://facewebmodal/f?href=https://www.facebook.com/ManitosXpress'),
                 SizedBox(width: 18.w),
                 _buildSocialButton(
                     icon: Icons.camera_alt,
@@ -450,13 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         final remoteUser = snap.data!;
 
-        // 1) Si el displayName es exactamente "Julio Socio", bloqueamos para cambiar de nombre
-        final displayName = remoteUser.registrationData.displayName ?? '';
-        if (displayName == '') {
-          return _buildNameChangeBlockedScreen(context, remoteUser);
-        }
-
-        // 2) Si faltan las 3 fotos, bloquea
+        // Si faltan las 3 fotos, bloquea
         final ok = remoteUser.imagePath.isNotEmpty &&
             remoteUser.idDocumentImagePath.isNotEmpty &&
             remoteUser.idDocumentImagePath2.isNotEmpty;
@@ -464,7 +395,8 @@ class _HomeScreenState extends State<HomeScreen> {
           return _buildBlockedScreen(remoteUser);
         }
 
-        // 3) Ya pasó la verificación, mostramos el contenido normal
+        // Ya pasó la verificación
+        // <-- aquí le pasamos el remoteUser
         return _buildMainScaffold(remoteUser);
       },
     );

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter/material.dart';
-
 class MyTextStyles {
   static const TextStyle inputTextStyle = TextStyle(
-    color: Color(0xFF000405),
-    fontSize: 14,
+    color: Color.fromARGB(255, 0, 0, 0),
+    fontSize: 12,
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
@@ -60,13 +58,14 @@ class MyTextStyles {
     fontStyle: FontStyle.normal,
   );
   static const TextStyle unselectedTabTextStyle = TextStyle(
-    fontSize: 12,
+    fontSize: 10,
+    color: Color.fromARGB(255, 0, 0, 0),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,
     fontStyle: FontStyle.italic,
   );
   static const TextStyle tabTextStyle = TextStyle(
-    fontSize: 12,
+    fontSize: 10,
     color: Color.fromARGB(255, 0, 0, 0),
     fontFamily: 'Xpress',
     fontWeight: FontWeight.w700,

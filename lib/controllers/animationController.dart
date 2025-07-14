@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Home.dart';
+
 
 
 import 'package:rive/rive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
 
+import '../Screens/Home.dart';
+import '../ServiceResponse/requestUserData.dart';
+import 'RegisController.dart';
 class EstrellaController {
   static void handsOnTheEyes(SMIBool? isHandsUp) {
     isHandsUp?.change(true);
@@ -125,8 +126,6 @@ Future<UserData> fetchUserData(String userId) async {
     criminalRecordImagePath: '',
     idDocumentImagePath: '',
     idDocumentImagePath2: '',
-    medicalLicenseImagePath: '',
-    professionalTitleImagePath: '',
     selectedCountryCode: '',
     expertises: [],
     expLevel: [],
@@ -159,6 +158,6 @@ Future<UserData> fetchUserData(String userId) async {
     ),
     referrerWorkerId: '',
     referralCode: '',
-    points: 0, verificationStatus: '',
+    points: 0, verificationStatus: '', medicalLicenseImagePath: '', professionalTitleImagePath: '',
   );
 }

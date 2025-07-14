@@ -2,18 +2,20 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../Controller/inProgressFetcher.dart';
-import '../Controller/offerFetcher.dart';
-import '../Controller/serviceCancelled.dart';
-import '../Controller/serviceComplete.dart';
+
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
+
 import '../ServiceResponse/request.dart';
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestServiceType.dart';
 import '../ServiceResponse/requestStatus.dart';
 import '../Utils/serviceFetcher.dart';
 import '../Utils/workerDetails.dart';
+import '../controllers/inProgressFetcher.dart';
+import '../controllers/offerFetcher.dart';
+import '../controllers/serviceCancelled.dart';
+import '../controllers/serviceComplete.dart';
 
 class HistorialProvider extends ChangeNotifier {
   // Repositorios

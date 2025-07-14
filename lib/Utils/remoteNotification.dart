@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Screens/Home.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+
+import '../Screens/Home.dart';
+import '../ServiceResponse/requestUserData.dart';
+import '../controllers/RegisController.dart';
 class NotificationService {
   late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
@@ -138,8 +139,6 @@ class NotificationService {
       criminalRecordImagePath: '',
       idDocumentImagePath: '',
       idDocumentImagePath2: '',
-      medicalLicenseImagePath: '',
-      professionalTitleImagePath: '',
       selectedCountryCode: '',
       expertises: [],
       expLevel: [],
@@ -172,7 +171,7 @@ class NotificationService {
       ),
       referrerWorkerId: '',
       referralCode: '',
-      points: 0, verificationStatus: '',
+      points: 0, verificationStatus: '', medicalLicenseImagePath: '', professionalTitleImagePath: '',
     );
   }
 

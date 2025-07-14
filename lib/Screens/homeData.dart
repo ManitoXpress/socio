@@ -1,5 +1,6 @@
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+
+import '../ServiceResponse/requestUserData.dart';
+import '../controllers/RegisController.dart';
 
 class HomeData {
   final String displayName;

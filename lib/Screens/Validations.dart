@@ -1,23 +1,32 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:socio/provider/providerImage.dart';
 
-import 'package:socio/provider/providerRegistration.dart';
-import 'package:socio/wizards/Certificates.dart';
-import 'package:socio/wizards/CriminalRecords.dart';
-import 'package:socio/wizards/DocumentB.dart';
-import 'package:socio/wizards/IdDocument.dart';
-import 'package:socio/wizards/Location.dart';
-import 'package:socio/wizards/ProfileImage.dart';
-import 'package:socio/wizards/ServiceTypeSelection.dart';
-import 'package:socio/wizards/forms.dart';
+
+import 'package:provider/provider.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
+
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
+import '../ServiceResponse/requestExpertise.dart';
+import '../Utils/styles.dart';
+import '../controllers/RegisController.dart';
+
+import '../provider/providerImage.dart';
+import '../provider/providerRegistration.dart';
+import '../wizards/Certificates.dart';
+import '../wizards/CriminalRecords.dart';
+import '../wizards/DocumentB.dart';
+import '../wizards/IdDocument.dart';
+import '../wizards/Location.dart';
+import '../wizards/ProfileImage.dart';
+import '../wizards/ServiceTypeSelection.dart';
+import '../wizards/forms.dart';
+import '../wizards/licenseMedical.dart';
+import '../wizards/profesionalTittle.dart';
 
 class RegistrationScreen extends StatelessWidget {
   final RegistrationController registrationController;
@@ -52,7 +61,7 @@ class RegistrationScreen extends StatelessWidget {
           final steps = <Step>[
             Step(
               title: Text('Datos del Servicio', style: MyTextStyles.drawerButtonTextStyle3),
-              content: ServiceDataWizard(
+               content: ServiceDataWizard(
                 onNextStep: provider.nextStep,
                 userData: provider.userData,
               ),
@@ -179,21 +188,21 @@ class RegistrationScreen extends StatelessWidget {
               title: Text('Certificados', style: MyTextStyles.drawerButtonTextStyle3),
               content: CertificateImageStep(
                 registrationController: provider.registrationController,
-                onImageSelected: (path) {
-                  provider.userData.certificateImagePaths = path;
-                  provider.registrationData.certificateImagePaths = path;
+                onImageSelected: (List<String> paths) {
+                  provider.userData.certificateImagePaths = paths;
+                  provider.registrationData.certificateImagePaths = paths;
                   provider.notifyListeners();
                 },
                 certificateImagePaths: provider.userData.certificateImagePaths,
                 registrationData: provider.registrationData,
                 userData: provider.userData,
-                isImageCaptured:
-                ValueNotifier(provider.userData.certificateImagePaths.isNotEmpty),
+                isImageCaptured: ValueNotifier(provider.userData.certificateImagePaths.isNotEmpty),
                 onNextStep: provider.nextStep,
               ),
               isActive: provider.currentStep >= 7,
               state: provider.currentStep > 7 ? StepState.complete : StepState.indexed,
             ),
+
           ];
 
           return Scaffold(

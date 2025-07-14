@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Controller/RegisController.dart';
+
 import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/styles.dart';
+
+import '../controllers/RegisController.dart';
 
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;

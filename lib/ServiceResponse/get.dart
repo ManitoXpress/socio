@@ -1,28 +1,31 @@
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
-import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/ServiceResponse/requestCategory.dart';
-import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/authUtils.dart';
+
+import '../Utils/authUtils.dart';
+import 'baseurl.dart';
+import 'requestCategory.dart';
+import 'requestServiceType.dart';
+
 
 class ApiService2 {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
 
   Future<Map<String, dynamic>> fetchSingleService(
-    String workerColumn,
-    String workerValue,
-    String type,
-    String deviceId,
-    String serviceId,
-  ) async {
+      String workerColumn,
+      String workerValue,
+      String type,
+      String deviceId,
+      String serviceId,
+      ) async {
     // Llamas a tu método que ya funciona
     final resp = await getAllServices(
       await AuthUtils.getToken() ?? '',
@@ -40,16 +43,16 @@ class ApiService2 {
     // Buscamos el que tenga el id que queremos
     final found = data.cast<Map<String, dynamic>>().firstWhere(
           (srv) => srv['id'] == serviceId,
-          orElse: () => throw Exception('Servicio no encontrado'),
-        );
+      orElse: () => throw Exception('Servicio no encontrado'),
+    );
 
     return found;
   }
 
   Future<void> patchServiceComments(
-    String serviceId,
-    List<Map<String, String>> commentsList,
-  ) async {
+      String serviceId,
+      List<Map<String, String>> commentsList,
+      ) async {
     final user = FirebaseAuth.instance.currentUser;
     final token = await user?.getIdToken(true);
     if (token == null) {
@@ -386,13 +389,13 @@ class ApiService2 {
   }
 
   Future<List<ServiceRequest>> getOffers(
-    String column,
-    String value,
-    String type,
-    String deviceId,
-    List<ServiceRequest> services,
-    String status, // Nuevo parámetro para filtrar por estado
-  ) async {
+      String column,
+      String value,
+      String type,
+      String deviceId,
+      List<ServiceRequest> services,
+      String status, // Nuevo parámetro para filtrar por estado
+      ) async {
     try {
       final String? authTokenValue = await AuthUtils.getToken();
 
@@ -409,11 +412,11 @@ class ApiService2 {
       List<Future> requests = services.map((service) async {
         final url = Uri.parse(
           '$baseUrl/offers/${service.id}?'
-          'columns=$column&'
-          'values=$value&'
-          'type=$type&'
-          'deviceId=$deviceId&'
-          'status=$status', // Añadir parámetro de estado
+              'columns=$column&'
+              'values=$value&'
+              'type=$type&'
+              'deviceId=$deviceId&'
+              'status=$status', // Añadir parámetro de estado
         );
 
         final response = await http.get(
@@ -428,7 +431,7 @@ class ApiService2 {
           allOffers.addAll(offersJson
               .map((offer) => ServiceRequest.fromSnapshot(offer))
               .where((offer) =>
-                  offer.status.id == status) // Filtro adicional en cliente
+          offer.status.id == status) // Filtro adicional en cliente
               .toList());
         } else {
           print(
@@ -536,7 +539,7 @@ class ApiService2 {
 
   Future<List<Category>> fetchExpertises() async {
     final response =
-        await http.get(Uri.parse('$baseUrl/categories/expertises'));
+    await http.get(Uri.parse('$baseUrl/categories/expertises'));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -622,7 +625,7 @@ class ApiService2 {
       String token, String parentId) async {
     try {
       final String? token =
-          await AuthUtils.getToken(); // Utiliza AuthUtils para obtener el token
+      await AuthUtils.getToken(); // Utiliza AuthUtils para obtener el token
       final response = await http.get(
         Uri.parse('$baseUrl/categories/parent/$parentId'),
         headers: {
@@ -717,7 +720,7 @@ class ApiService2 {
           'Content-Type': 'application/json',
         },
       );
-      
+
       if (offersResp.statusCode == 200) {
         final List offers = json.decode(offersResp.body) as List;
         return offers.map((e) => Map<String, dynamic>.from(e)).toList();
@@ -796,11 +799,11 @@ class ServiceResponse {
     final List<dynamic> serviceTypesData = json['serviceTypes'] ?? [];
     final List<ServiceType> serviceTypes = serviceTypesData
         .map((data) => ServiceType(
-              id: data['id'] ?? '',
-              name: data['name'] ?? '',
-              selectedDate: data['selectedDate'] ?? '',
-              selectedTime: data['selectedTime'] ?? '',
-            ))
+      id: data['id'] ?? '',
+      name: data['name'] ?? '',
+      selectedDate: data['selectedDate'] ?? '',
+      selectedTime: data['selectedTime'] ?? '',
+    ))
         .toList();
     return ServiceResponse(
       id: json['id'] ?? '',

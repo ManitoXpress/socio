@@ -1,33 +1,32 @@
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'dart:io'; // Para manejar archivos locales
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 
-import 'package:socio/Screens/commentScreen.dart';
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/requestStatus.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/authUtils.dart';
-import 'package:socio/Utils/service_details_card.dart';
-import 'package:socio/Utils/styles.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:socio/Controller/imagePreview.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:socio/constans/service_constans.dart';
-import 'package:socio/models/offer_models.dart';
-import 'package:socio/models/serviceRequest_models.dart';
-import 'package:socio/provider/service_partner_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'timeline_widgets/service_details_section.dart';
-import 'timeline_widgets/description_section.dart';
-import 'timeline_widgets/images_carousel_section.dart';
-import 'timeline_widgets/expertises_section.dart';
-import 'timeline_widgets/location_map_section.dart';
-import 'timeline_widgets/financial_breakdown_section.dart';
+import '../Screens/commentScreen.dart';
+import '../ServiceResponse/get.dart';
+import '../ServiceResponse/post.dart';
+
+import '../ServiceResponse/requestStatus.dart';
+import '../ServiceResponse/requestUserData.dart';
+
+import '../constans/service_constans.dart';
+import '../models/offer_models.dart';
+import '../models/serviceRequest_models.dart';
+import '../provider/service_partner_provider.dart';
+import 'styles.dart';
 import 'timeline_widgets/action_buttons_section.dart';
+import 'timeline_widgets/description_section.dart';
+import 'timeline_widgets/expertises_section.dart';
+import 'timeline_widgets/financial_breakdown_section.dart';
+import 'timeline_widgets/images_carousel_section.dart';
+import 'timeline_widgets/location_map_section.dart';
+import 'timeline_widgets/service_details_section.dart';
+
+
 class ServiceFormWithTimelineSocio extends StatefulWidget {
   final ServiceRequestModel serviceRequest;
   final OfferModel offer;

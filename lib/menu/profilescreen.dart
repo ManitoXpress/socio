@@ -7,9 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/Controller/RegisController.dart';
-import 'package:socio/Controller/editController.dart';
-import 'package:socio/Screens/buttonDocument.dart';
+
+
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/Utils/Colors.dart';
@@ -19,8 +18,10 @@ import 'package:socio/menu/login.dart';
 import 'package:socio/provider/providerRegistration.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../Screens/documentScreen.dart';
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestUserData.dart';
+import '../controllers/RegisController.dart';
 class ProfileData {
   String displayName;
   String email;
