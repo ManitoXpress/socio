@@ -1,9 +1,7 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
-import '../models/imageModels.dart';
-
+import '../controllers/imagePreview.dart';
 
 class ServiceImagesCarousel extends StatelessWidget {
   final List<String> images;

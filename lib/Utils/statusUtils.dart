@@ -1,5 +1,4 @@
 
-
 import '../ServiceResponse/requestStatus.dart';
 
 class StatusUtils {

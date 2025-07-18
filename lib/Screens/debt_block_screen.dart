@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:socio/Screens/debt_warning_screen.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
+
 import '../Utils/debt_blocker_service.dart';
 import '../Utils/styles.dart';
+import 'debt_warning_screen.dart';
 
 class DebtBlockScreen extends StatefulWidget {
   final double totalDebt;
@@ -61,19 +62,51 @@ class _DebtBlockScreenState extends State<DebtBlockScreen> {
               _buildHeader(),
               SizedBox(height: 24.h),
 
-              // Lista de deudas vencidas
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _overdueDebts.isEmpty
-                        ? _buildEmptyState()
-                        : _buildOverdueDebtsList(),
+              // Mensaje de advertencia más grande
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 32.h),
+                child: Text(
+                  'Debes pagar tus deudas vencidas para desbloquear tu cuenta.',
+                  style: MyTextStyles.buttonTextStyle.copyWith(
+                    fontSize: 20.sp,
+                    color: Colors.red[800],
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-
-              SizedBox(height: 24.h),
-
-              // Botón para pagar
-              _buildPaymentButton(),
+              // Botón para pagar más grande
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _sendDebtToWhatsApp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    padding: EdgeInsets.symmetric(vertical: 22.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.payment,
+                        color: Colors.white,
+                        size: 30.w,
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        'Pagar deudas vencidas',
+                        style: MyTextStyles.buttonTextStyle.copyWith(
+                          fontSize: 22.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -260,35 +293,27 @@ class _DebtBlockScreenState extends State<DebtBlockScreen> {
 
         SizedBox(height: 16.h),
 
-        // Botón para pagar
+        // Botón de pagar deudas aún más pequeño
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
+          child: ElevatedButton.icon(
             onPressed: _sendDebtToWhatsApp,
+            icon: Icon(Icons.payment, size: 18),
+            label: Text(
+              'Pagar deudas vencidas',
+              style: MyTextStyles.buttonTextStyle.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4CAF50),
-              padding: EdgeInsets.symmetric(vertical: 16.h),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(vertical: 8.h),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12.r),
               ),
               elevation: 4,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.payment,
-                  color: Colors.white,
-                  size: 24.w,
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  'Pagar deudas vencidas',
-                  style: MyTextStyles.buttonTextStyle.copyWith(
-                    fontSize: 18.sp,
-                  ),
-                ),
-              ],
             ),
           ),
         ),

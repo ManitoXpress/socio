@@ -1,6 +1,5 @@
-
-import '../ServiceResponse/requestUserData.dart';
 import '../controllers/RegisController.dart';
+import '../ServiceResponse/requestUserData.dart';
 
 class HomeData {
   final String displayName;

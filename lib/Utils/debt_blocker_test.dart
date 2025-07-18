@@ -1,6 +1,6 @@
 
 
-import 'package:socio/Utils/debt_blocker_service.dart';
+import 'debt_blocker_service.dart';
 
 /// Archivo de prueba para verificar la lógica del sistema de bloqueo por deudas
 /// Este archivo no se usa en producción, solo para testing

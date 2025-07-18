@@ -6,11 +6,12 @@ import 'package:camera/camera.dart';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-
+import 'package:flutter/cupertino.dart';
 
 import '../ServiceResponse/requestUserData.dart';
 import '../Utils/styles.dart';
 import '../controllers/RegisController.dart';
+
 
 class Step9FormData {
   final List<String> jobCompleteImagePaths;

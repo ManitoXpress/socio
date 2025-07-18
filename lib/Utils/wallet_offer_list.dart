@@ -23,11 +23,22 @@ class WalletOfferList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filtrar solo deudas adeudadas (status completed y paymentStatus debe)
+    final filteredOffers = offers.where((offer) {
+      final data = offer.data() as Map<String, dynamic>;
+      final status = data['status']?.toString().trim().toLowerCase();
+      final paymentStatus = data['paymentStatus']?.toString().trim().toLowerCase();
+      if (title == 'Adeudado') {
+        return status == 'completed' && paymentStatus == 'debe';
+      }
+      return true;
+    }).toList();
+
     return ListView.builder(
-      itemCount: offers.length,
+      itemCount: filteredOffers.length,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemBuilder: (context, index) {
-        final offer = offers[index];
+        final offer = filteredOffers[index];
         final offerId = offer.id;
         final commission = offer['commission'] ?? 0.0;
         final extraCosts = offer['extraCosts'] ?? 0.0;

@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
-
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
 import '../ServiceResponse/request.dart';
@@ -21,6 +20,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 
+import '../Widgets/modern_tabbar.dart';
 import '../provider/providerService.dart';
 
 class HistorialScreen extends StatefulWidget {
@@ -44,7 +44,7 @@ class _HistorialScreenState extends State<HistorialScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
     // 1) Creamos el provider UNA sola vez
     _historialProv = HistorialProvider();
@@ -173,224 +173,15 @@ class _HistorialScreenState extends State<HistorialScreen>
               automaticallyImplyLeading: false,
               backgroundColor: Colors.white,
               elevation: 0,
-              toolbarHeight: 60,
+              toolbarHeight: 48,
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(1),
-                child: Container(
-                  color: Colors.white,
-                  child: TabBar(
-                    controller: _tabController,
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    labelStyle: MyTextStyles.tabTextStyle,
-                    unselectedLabelStyle: MyTextStyles.unselectedTabTextStyle,
-                    indicator: const UnderlineTabIndicator(
-                      borderSide:
-                          BorderSide(width: 3, color: Color(0xFF84090D)),
-                      insets: EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    tabs: [
-                      Tab(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Padding(
-                                    padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.task_alt,
-                                        color: Colors.black)),
-                                if (prov.availableCount > 0)
-                                  Positioned(
-                                    top: -10,
-                                    right: -10,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF84090D),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 20,
-                                        minHeight: 20,
-                                      ),
-                                      child: Text(
-                                        prov.availableCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Disponibles'),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Padding(
-                                    padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.local_offer,
-                                        color: Colors.black)),
-                                if (prov.offerServiceCount > 0)
-                                  Positioned(
-                                    top: -10,
-                                    right: -10,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF84090D),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 20,
-                                        minHeight: 20,
-                                      ),
-                                      child: Text(
-                                        prov.offerServiceCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Ofertados'),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Padding(
-                                    padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.assignment_ind,
-                                        color: Colors.black)),
-                                if (prov.inProgressCount > 0)
-                                  Positioned(
-                                    top: -10,
-                                    right: -10,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF84090D),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 20,
-                                        minHeight: 20,
-                                      ),
-                                      child: Text(
-                                        prov.inProgressCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Asignados'),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Padding(
-                                    padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.check_circle,
-                                        color: Colors.black)),
-                                if (prov.completedCount > 0)
-                                  Positioned(
-                                    top: -10,
-                                    right: -10,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF84090D),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 20,
-                                        minHeight: 20,
-                                      ),
-                                      child: Text(
-                                        prov.completedCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Completados'),
-                          ],
-                        ),
-                      ),
-                      Tab(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Padding(
-                                    padding: EdgeInsets.only(bottom: 4),
-                                    child: Icon(Icons.cancel,
-                                        color: Colors.black)),
-                                if (prov.cancelledCount > 0)
-                                  Positioned(
-                                    top: -10,
-                                    right: -10,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF84090D),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 20,
-                                        minHeight: 20,
-                                      ),
-                                      child: Text(
-                                        prov.cancelledCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white, fontSize: 10),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            const Text('Cancelados'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                preferredSize: const Size.fromHeight(5),
+                child: ModernTabBar(
+                  controller: _tabController,
+                  availableCount: prov.availableCount,
+                  offerServiceCount: prov.offerServiceCount,
+                  inProgressCount: prov.inProgressCount,
+                  completedCount: prov.completedCount,
                 ),
               ),
             ),
@@ -398,16 +189,13 @@ class _HistorialScreenState extends State<HistorialScreen>
               children: [
                 Column(
                   children: [
-                    Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 2),
                       child: Center(
                         child: Text('Historial',
                             style: MyTextStyles.buttonTextStyle3),
                       ),
                     ),
-                    const Divider(height: 1),
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
@@ -450,18 +238,6 @@ class _HistorialScreenState extends State<HistorialScreen>
                           ),
                           _ServiceListTab(
                             status: 'completed',
-                            userId: _userId,
-                            userData: widget.userData,
-                            apiService: ApiService(),
-                            apiService2: ApiService2(),
-                            onRefresh: () => prov.refresh(
-                                userId: _userId,
-                                token: _token,
-                                deviceId: _deviceId),
-                            isLoading: prov.isLoading,
-                          ),
-                          _ServiceListTab(
-                            status: 'cancelled',
                             userId: _userId,
                             userData: widget.userData,
                             apiService: ApiService(),

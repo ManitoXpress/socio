@@ -78,6 +78,59 @@ class WalletIncomeList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filtrar solo servicios completados
+    final completedServices = services.where((service) {
+      final data = service.data() as Map<String, dynamic>;
+      final status = data['status']?.toString().trim().toLowerCase();
+      return status == 'completed';
+    }).toList();
+
+    // Calcular ingresos netos por mes
+    final Map<String, double> localMonthlyIncome = {};
+    double localTotalIncome = 0.0;
+    double localBestMonthIncome = 0.0;
+    String localBestMonth = '';
+    final now = DateTime.now();
+    final monthsToShow = int.tryParse(selectedIncomePeriod) ?? 6;
+    for (int i = 0; i < monthsToShow; i++) {
+      final date = DateTime(now.year, now.month - i, 1);
+      final monthName = DateFormat('MMM yyyy', 'es').format(date);
+      localMonthlyIncome[monthName] = 0.0;
+    }
+    for (final service in completedServices) {
+      final data = service.data() as Map<String, dynamic>;
+      final offeredPrice = (data['offeredPrice'] ?? 0.0) as num;
+      final commission = (data['commission'] ?? 0.0) as num;
+      final netIncome = offeredPrice - commission;
+      final createdAtData = data['createdAt'];
+      DateTime createdAt;
+      if (createdAtData is Timestamp) {
+        createdAt = createdAtData.toDate();
+      } else if (createdAtData is String) {
+        createdAt = DateTime.tryParse(createdAtData) ?? DateTime.now();
+      } else if (createdAtData is Map && createdAtData['_seconds'] != null) {
+        createdAt = DateTime.fromMillisecondsSinceEpoch(
+          (createdAtData['_seconds'] as int) * 1000,
+        );
+      } else {
+        createdAt = DateTime.now();
+      }
+      final monthName = DateFormat('MMM yyyy', 'es').format(createdAt);
+      if (localMonthlyIncome.containsKey(monthName)) {
+        localMonthlyIncome[monthName] = localMonthlyIncome[monthName]! + netIncome;
+        localTotalIncome += netIncome;
+      }
+    }
+    localMonthlyIncome.forEach((month, income) {
+      if (income > localBestMonthIncome) {
+        localBestMonthIncome = income;
+        localBestMonth = month;
+      }
+    });
+    final localAverageIncome = localMonthlyIncome.isNotEmpty
+        ? localTotalIncome / localMonthlyIncome.length
+        : 0.0;
+
     // Selector de período
     Widget buildPeriodSelector() {
       return Container(
@@ -134,7 +187,7 @@ class WalletIncomeList extends StatelessWidget {
                 children: [
                   buildStatCard(
                     'Total',
-                    'Bs ${totalIncome.toStringAsFixed(2)}',
+                    'Bs ${localTotalIncome.toStringAsFixed(2)}',
                     Icons.account_balance_wallet,
                     const Color(0xFF4CAF50),
                   ),
@@ -144,7 +197,7 @@ class WalletIncomeList extends StatelessWidget {
                       Expanded(
                         child: buildStatCard(
                           'Promedio',
-                          'Bs ${averageIncome.toStringAsFixed(2)}',
+                          'Bs ${localAverageIncome.toStringAsFixed(2)}',
                           Icons.trending_up,
                           const Color(0xFF2196F3),
                         ),
@@ -153,7 +206,7 @@ class WalletIncomeList extends StatelessWidget {
                       Expanded(
                         child: buildStatCard(
                           'Mejor mes',
-                          bestMonth.isNotEmpty ? bestMonth : 'N/A',
+                          localBestMonth.isNotEmpty ? localBestMonth : 'N/A',
                           Icons.star,
                           const Color(0xFFFF9800),
                         ),
@@ -168,7 +221,7 @@ class WalletIncomeList extends StatelessWidget {
                 Expanded(
                   child: buildStatCard(
                     'Total',
-                    'Bs ${totalIncome.toStringAsFixed(2)}',
+                    'Bs ${localTotalIncome.toStringAsFixed(2)}',
                     Icons.account_balance_wallet,
                     const Color(0xFF4CAF50),
                   ),
@@ -177,7 +230,7 @@ class WalletIncomeList extends StatelessWidget {
                 Expanded(
                   child: buildStatCard(
                     'Promedio',
-                    'Bs ${averageIncome.toStringAsFixed(2)}',
+                    'Bs ${localAverageIncome.toStringAsFixed(2)}',
                     Icons.trending_up,
                     const Color(0xFF2196F3),
                   ),
@@ -186,7 +239,7 @@ class WalletIncomeList extends StatelessWidget {
                 Expanded(
                   child: buildStatCard(
                     'Mejor mes',
-                    bestMonth.isNotEmpty ? bestMonth : 'N/A',
+                    localBestMonth.isNotEmpty ? localBestMonth : 'N/A',
                     Icons.star,
                     const Color(0xFFFF9800),
                   ),
@@ -199,7 +252,7 @@ class WalletIncomeList extends StatelessWidget {
     }
 
     Widget buildMonthlyChart() {
-      if (monthlyIncome.isEmpty) {
+      if (localMonthlyIncome.isEmpty) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(20),
@@ -224,7 +277,7 @@ class WalletIncomeList extends StatelessWidget {
         );
       }
       final monthsWithIncome =
-          monthlyIncome.entries.where((entry) => entry.value > 0).toList();
+          localMonthlyIncome.entries.where((entry) => entry.value > 0).toList();
       if (monthsWithIncome.isEmpty) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -297,7 +350,7 @@ class WalletIncomeList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: sortedMonths.map((month) {
-                      final income = monthlyIncome[month] ?? 0.0;
+                      final income = localMonthlyIncome[month] ?? 0.0;
                       if (income <= 0) {
                         return Expanded(
                           child: Container(
@@ -402,7 +455,11 @@ class WalletIncomeList extends StatelessWidget {
     }
 
     Widget buildIncomeTransactionsList() {
-      if (services.isEmpty) {
+      final filteredServices = services.where((service) {
+        final data = service.data() as Map<String, dynamic>;
+        return data['status'] == 'completed';
+      }).toList();
+      if (filteredServices.isEmpty) {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           padding: const EdgeInsets.all(40),
@@ -433,7 +490,7 @@ class WalletIncomeList extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'Transacciones (${services.length})',
+                'Transacciones ( ${filteredServices.length})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -444,16 +501,17 @@ class WalletIncomeList extends StatelessWidget {
             SizedBox(
               height: 300,
               child: ListView.builder(
-                itemCount: services.length,
+                itemCount: filteredServices.length,
                 padding: EdgeInsets.zero,
                 itemBuilder: (context, index) {
-                  final service = services[index];
-                  final commission = service['commission'] ?? 0.0;
-                  final offeredPrice = service['offeredPrice'] ?? 0.0;
+                  final service = filteredServices[index];
+                  final data = service.data() as Map<String, dynamic>;
+                  final commission = data['commission'] ?? 0.0;
+                  final offeredPrice = data['offeredPrice'] ?? 0.0;
                   final netIncome = offeredPrice - commission;
-                  final serviceId = service['serviceId'] ?? 'Sin ID';
-                  final status = service['status'] ?? 'Desconocido';
-                  final createdAtData = service['createdAt'];
+                  final serviceId = data['serviceId'] ?? 'Sin ID';
+                  final status = data['status'] ?? 'Desconocido';
+                  final createdAtData = data['createdAt'];
                   DateTime createdAt;
                   if (createdAtData is Timestamp) {
                     createdAt = createdAtData.toDate();
@@ -589,8 +647,7 @@ class WalletIncomeList extends StatelessWidget {
                           ),
                         ],
                       ),
-                      onTap: () => onShowIncomeDetails(
-                          service.data() as Map<String, dynamic>),
+                      onTap: () => onShowIncomeDetails(data),
                     ),
                   );
                 },

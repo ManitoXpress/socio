@@ -63,21 +63,75 @@ class _DebtWarningScreenState extends State<DebtWarningScreen> {
             children: [
               // Header
               _buildHeader(),
-              SizedBox(height: 24.h),
+              SizedBox(height: 100.h),
 
-              // Lista de deudas próximas a vencer
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _warningDebts.isEmpty
-                        ? _buildEmptyState()
-                        : _buildWarningDebtsList(),
+              // Botón para pagar más grande
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _sendDebtToWhatsApp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4CAF50),
+                    padding: EdgeInsets.symmetric(vertical: 18.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.payment, color: Colors.white, size: 24.w),
+                      SizedBox(width: 10.w),
+                      Text('Pagar deudas',
+                          style: MyTextStyles.buttonTextStyle
+                              .copyWith(fontSize: 18.sp, color: Colors.white)),
+                    ],
+                  ),
+                ),
               ),
-
-              SizedBox(height: 24.h),
-
-              // Botones
-              _buildButtons(),
+              SizedBox(height: 14.h),
+              // Botón ver deudas pendientes restaurado
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _showAllDebtsModal,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange[900],
+                    side: BorderSide(color: Colors.orange[900]!, width: 1.2),
+                    padding: EdgeInsets.symmetric(vertical: 18.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    textStyle:
+                        MyTextStyles.buttonTextStyle.copyWith(fontSize: 18),
+                  ),
+                  child: Text('Ver deudas pendientes',
+                      style: MyTextStyles.buttonTextStyle
+                          .copyWith(fontSize: 18, color: Colors.orange[900])),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              // Botón continuar
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange[900],
+                    side: BorderSide(color: Colors.orange[900]!, width: 1.2),
+                    padding: EdgeInsets.symmetric(vertical: 18.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
+                    textStyle:
+                        MyTextStyles.buttonTextStyle.copyWith(fontSize: 18),
+                  ),
+                  child: Text('Continuar',
+                      style: MyTextStyles.buttonTextStyle
+                          .copyWith(fontSize: 18, color: Colors.orange[900])),
+                ),
+              ),
             ],
           ),
         ),
@@ -159,15 +213,18 @@ class _DebtWarningScreenState extends State<DebtWarningScreen> {
             ],
           ),
         ),
-        SizedBox(height: 16.h),
-        Text(
-          'Si no realizas el pago en el plazo establecido, tu cuenta será bloqueada hasta que saldes tus deudas vencidas.',
-          style: MyTextStyles.inputTextStyle5.copyWith(
-            fontSize: 13.sp,
-            color: Colors.grey[800],
-            fontWeight: FontWeight.w500,
+        SizedBox(height: 50.h),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 0),
+          child: Text(
+            'Si no realizas el pago en el plazo establecido, tu cuenta será bloqueada hasta que saldes tus deudas vencidas.',
+            style: MyTextStyles.inputTextStyle5.copyWith(
+              fontSize: 16.sp,
+              color: Colors.grey[800],
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -216,7 +273,7 @@ class _DebtWarningScreenState extends State<DebtWarningScreen> {
     );
   }
 
-  Widget _buildButtons() {
+  Widget _buildButtons(BuildContext context) {
     return Column(
       children: [
         // Botón para refrescar datos

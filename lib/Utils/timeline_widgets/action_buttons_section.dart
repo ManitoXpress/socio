@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/constans/service_constans.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../Screens/commentScreen.dart';
 
+import '../../constans/service_constans.dart';
 import '../../models/serviceRequest_models.dart';
 import '../../provider/service_partner_provider.dart';
 import '../authUtils.dart';
@@ -115,18 +115,9 @@ class ActionButtonsSection extends StatelessWidget {
                   textColor: Colors.white,
                   iconColor: Colors.white,
                 ),
-                const SizedBox(height: 12),
-                _buildModernButton(
-                  onPressed: () => _showNoParticipationDialog(context, prov),
-                  icon: Icons.dangerous,
-                  label: "No Participar",
-                  backgroundColor: const Color(0xFF830A09)!,
-                  textColor: Colors.white,
-                  iconColor: Colors.white,
-                ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildModernButton(
               onPressed: () async {
                 final url = prov.getWhatsAppUrl();
@@ -436,78 +427,6 @@ class ActionButtonsSection extends StatelessWidget {
               ],
             );
           },
-        );
-      },
-    );
-  }
-
-  void _showNoParticipationDialog(
-      BuildContext context, ServicePartnerProvider prov) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF830A09).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.dangerous, color: Color(0xFF830A09)),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'No Participar',
-                style: GoogleFonts.karla(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF830A09),
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            '¿Estás seguro de que no quieres participar en este trabajo?',
-            style: GoogleFonts.karla(
-              fontSize: 14,
-              color: Colors.grey[700],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                "Cancelar",
-                style: GoogleFonts.karla(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await prov.blockParticipation();
-                Navigator.of(ctx).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF830A09),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: Text(
-                "Confirmar",
-                style: GoogleFonts.karla(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
         );
       },
     );

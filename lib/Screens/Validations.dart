@@ -5,24 +5,25 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import 'package:image/image.dart' as img;
 
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/wizards/Location.dart';
+import 'package:socio/wizards/ProfileImage.dart';
 
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
 import '../ServiceResponse/requestExpertise.dart';
+import '../ServiceResponse/requestUserData.dart';
 import '../Utils/styles.dart';
 import '../controllers/RegisController.dart';
-
 import '../provider/providerImage.dart';
 import '../provider/providerRegistration.dart';
 import '../wizards/Certificates.dart';
 import '../wizards/CriminalRecords.dart';
 import '../wizards/DocumentB.dart';
 import '../wizards/IdDocument.dart';
-import '../wizards/Location.dart';
-import '../wizards/ProfileImage.dart';
 import '../wizards/ServiceTypeSelection.dart';
 import '../wizards/forms.dart';
 import '../wizards/licenseMedical.dart';
@@ -61,7 +62,7 @@ class RegistrationScreen extends StatelessWidget {
           final steps = <Step>[
             Step(
               title: Text('Datos del Servicio', style: MyTextStyles.drawerButtonTextStyle3),
-               content: ServiceDataWizard(
+              content: ServiceDataWizard(
                 onNextStep: provider.nextStep,
                 userData: provider.userData,
               ),

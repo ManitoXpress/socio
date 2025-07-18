@@ -3,9 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../models/imageModels.dart';
-
-
+import '../../controllers/imagePreview.dart';
 
 class ImagesCarouselSection extends StatelessWidget {
   final List<String> images;

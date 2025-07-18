@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:socio/Screens/debt_block_screen.dart';
-import 'package:socio/Screens/debt_warning_screen.dart';
-import 'package:socio/Utils/debt_blocker_service.dart';
 
+
+import '../Screens/debt_block_screen.dart';
+import '../Screens/debt_warning_screen.dart';
+import 'debt_blocker_service.dart';
 
 class DebtBlockerWrapper extends StatefulWidget {
   final Widget child;

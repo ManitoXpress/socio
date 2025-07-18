@@ -2,8 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../Screens/Home.dart';
-import '../ServiceResponse/requestUserData.dart';
 import '../controllers/RegisController.dart';
+import '../ServiceResponse/requestUserData.dart';
 
 class ServiceRequest extends StatefulWidget {
   final String buttonText;
