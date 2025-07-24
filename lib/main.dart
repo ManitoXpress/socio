@@ -50,9 +50,6 @@ void main() async {
     androidProvider: AndroidProvider.playIntegrity,
     appleProvider: AppleProvider.appAttest,
   );
-  if (Platform.isIOS) {
-    await requestTrackingPermission(); // Solo en iOS
-  }
   // Obtener y guardar Device ID
   final deviceId = await obtenerDeviceId();
   print("Device ID: $deviceId");
@@ -151,6 +148,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
+      requestTrackingPermission(); // ← Mover aquí la solicitud de ATT
       _checkLoginStatus();
     });
 
@@ -238,6 +236,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     );
   }
 }
+
 // Ejemplo de función para obtener los datos del usuario
 Future<UserData> fetchUserData(String userId) async {
   // Aquí debes implementar la lógica para obtener los datos del usuario

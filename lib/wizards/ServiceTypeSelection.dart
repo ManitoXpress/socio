@@ -5,7 +5,6 @@ import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/styles.dart';
 
 import '../controllers/RegisController.dart';
-
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
@@ -63,219 +62,163 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
   }
 
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Text(
-            "Paso 4: Escoja una o varias profesiones",
-            style: MyTextStyles.drawerButtonTextStyle2,
-          ),
-        ),
-        // Primer grupo de botones (arriba)
-        Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16.0), // Espacio en los lados
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              if (fetchCategories != null)
-                ...fetchCategories!
-                    .take((fetchCategories!.length / 2).ceil())
-                    .map((category) {
-                  return Expanded(
-                    child: buildCategoryButton(
-                      category.name,
-                      const Color(0xFF830A09),
-                    ),
-                  );
-                }).toList(),
-              if (fetchCategories == null)
-                Center(
-                  child: CircularProgressIndicator(),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(height: 10),
-
-        // Segundo grupo de botones (abajo)
-        Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16.0), // Espacio en los lados
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              if (fetchCategories != null)
-                ...fetchCategories!
-                    .skip((fetchCategories!.length / 2).ceil())
-                    .map((category) {
-                  return Expanded(
-                    child: buildCategoryButton(
-                      category.name,
-                      const Color(0xFF830A09),
-                    ),
-                  );
-                }).toList(),
-              if (fetchCategories == null)
-                Center(
-                  child: CircularProgressIndicator(),
-                ),
-            ],
-          ),
-        ),
-        SizedBox(height: 10),
-        if (selectedCategories.isNotEmpty)
-          Column(
-            children: [
-              Text(
-                'Categorías seleccionadas: ${selectedCategories.join(", ")}',
-                style: TextStyle(color: Color(0xFF830A09)),
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Seleccione una o varias profesiones:',
-                style: TextStyle(fontSize: 16),
-              ),
-              SizedBox(height: 10),
-              buildSubcategoryDropdown(),
-            ],
-          ),
-        SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              showCustomProfessionField = true;
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-              side: BorderSide(
-                color: Color(0xFF84090D),
-              ),
+    final screenWidth = MediaQuery.of(context).size.width;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              "Paso 4: Escoja una o varias profesiones",
+              style: MyTextStyles.drawerButtonTextStyle2.copyWith(fontSize: 22),
             ),
           ),
-          child: Text(
-            "No encuentro mi profesión",
-            style: TextStyle(
-              color: Color(0xFF84090D),
-            ),
+          Text(
+            "Seleccione una o varias categorías:",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-        ),
-
-        if (showCustomProfessionField)
-          Column(
-            children: [
-              TextField(
-                controller: customProfessionController,
-                decoration: InputDecoration(
-                  hintText: 'Ingrese la profesión o servicio que desea ofertar',
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF830A09)),
-                  ),
+          SizedBox(height: 8),
+          fetchCategories == null
+              ? Center(child: CircularProgressIndicator())
+              : Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: fetchCategories!.map((category) {
+                    final isSelected = selectedCategories.contains(category.name);
+                    return ChoiceChip(
+                      label: Text(category.name),
+                      selected: isSelected,
+                      selectedColor: Color(0xFF830A09),
+                      backgroundColor: Colors.grey[200],
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            selectedCategories.add(category.name);
+                          } else {
+                            selectedCategories.remove(category.name);
+                            selectedSubcategories.removeWhere((sub) => category.expertises.contains(sub));
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
                 ),
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  // Aquí va la lógica de lo que deseas hacer al presionar el botón
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(
-                      color: Color(0xFF84090D),
-                    ),
-                  ),
-                ),
-                child: Text(
-                  "Aceptar",
-                  style: TextStyle(
+          if (selectedCategories.isNotEmpty) ...[
+            SizedBox(height: 16),
+            Text(
+              'Categorías seleccionadas: ${selectedCategories.join(", ")}',
+              style: TextStyle(color: Color(0xFF830A09)),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Seleccione una o varias profesiones:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            buildSubcategoryChips(),
+          ],
+          SizedBox(height: 16),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  showCustomProfessionField = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                  side: BorderSide(
                     color: Color(0xFF84090D),
                   ),
                 ),
               ),
-            ],
-          ),
-        if (selectedSubcategories.isNotEmpty)
-          Column(
-            children: [
-              Text(
-                // Mapea la lista de Expertises a una lista de nombres (String) antes de unirlos
-                'Profesiones seleccionadas: ${selectedSubcategories.map((e) => e.name).join(", ")}',
-                style: TextStyle(color: Color(0xFF830A09)),
+              child: Text(
+                "No encuentro mi profesión",
+                style: TextStyle(
+                  color: Color(0xFF84090D),
+                ),
               ),
-              SizedBox(height: 10),
-            ],
+            ),
           ),
-
-        SizedBox(height: 20),
-        Text(
-          'Seleccione su experiencia laboral:',
-          style: TextStyle(fontSize: 16),
-        ),
-        SizedBox(height: 10),
-        buildExperienceLevelDropdown(),
-        SizedBox(height: 20),
-        Column(
-          children: [
+          if (showCustomProfessionField)
+            Column(
+              children: [
+                SizedBox(height: 10),
+                TextField(
+                  controller: customProfessionController,
+                  decoration: InputDecoration(
+                    hintText: 'Ingrese la profesión o servicio que desea ofertar',
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF830A09)),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    // Aquí va la lógica de lo que deseas hacer al presionar el botón
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(
+                        color: Color(0xFF84090D),
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    "Aceptar",
+                    style: TextStyle(
+                      color: Color(0xFF84090D),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (selectedSubcategories.isNotEmpty)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 16),
+                Text(
+                  // Mapea la lista de Expertises a una lista de nombres (String) antes de unirlos
+                  'Profesiones seleccionadas: ${selectedSubcategories.map((e) => e.name).join(", ")}',
+                  style: TextStyle(color: Color(0xFF830A09)),
+                ),
+              ],
+            ),
+          SizedBox(height: 24),
+          Text(
+            'Seleccione su experiencia laboral:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 10),
+          buildExperienceLevelDropdown(),
+          SizedBox(height: 20),
+          if (selectedExperienceLevel != null)
             Text(
-              'Experiencia Laboral: ${selectedExperienceLevel}',
+              'Experiencia Laboral: $selectedExperienceLevel',
               style: TextStyle(color: Color(0xFF830A09)),
             ),
-            SizedBox(height: 10),
-          ],
-        ),
-
-        SizedBox(height: 20),
-      ],
-    );
-  }
-
-  Widget buildCategoryButton(String category, Color textColor) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          if (selectedCategories.contains(category)) {
-            selectedCategories.remove(category);
-            selectedSubcategories.removeWhere((subcategory) => fetchCategories!
-                .firstWhere((cat) => cat.name == category)
-                .expertises
-                .map((expertise) => expertise.name)
-                .contains(subcategory));
-          } else {
-            selectedCategories.add(category);
-          }
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        backgroundColor: Color.fromARGB(255, 255, 255, 255),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          side: BorderSide(
-            color: Color(0xFF84090D),
-          ),
-        ),
-      ),
-      child: Text(
-        category,
-        style: TextStyle(
-          color: textColor,
-        ),
+          SizedBox(height: 20),
+        ],
       ),
     );
   }
 
-  Widget buildSubcategoryDropdown() {
+  Widget buildSubcategoryChips() {
     Set<Expertise> uniqueSubcategories = {};
-
-    // Obtener las subcategorías de las categorías seleccionadas
     selectedCategories.forEach((categoryName) {
       final category = fetchCategories!.firstWhere(
         (cat) => cat.name == categoryName,
@@ -283,13 +226,11 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
       );
       uniqueSubcategories.addAll(category.expertises);
     });
-
     List<Expertise> allSubcategories = uniqueSubcategories.toList();
     allSubcategories.sort((a, b) => a.name.compareTo(b.name));
-
     return Wrap(
-      spacing: 8.0, // Espaciado horizontal entre chips
-      runSpacing: 4.0, // Espaciado vertical entre chips
+      spacing: 8.0,
+      runSpacing: 4.0,
       children: allSubcategories.map((expertise) {
         final isSelected = selectedSubcategories.contains(expertise);
         return ChoiceChip(
@@ -299,6 +240,7 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
           backgroundColor: Colors.grey[200],
           labelStyle: TextStyle(
             color: isSelected ? Colors.white : Colors.black,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           onSelected: (selected) {
             setState(() {
@@ -308,8 +250,6 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
                 selectedSubcategories.remove(expertise);
               }
             });
-
-            // Actualizar la selección en el callback
             widget.onServiceTypesSelected(
                 selectedSubcategories, selectedExperienceLevel);
           },

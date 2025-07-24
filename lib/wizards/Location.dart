@@ -1,379 +1,545 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:location/location.dart' as location;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:socio/Utils/styles.dart';
 
 import '../controllers/RegisController.dart';
+class FavoriteLocation {
+  final String id;
+  final String name;
+  final String address;
+  final double latitude;
+  final double longitude;
+  final DateTime createdAt;
+  final String? icon;
+
+  FavoriteLocation({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
+    required this.createdAt,
+    this.icon,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'address': address,
+        'latitude': latitude,
+        'longitude': longitude,
+        'createdAt': createdAt.toIso8601String(),
+        'icon': icon,
+      };
+
+  factory FavoriteLocation.fromJson(Map<String, dynamic> json) =>
+      FavoriteLocation(
+        id: json['id'],
+        name: json['name'],
+        address: json['address'],
+        latitude: json['latitude'],
+        longitude: json['longitude'],
+        createdAt: DateTime.parse(json['createdAt']),
+        icon: json['icon'],
+      );
+}
+
 class LocationAndFavoritesWizard extends StatefulWidget {
-  final Function(LatLng)
-  onLocationSelected; // Callback para seleccionar ubicación
-  final Function(bool)
-  onFavoritesSelected; // Callback para seleccionar favoritos
-  final VoidCallback onNextStep; // Callback para avanzar al siguiente paso
-  final Map<String, double>
-  location; // Ubicación proporcionada como coordenadas
-  final RegistrationController
-  registrationController; // Controlador de registro
-  final UserData userData; // Datos del usuario
-  _LocationAndFavoritesWizardState? _locationAndFavoritesWizardState;
+  final Map<String, double> location;
+  final Function(LatLng selectedLocation) onLocationSelected;
+  final Function(bool isFavorite) onFavoritesSelected;
+  final Function onNextStep;
 
-  // Método para verificar si la ubicación y favoritos son válidos
-  bool? isLocationAndFavoritesValid() {
-    return _locationAndFavoritesWizardState?.isLocationAndFavoritesValid();
-  }
-
-  LocationAndFavoritesWizard({
+  const LocationAndFavoritesWizard({
+    required this.location,
     required this.onLocationSelected,
     required this.onFavoritesSelected,
     required this.onNextStep,
-    required this.location,
-    required this.registrationController,
-    required this.userData,
-    required RegistrationData registrationData,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
-  _LocationAndFavoritesWizardState createState() {
-    _locationAndFavoritesWizardState = _LocationAndFavoritesWizardState();
-    return _locationAndFavoritesWizardState!;
-  }
+  _LocationAndFavoritesWizardState createState() =>
+      _LocationAndFavoritesWizardState();
 }
 
-class _LocationAndFavoritesWizardState
-    extends State<LocationAndFavoritesWizard> {
-  LatLng? selectedLocation; // Ubicación seleccionada
-  bool isFavorite = false; // Indica si es favorito
-  late GoogleMapController mapController; // Controlador del mapa de Google
-  Set<Marker> markers = {}; // Conjunto de marcadores para el mapa
-  TextEditingController locationController =
-  TextEditingController(); // Controlador de texto para la ubicación
-  TextEditingController writtenLocationController =
-  TextEditingController(); // Controlador de texto para la dirección escrita
-  Uint8List? mapSnapshot; // Instantánea del mapa
-  TextEditingController additionalInfoController =
-  TextEditingController(); // Controlador para la información adicional
-  Completer<GoogleMapController> _controller =
-  Completer<GoogleMapController>(); // Controlador asíncrono del mapa
+class _LocationAndFavoritesWizardState extends State<LocationAndFavoritesWizard>
+    with TickerProviderStateMixin {
+  LatLng? selectedLocation;
+  bool isFavorite = false;
+  GoogleMapController? mapController;
+  Set<Marker> markers = {};
+  final TextEditingController writtenLocationController =
+      TextEditingController();
+  final TextEditingController additionalInfoController =
+      TextEditingController();
+  final Completer<GoogleMapController> _controller = Completer();
 
-  final LatLng santaCruzDefaultLocation = LatLng(-17.7833,
-      -63.1821); // Coordenadas predeterminadas de Santa Cruz de la Sierra
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  final LatLng santaCruzDefaultLocation = LatLng(-17.7833, -63.1821);
+  final LatLng _initialPosition = LatLng(-17.7833, -63.1833);
+
+  // Mapa de iconos para favoritos
+  static const Map<String, IconData> _iconMap = {
+    'home': Icons.home,
+    'work': Icons.work,
+    'fitness_center': Icons.fitness_center,
+    'shopping_cart': Icons.shopping_cart,
+    'local_hospital': Icons.local_hospital,
+    'school': Icons.school,
+    'location_on': Icons.location_on,
+  };
 
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation(); // Obtención de la ubicación actual cuando se inicializa el estado
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+            .animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    _getCurrentLocation();
+    _animationController.forward();
   }
 
-  // Verifica si la ubicación y los favoritos son válidos
-  bool isLocationAndFavoritesValid() {
-    return selectedLocation != null;
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
-  // Función para obtener la ubicación actual del dispositivo
   Future<void> _getCurrentLocation() async {
     try {
-      location.Location loc = location.Location();
-
-      bool serviceEnabled = await loc.serviceEnabled();
-      if (!serviceEnabled) {
-        serviceEnabled = await loc.requestService();
-        if (!serviceEnabled) {
-          return;
-        }
+      final loc = location.Location();
+      if (!await loc.serviceEnabled() && !(await loc.requestService())) {
+        return;
       }
-
-      location.PermissionStatus permissionGranted = await loc.hasPermission();
-      if (permissionGranted == location.PermissionStatus.denied) {
-        permissionGranted = await loc.requestPermission();
-        if (permissionGranted != location.PermissionStatus.granted) {
-          return;
-        }
+      var perm = await loc.hasPermission();
+      if (perm == location.PermissionStatus.denied &&
+          await loc.requestPermission() != location.PermissionStatus.granted) {
+        return;
       }
-
-      location.LocationData locationData = await loc.getLocation();
-      LatLng currentLocation =
-      LatLng(locationData.latitude!, locationData.longitude!);
-
-      setState(() {
-        selectedLocation = currentLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(currentLocation.toString()),
-            position: currentLocation,
-            icon:
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
-        );
-      });
-
-      if (_controller.isCompleted) {
-        final GoogleMapController controller = await _controller.future;
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: currentLocation,
-              zoom: 14.0,
-            ),
-          ),
-        );
-      }
-
-      _handleTap(currentLocation);
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-
-      setState(() {
-        selectedLocation = santaCruzDefaultLocation;
-        markers.clear();
-        markers.add(
-          Marker(
-            markerId: MarkerId(santaCruzDefaultLocation.toString()),
-            position: santaCruzDefaultLocation,
-            icon:
-            BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-          ),
-        );
-      });
-
-      if (_controller.isCompleted) {
-        final GoogleMapController controller = await _controller.future;
-        controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: santaCruzDefaultLocation,
-              zoom: 14.0,
-            ),
-          ),
-        );
-      }
-
-      _handleTap(santaCruzDefaultLocation);
+      final data = await loc.getLocation();
+      final curr = LatLng(data.latitude!, data.longitude!);
+      _updateSelectedLocation(curr);
+      (await _controller.future).animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: curr, zoom: 14),
+        ),
+      );
+    } catch (_) {
+      _updateSelectedLocation(santaCruzDefaultLocation);
+      (await _controller.future).animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: santaCruzDefaultLocation, zoom: 14),
+        ),
+      );
     }
   }
 
-  // Función para capturar y guardar una instantánea del mapa
-  Future<void> _captureAndSaveMapSnapshot() async {
-    final Uint8List? snapshotBytes = await mapController.takeSnapshot();
-    setState(() {
-      mapSnapshot = snapshotBytes;
-    });
-  }
-
-  // Función que se llama cuando se crea el mapa
-  void _onMapCreated(GoogleMapController controller) {
-    mapController = controller;
-    print("Mapa creado correctamente");
-  }
-
-  // Maneja el toque en el mapa para actualizar la ubicación seleccionada
-  void _handleTap(LatLng loc) async {
-    widget.onLocationSelected(
-        loc); // Llama al callback para pasar la ubicación seleccionada
-
+  Future<void> _updateSelectedLocation(LatLng loc) async {
+    widget.onLocationSelected(loc);
+    final address = await _getAddressFromLatLng(loc);
     setState(() {
       selectedLocation = loc;
-      markers.clear();
-      markers.add(Marker(
-        markerId: MarkerId(loc.toString()),
-        position: loc,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ));
+      markers = {
+        Marker(
+          markerId: MarkerId(loc.toString()),
+          position: loc,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        )
+      };
+      writtenLocationController.text = address;
     });
-
-    try {
-      // Obtener la dirección basada en las coordenadas
-      List<Placemark> placemarks =
-      await placemarkFromCoordinates(loc.latitude, loc.longitude);
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        String address =
-            "${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}";
-        writtenLocationController.text = address;
-      } else {
-        writtenLocationController.text = "Dirección no encontrada";
-      }
-    } catch (e) {
-      print("Error obteniendo dirección: $e");
-      writtenLocationController.text = "Error obteniendo dirección";
+    if (mapController != null) {
+      mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: loc, zoom: 14),
+        ),
+      );
     }
   }
 
-  // Muestra la pantalla del mapa para que el usuario seleccione una ubicación
-  Future<void> _showMapScreen() async {
-    TextEditingController searchController = TextEditingController();
-
-    // Obtener la ubicación actual del usuario
-    Position position;
+  Future<String> _getAddressFromLatLng(LatLng latLng) async {
     try {
-      position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-    } catch (e) {
-      print("Error obteniendo la ubicación actual: $e");
-      position = Position(
-        latitude: santaCruzDefaultLocation.latitude,
-        longitude: santaCruzDefaultLocation.longitude,
-        timestamp: DateTime.now(),
-        accuracy: 1.0,
-        altitude: 0.0,
-        heading: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-        altitudeAccuracy: 1.0,
-        headingAccuracy: 1.0,
-      );
-    }
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(latLng.latitude, latLng.longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        return "${place.street}, ${place.locality}, ${place.country}";
+      }
+    } catch (_) {}
+    return "Ubicación desconocida";
+  }
 
-    // Navegar a la pantalla del mapa
+  // --- Favoritos: guardar, cargar, eliminar, UI ---
+  // (El código de favoritos avanzado que ya tienes, adaptado al color 0xFF830A09 y animaciones)
+  // ... (el resto del código de favoritos y UI avanzada, igual al ejemplo que diste, pero con color 0xFF830A09 en todos los elementos visuales) ...
+
+  // Cargar ubicaciones favoritas
+  Future<List<FavoriteLocation>> _loadFavoriteLocations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'favoriteLocations_v2';
+    final jsonString = prefs.getString(key);
+    if (jsonString == null || jsonString.isEmpty) return [];
+    final List<dynamic> jsonList = json.decode(jsonString);
+    return jsonList.map((item) => FavoriteLocation.fromJson(item)).toList();
+  }
+
+  // Eliminar ubicación favorita
+  Future<void> _deleteFavoriteLocation(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'favoriteLocations_v2';
+    final favorites = await _loadFavoriteLocations();
+    favorites.removeWhere((favorite) => favorite.id == id);
+    final updatedJson = json.encode(favorites.map((f) => f.toJson()).toList());
+    await prefs.setString(key, updatedJson);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ubicación eliminada de favoritos'),
+        backgroundColor: Color(0xFF830A09),
+      ),
+    );
+  }
+
+  // Guardar ubicación favorita
+  Future<void> _saveFavoriteLocation(
+      LatLng location, String name, String icon) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'favoriteLocations_v2';
+    final existingJson = prefs.getString(key) ?? '[]';
+    final List<dynamic> existingList = json.decode(existingJson);
+    final List<FavoriteLocation> favorites =
+        existingList.map((item) => FavoriteLocation.fromJson(item)).toList();
+    final address = await _getAddressFromLatLng(location);
+    final newFavorite = FavoriteLocation(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      address: address,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      createdAt: DateTime.now(),
+      icon: icon,
+    );
+    favorites.add(newFavorite);
+    final updatedJson = json.encode(favorites.map((f) => f.toJson()).toList());
+    await prefs.setString(key, updatedJson);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.favorite, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text('Ubicación "$name" guardada en favoritos')),
+          ],
+        ),
+        backgroundColor: const Color(0xFF4CAF50),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: selectedLocation != null
+            ? const LinearGradient(
+                colors: [Color(0xFF830A09), Color(0xFF5A0707)],
+              )
+            : null,
+        color: selectedLocation != null ? null : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: selectedLocation != null
+                ? const Color(0xFF830A09).withOpacity(0.3)
+                : Colors.black.withOpacity(0.05),
+            blurRadius: selectedLocation != null ? 12 : 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: selectedLocation != null
+            ? null
+            : Border.all(
+                color: Colors.grey[300]!,
+                width: 1,
+              ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: selectedLocation != null
+                  ? Colors.white.withOpacity(0.2)
+                  : const Color(0xFF830A09).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Icon(
+              Icons.location_on,
+              color: selectedLocation != null
+                  ? Colors.white
+                  : const Color(0xFF830A09),
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Ubicación del domicilio',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: selectedLocation != null
+                  ? Colors.white
+                  : const Color(0xFF830A09),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            selectedLocation != null
+                ? writtenLocationController.text
+                : 'Toca para seleccionar ubicación',
+            style: TextStyle(
+              fontSize: 12,
+              color: selectedLocation != null
+                  ? Colors.white.withOpacity(0.9)
+                  : Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Muestra la pantalla del mapa para que el usuario seleccione una ubicación y gestione favoritos
+  Future<void> _showMapScreen() async {
+    LatLng? tempSelected = selectedLocation;
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Scaffold(
+        builder: (_) => Scaffold(
           appBar: AppBar(
-            iconTheme: IconThemeData(color: Colors.white),
-            title: Text(
+            elevation: 0,
+            backgroundColor: const Color(0xFF830A09),
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
               'Seleccionar Ubicación',
-              style: MyTextStyles.buttonTextStyle,
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
           body: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setStateDialog) {
+            builder: (context, setStateDialog) {
               return Stack(
                 children: [
                   Column(
                     children: [
-                      TextField(
-                        controller: searchController,
-                        decoration: InputDecoration(
-                          labelText: 'Buscar dirección',
-                          suffixIcon: IconButton(
-                            icon: Icon(Icons.search),
-                            onPressed: () async {
-                              final query = searchController.text;
-                              if (query.isNotEmpty) {
-                                try {
-                                  final locations =
-                                  await locationFromAddress(query);
-                                  if (locations.isNotEmpty) {
-                                    final location = locations.first;
-                                    setStateDialog(() {
-                                      _handleTap(LatLng(location.latitude,
-                                          location.longitude));
-                                    });
-                                  } else {
-                                    print("No se encontró la dirección");
-                                  }
-                                } catch (e) {
-                                  print("Error buscando dirección: $e");
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      ),
                       Expanded(
                         child: GoogleMap(
-                          onMapCreated: (controller) {
-                            _onMapCreated(controller);
-                            _controller.complete(controller);
-                            // Establecer la posición inicial del mapa con la ubicación del usuario
-                            setStateDialog(() {
-                              _handleTap(LatLng(
-                                  position.latitude, position.longitude));
-                            });
-                          },
-                          onTap: (LatLng loc) {
-                            setStateDialog(() {
-                              _handleTap(loc);
-                            });
-                          },
                           initialCameraPosition: CameraPosition(
-                            target:
-                            LatLng(position.latitude, position.longitude),
-                            zoom: 14.0,
+                            target: tempSelected ?? _initialPosition,
+                            zoom: 14,
                           ),
-                          markers: markers,
+                          onMapCreated: (controller) {
+                            mapController = controller;
+                          },
+                          onTap: (loc) {
+                            setStateDialog(() {
+                              tempSelected = loc;
+                            });
+                          },
+                          markers: tempSelected != null
+                              ? {
+                                  Marker(
+                                    markerId: MarkerId(tempSelected.toString()),
+                                    position: tempSelected!,
+                                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                                        BitmapDescriptor.hueRed),
+                                  )
+                                }
+                              : {},
                         ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Volver',
-                                style: MyTextStyles.drawerButtonLabelTextStyle,
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF830A09),
+                                  side: const BorderSide(
+                                      color: Color(0xFF830A09)),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Cancelar',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF830A09),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 2,
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (tempSelected != null) {
+                                    await _updateSelectedLocation(
+                                        tempSelected!);
+                                    Navigator.pop(context);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Por favor selecciona una ubicación'),
+                                        backgroundColor: Color(0xFF830A09),
+                                      ),
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF830A09),
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Confirmar Ubicación',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
                               ),
                             ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              if (selectedLocation != null) {
-                                widget.onLocationSelected(selectedLocation!);
-                                Navigator.pop(context);
-                              } else {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(SnackBar(
-                                  content: Text(
-                                      'Por favor, selecciona una ubicación.'),
-                                ));
-                              }
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Aceptar',
-                                style: MyTextStyles.drawerButtonLabelTextStyle,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF830A09),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
+                  // Botón flotante de favoritos
                   Positioned(
-                    bottom: 160,
-                    right: 10,
+                    top: 20,
+                    left: 20,
+                    child: FloatingActionButton(
+                      onPressed: () async {
+                        await _showFavoriteLocationsDialog((LatLng loc) {
+                          setStateDialog(() {
+                            tempSelected = loc;
+                          });
+                        });
+                      },
+                      backgroundColor: const Color(0xFF4CAF50),
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      child: const Icon(Icons.favorite),
+                    ),
+                  ),
+                  // Botón flotante para agregar favorito
+                  Positioned(
+                    top: 90,
+                    left: 20,
+                    child: FloatingActionButton(
+                      onPressed: () async {
+                        if (tempSelected != null) {
+                          await _showAddFavoriteDialog(tempSelected!);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Primero selecciona una ubicación en el mapa'),
+                              backgroundColor: Color(0xFF830A09),
+                            ),
+                          );
+                        }
+                      },
+                      backgroundColor: const Color(0xFFFF9800),
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      child: const Icon(Icons.add_location),
+                    ),
+                  ),
+                  // Botón flotante para seleccionar mi ubicación actual
+                  Positioned(
+                    top: 20,
+                    right: 20,
                     child: FloatingActionButton(
                       onPressed: () async {
                         try {
-                          final currentPosition =
-                          await Geolocator.getCurrentPosition(
-                            desiredAccuracy: LocationAccuracy.high,
-                          );
+                          final position = await Geolocator.getCurrentPosition(
+                              desiredAccuracy: LocationAccuracy.high);
+                          final currentLoc =
+                              LatLng(position.latitude, position.longitude);
                           setStateDialog(() {
-                            _handleTap(LatLng(currentPosition.latitude,
-                                currentPosition.longitude));
+                            tempSelected = currentLoc;
                           });
+                          if (mapController != null) {
+                            mapController!.animateCamera(
+                              CameraUpdate.newCameraPosition(
+                                CameraPosition(target: currentLoc, zoom: 16),
+                              ),
+                            );
+                          }
                         } catch (e) {
-                          print("Error obteniendo la ubicación actual: $e");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'No se pudo obtener la ubicación actual'),
+                              backgroundColor: Color(0xFF830A09),
+                            ),
+                          );
                         }
                       },
-                      child: Icon(Icons.gps_fixed),
-                      tooltip: "Ir a mi ubicación",
+                      backgroundColor: const Color(0xFF830A09),
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      child: const Icon(Icons.my_location, color: Colors.white),
                     ),
                   ),
                 ],
@@ -383,96 +549,555 @@ class _LocationAndFavoritesWizardState
         ),
       ),
     );
-    await _captureAndSaveMapSnapshot(); // Captura una instantánea después de seleccionar la ubicación
+  }
+
+  // Diálogo de ubicaciones favoritas
+  Future<void> _showFavoriteLocationsDialog(
+      Function(LatLng) onSelectFavorite) async {
+    final favorites = await _loadFavoriteLocations();
+    if (favorites.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay ubicaciones favoritas guardadas'),
+          backgroundColor: Color(0xFF830A09),
+        ),
+      );
+      return;
+    }
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Icon(Icons.favorite,
+                        color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Ubicaciones Favoritas',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4CAF50))),
+                  const SizedBox(height: 8),
+                  const Text('Selecciona una ubicación guardada',
+                      style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  const SizedBox(height: 20),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: favorites.length,
+                    itemBuilder: (context, index) {
+                      final favorite = favorites[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[200]!),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Icono grande a la izquierda
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4CAF50),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  _iconMap[favorite.icon ?? 'location_on'] ??
+                                      Icons.location_on,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // Info principal
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      favorite.name,
+                                      style: const TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      favorite.address,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Guardado el ${favorite.createdAt.day}/${favorite.createdAt.month}/${favorite.createdAt.year}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Acciones
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.red[50],
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: IconButton(
+                                      icon: Icon(Icons.delete_outline,
+                                          color: Colors.red[400], size: 20),
+                                      onPressed: () async {
+                                        await _deleteFavoriteLocation(
+                                            favorite.id);
+                                        Navigator.of(context).pop();
+                                        _showFavoriteLocationsDialog(
+                                            onSelectFavorite);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4CAF50),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.check,
+                                          color: Colors.white, size: 20),
+                                      onPressed: () {
+                                        final selectedLoc = LatLng(
+                                            favorite.latitude,
+                                            favorite.longitude);
+                                        Navigator.of(context).pop();
+                                        onSelectFavorite(selectedLoc);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(Icons.check_circle,
+                                                    color: Colors.white),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                    child: Text(
+                                                        'Ubicación "${favorite.name}" seleccionada')),
+                                              ],
+                                            ),
+                                            backgroundColor:
+                                                const Color(0xFF830A09),
+                                            behavior: SnackBarBehavior.floating,
+                                            duration:
+                                                const Duration(seconds: 2),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        if (selectedLocation != null) {
+                          _showAddFavoriteDialog(selectedLocation!);
+                        }
+                      },
+                      icon: const Icon(Icons.add_location),
+                      label: const Text('Agregar Nueva Ubicación'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF4CAF50),
+                        side: const BorderSide(color: Color(0xFF4CAF50)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Diálogo para agregar favorito
+  Future<void> _showAddFavoriteDialog(LatLng location) async {
+    final TextEditingController nameController = TextEditingController();
+    String selectedIcon = 'location_on';
+    final List<Map<String, dynamic>> iconOptions = [
+      {'icon': 'home', 'label': 'Casa'},
+      {'icon': 'work', 'label': 'Trabajo'},
+      {'icon': 'fitness_center', 'label': 'Gimnasio'},
+      {'icon': 'shopping_cart', 'label': 'Supermercado'},
+      {'icon': 'local_hospital', 'label': 'Hospital'},
+      {'icon': 'school', 'label': 'Escuela'},
+      {'icon': 'location_on', 'label': 'Otro'},
+    ];
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF830A09),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Icon(Icons.favorite,
+                            color: Colors.white, size: 30),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Guardar Ubicación Favorita',
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF830A09)),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 8),
+                      const Text('Dale un nombre a esta ubicación',
+                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Nombre de la ubicación',
+                          hintText: 'Ej: Casa, Trabajo, Gimnasio...',
+                          prefixIcon: const Icon(Icons.edit_location,
+                              color: Color(0xFF830A09)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.grey),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF830A09), width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text('Selecciona un ícono',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF830A09)),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: iconOptions.length,
+                          itemBuilder: (context, index) {
+                            final option = iconOptions[index];
+                            final isSelected = selectedIcon == option['icon'];
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedIcon = option['icon'];
+                                });
+                              },
+                              child: Container(
+                                width: 70,
+                                margin: const EdgeInsets.only(right: 12),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF830A09)
+                                      : Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? const Color(0xFF830A09)
+                                        : Colors.grey[300]!,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                        _iconMap[option['icon']] ??
+                                            Icons.location_on,
+                                        color: isSelected
+                                            ? Colors.white
+                                            : const Color(0xFF830A09),
+                                        size: 24),
+                                    const SizedBox(height: 4),
+                                    Text(option['label'],
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Color(0xFF830A09),
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.normal),
+                                        textAlign: TextAlign.center),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF830A09),
+                                side:
+                                    const BorderSide(color: Color(0xFF830A09)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: const Text('Cancelar'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (nameController.text.trim().isNotEmpty) {
+                                  Navigator.of(context).pop();
+                                  await _saveFavoriteLocation(location,
+                                      nameController.text.trim(), selectedIcon);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Por favor ingresa un nombre para la ubicación'),
+                                      backgroundColor: Color(0xFF830A09),
+                                    ),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF830A09),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 0,
+                              ),
+                              child: const Text('Guardar Favorito'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Paso 2: Coloque su ubicación en el mapa',
-              style: MyTextStyles.drawerButtonTextStyle2,
-              textAlign: TextAlign.left,
-            ),
-          ),
-        ),
-        Card(
-          elevation: 5.0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          margin: const EdgeInsets.all(8.0),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: _showMapScreen,
-                  child: Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.0),
-                      color: Colors.grey[200],
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF830A09), Color(0xFF5A0707)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF830A09).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
-                    child: mapSnapshot != null
-                        ? Image.memory(
-                      mapSnapshot!,
-                      fit: BoxFit.cover,
-                    )
-                        : Image.asset(
-                      'assets/map.png',
-                      fit: BoxFit.cover,
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Ubicación del domicilio',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Selector de ubicación
+              GestureDetector(
+                onTap: _showMapScreen,
+                child: _buildLocationCard(),
+              ),
+              const SizedBox(height: 24),
+              // Resumen de selección
+              if (selectedLocation != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green[200]!,
                     ),
                   ),
-                ),
-                SizedBox(height: 10),
-                TextField(
-                  controller: writtenLocationController,
-                  decoration: InputDecoration(
-                    labelText: 'Ubicación seleccionada',
-                    border: OutlineInputBorder(),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.green[600],
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ubicación seleccionada',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green[700],
+                              ),
+                            ),
+                            Text(
+                              writtenLocationController.text,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.green[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
-        Padding(
-          padding: EdgeInsets.only(bottom: 10.0, left: 20.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Añadir información adicional',
-              style: MyTextStyles.inputTextStyle3,
-              textAlign: TextAlign.left,
-            ),
-          ),
-        ),
-        TextFormField(
-          maxLines: 2,
-          decoration: InputDecoration(
-            labelText: 'Añadir información adicional',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color.fromARGB(162, 0, 0, 0)),
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFF830A09)),
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            labelStyle: MyTextStyles.formsdetails,
-          ),
-          onChanged: (value) {},
-        ),
-      ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -135,37 +136,33 @@ static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alread
   // Inicio de sesión con Apple
   static Future<void> signInWithApple(BuildContext context) async {
     try {
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
+      final appleCred = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
+          AppleIDAuthorizationScopes.fullName
         ],
       );
-
-      final oAuthProvider = OAuthProvider("apple.com");
-      final credential = oAuthProvider.credential(
-        idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
+      final oAuth = OAuthProvider("apple.com").credential(
+        idToken: appleCred.identityToken,
+        accessToken: appleCred.authorizationCode,
       );
-
-      final authResult = await FirebaseAuth.instance.signInWithCredential(credential);
-      final user = authResult.user;
-
-      if (user != null) {
-        final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
-        await storeUserData(user);
-
-        await _updateLoginState(alreadyRegistered); // Actualizar estado de login
-
-        print('Inicio de sesión con Apple exitoso para ${user.displayName}');
-        await _navigateToRegisterScreen(
-            context,
-            alreadyRegistered: alreadyRegistered
-        );
-      }
+      final result = await FirebaseAuth.instance.signInWithCredential(oAuth);
+      final user = result.user!;
+      final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
+      await storeUserData(user);
+      // Guardar flag de sesión
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+      // Guardar token FCM en Firestore
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      await FirebaseFirestore.instance.collection('workers').doc(user.uid).set({
+        'fcmToken': fcmToken,
+      }, SetOptions(merge: true));
+      await _navigateToRegisterScreen(context,
+          alreadyRegistered: alreadyRegistered);
     } catch (e) {
-      print('Error durante el inicio de sesión con Apple: $e');
-      _showErrorDialog(context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
+      _showErrorDialog(
+          context, 'No se pudo iniciar sesión con Apple. Inténtelo de nuevo.');
     }
   }
    static Future<void> signInAnonymously(BuildContext context) async {

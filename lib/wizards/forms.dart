@@ -35,30 +35,37 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     super.initState();
     final user = FirebaseAuth.instance.currentUser;
     final prov = Provider.of<RegistrationProvider>(context, listen: false);
-    final providers = user?.providerData.map((p) => p.providerId).toList() ?? [];
+    final providers =
+        user?.providerData.map((p) => p.providerId).toList() ?? [];
+    String? appleName = user?.displayName;
 
-  if (providers.contains('google.com')) {
-    // Si vino por Google: mostramos su nombre y NO es editable
-    fullNameController = TextEditingController(text: user?.displayName ?? '');
-    _isNameEditable = false;
-  } else if (providers.contains('apple.com')) {
-    // Si vino por Apple/iCloud: ponemos “Private” y NO editable
-    fullNameController = TextEditingController(text: 'Private');
-    _isNameEditable = false;
-  } else {
-    // Si es otro flujo (registro manual, etc): sí permitimos editar
-    fullNameController = TextEditingController(text: prov.registrationData.displayName );
-    _isNameEditable = true;
-  }
-    idCardController = TextEditingController(text: prov.registrationData.idCardNumber);
-    phoneController = TextEditingController(text: prov.registrationData.phoneNumber);
-    referralController = TextEditingController(text: prov.registrationData.referralCode);
+    if (providers.contains('google.com')) {
+      // Si vino por Google: mostramos su nombre y NO es editable
+      fullNameController = TextEditingController(text: user?.displayName ?? '');
+      _isNameEditable = false;
+    } else if (providers.contains('apple.com')) {
+      // Si vino por Apple/iCloud: mostramos el nombre real si está disponible, sino "Private". NO editable
+      fullNameController = TextEditingController(
+          text: appleName != null && appleName.isNotEmpty
+              ? appleName
+              : 'Private');
+      _isNameEditable = false;
+    } else {
+      // Si es otro flujo (registro manual, etc): sí permitimos editar
+      fullNameController =
+          TextEditingController(text: prov.registrationData.displayName);
+      _isNameEditable = true;
+    }
+    idCardController =
+        TextEditingController(text: prov.registrationData.idCardNumber);
+    phoneController =
+        TextEditingController(text: prov.registrationData.phoneNumber);
+    referralController =
+        TextEditingController(text: prov.registrationData.referralCode);
   }
 
   bool _isValid() {
-    return
-        idCardController.text.isNotEmpty &&
-        phoneController.text.isNotEmpty;
+    return idCardController.text.isNotEmpty && phoneController.text.isNotEmpty;
   }
 
   Future<void> _verifyReferralCode(String code) async {
@@ -122,26 +129,26 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             style: MyTextStyles.drawerButtonTextStyle2,
           ),
           TextField(
-                  controller: fullNameController,
-                  enabled: _isNameEditable,
-                  decoration: InputDecoration(
-                    prefixIcon: Icon(Icons.person, color: Color(0xFF84090D)),
-                    hintText: 'Nombre completo',
-                    filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF84090D)),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onChanged: _isNameEditable
-                      ? (value) {
-                          prov.registrationData.displayName = value;
-                          prov.notifyListeners();
-                          
-                        }
-                      : null,
-                ),
+            controller: fullNameController,
+            enabled: _isNameEditable,
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.person, color: Color(0xFF84090D)),
+              hintText: 'Nombre completo',
+              filled: true,
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF84090D)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onChanged: _isNameEditable
+                ? (value) {
+                    prov.registrationData.displayName = value;
+                    prov.notifyListeners();
+                  }
+                : null,
+          ),
           SizedBox(height: 20),
           _buildStyledTextField(
             controller: idCardController,
@@ -181,7 +188,8 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
               SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () => _verifyReferralCode(referralController.text),
-                child: Text('Verificar', style: MyTextStyles.drawerButtonLabelTextStyle),
+                child: Text('Verificar',
+                    style: MyTextStyles.drawerButtonLabelTextStyle),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF830A09),
                   shape: RoundedRectangleBorder(
@@ -194,7 +202,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           SizedBox(height: 20),
           _buildStyledDropdown(
             label: '¿Aceptaría recibir pagos con QR?',
-            value: prov.registrationData.paymentType.isEmpty ? qrOptions[0] : prov.registrationData.paymentType,
+            value: prov.registrationData.paymentType.isEmpty
+                ? qrOptions[0]
+                : prov.registrationData.paymentType,
             options: qrOptions,
             onChanged: (value) {
               prov.registrationData.paymentType = value!;
@@ -204,7 +214,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
           SizedBox(height: 20),
           _buildStyledDropdown(
             label: '¿Emite factura?',
-            value: prov.registrationData.verificationStatus.isEmpty ? invoiceOptions[0] : prov.registrationData.verificationStatus,
+            value: prov.registrationData.verificationStatus.isEmpty
+                ? invoiceOptions[0]
+                : prov.registrationData.verificationStatus,
             options: invoiceOptions,
             onChanged: (value) {
               prov.registrationData.verificationStatus = value!;
@@ -258,7 +270,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: MyTextStyles.inputTextStyle.copyWith(color: Color(0xFF830A09))),
+        Text(label,
+            style:
+                MyTextStyles.inputTextStyle.copyWith(color: Color(0xFF830A09))),
         SizedBox(height: 5),
         Container(
           height: 60,
@@ -272,7 +286,9 @@ class _ServiceDataWizardState extends State<ServiceDataWizard> {
             isExpanded: true,
             underline: SizedBox(),
             onChanged: onChanged,
-            items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt))).toList(),
+            items: options
+                .map((opt) => DropdownMenuItem(value: opt, child: Text(opt)))
+                .toList(),
             style: MyTextStyles.inputTextStyle,
           ),
         ),

@@ -13,9 +13,11 @@ import 'package:image/image.dart' as img;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:socio/provider/providerImage.dart';
+import 'package:flutter/services.dart';
 
 import '../Utils/styles.dart';
 import '../controllers/RegisController.dart';
+
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String imagePath) onImageSelected;
@@ -40,10 +42,16 @@ class ProfileImage extends StatefulWidget {
   _ProfileImageState createState() => _ProfileImageState();
 }
 
-class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver {
+class _ProfileImageState extends State<ProfileImage>
+    with WidgetsBindingObserver {
   final ImagePicker _imagePicker = ImagePicker();
   late String _persistentImagePath;
   bool _isProcessing = false;
+  bool _faceDetected = false;
+  String? _faceError;
+
+  // Agregar canal de plataforma
+  static const platform = MethodChannel('face_detection_channel');
 
   @override
   void initState() {
@@ -72,7 +80,8 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
     if (_persistentImagePath.isNotEmpty) {
       final file = File(_persistentImagePath);
       if (await file.exists()) {
-        final provider = Provider.of<ImageStateProvider>(context, listen: false);
+        final provider =
+            Provider.of<ImageStateProvider>(context, listen: false);
         provider.setProfileImage(file);
       }
     }
@@ -111,7 +120,8 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _captureImage());
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _captureImage());
                 },
                 child: const Text('Tomar Foto'),
               ),
@@ -128,10 +138,12 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
 
   Future<void> _captureImage() async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-      ).timeout(const Duration(seconds: 30));
+      final XFile? image = await _imagePicker
+          .pickImage(
+            source: ImageSource.camera,
+            preferredCameraDevice: CameraDevice.front,
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (image != null && mounted) {
         await _processImage(image);
@@ -155,8 +167,22 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
       // Procesamiento de imagen optimizado
       final processedImage = _applyImageProcessing(originalImage);
 
-      final persistentFile = File('${directory.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final persistentFile = File(
+          '${directory.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await persistentFile.writeAsBytes(img.encodeJpg(processedImage));
+
+      // Detección de rostro usando canal de plataforma (Core Image)
+      final bool faceDetected =
+          await detectFaceWithCoreImage(persistentFile.path);
+      if (!faceDetected) {
+        setState(() {
+          _faceDetected = false;
+          _faceError =
+              'No se detectó un rostro válido en la imagen. Intenta nuevamente.';
+        });
+        persistentFile.delete();
+        return;
+      }
 
       if (!mounted) return;
 
@@ -166,9 +192,24 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
       widget.onImageSelected(persistentFile.path);
       _persistentImagePath = persistentFile.path;
       widget.isImageCaptured.value = true;
-
+      setState(() {
+        _faceDetected = true;
+        _faceError = null;
+      });
     } catch (e) {
-      _showErrorSnackbar('Error procesando imagen: ${e.toString()}');
+      _showErrorSnackbar('Error procesando imagen:  [${e.toString()}');
+    }
+  }
+
+  // Nuevo método para llamar al canal de plataforma
+  Future<bool> detectFaceWithCoreImage(String imagePath) async {
+    try {
+      final bool result =
+          await platform.invokeMethod('detectFace', {'path': imagePath});
+      return result;
+    } on PlatformException catch (e) {
+      print("Error usando Core Image: $e");
+      return false;
     }
   }
 
@@ -208,32 +249,94 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
               child: Text(
                 "Paso 3: Saque una foto de perfil sin gafas ni gorra",
                 style: MyTextStyles.drawerButtonTextStyle2,
+                textAlign: TextAlign.center,
               ),
             ),
-            GestureDetector(
-              onTap: _isProcessing ? null : _pickImage,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xA3C9D2D2)),
-                  borderRadius: BorderRadius.circular(8),
+            SizedBox(height: 8),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                GestureDetector(
+                  onTap: _isProcessing ? null : _pickImage,
+                  child: Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: _faceDetected
+                            ? Color(0xFF830A09)
+                            : (_faceError != null
+                                ? Colors.red
+                                : Color(0xA3C9D2D2)),
+                        width: 4,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 12,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: _buildImageWidget(imageFile),
+                    ),
+                  ),
                 ),
-                child: _buildImageWidget(imageFile),
-              ),
+                if (_isProcessing)
+                  Container(
+                    width: 220,
+                    height: 220,
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                if (!_isProcessing && imageFile == null)
+                  Positioned(
+                    bottom: 16,
+                    child: Icon(Icons.camera_alt,
+                        size: 40, color: Color(0xFF830A09)),
+                  ),
+                if (!_isProcessing && imageFile != null)
+                  Positioned(
+                    bottom: 16,
+                    child: ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: Icon(Icons.refresh, color: Colors.white),
+                      label: Text('Repetir',
+                          style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF830A09),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
+            SizedBox(height: 16),
+            if (_faceError != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  _faceError!,
+                  style:
+                      TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             if (imageFile == null && !_isProcessing)
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
-                  'Saca una foto antes de continuar.',
+                  'Toca el círculo para tomar una foto antes de continuar.',
                   style: TextStyle(color: Color(0xFF830A09)),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            if (_isProcessing)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
               ),
           ],
         );
@@ -245,8 +348,8 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
     if (imageFile != null) {
       return Image.file(
         imageFile,
-        width: 200,
-        height: 200,
+        width: 220,
+        height: 220,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
       );
@@ -254,11 +357,14 @@ class _ProfileImageState extends State<ProfileImage> with WidgetsBindingObserver
     return _buildPlaceholder();
   }
 
-  Widget _buildPlaceholder() => Center(
-    child: Icon(
-      Icons.cloud_upload,
-      size: 48,
-      color: Color(0xA3C9D2D2),
-    ),
-  );
+  Widget _buildPlaceholder() => Container(
+        color: Colors.grey[200],
+        child: Center(
+          child: Icon(
+            Icons.person_outline,
+            size: 80,
+            color: Color(0xA3C9D2D2),
+          ),
+        ),
+      );
 }
