@@ -1,0 +1,77 @@
+{
+  "name": "Buscar ofertas por worker",
+  "nodes": [
+    {
+      "parameters": {
+        "projectId": "manitoxpress-cf855",
+        "collection": "workers",
+        "documentId": "={{ $json.workerId }}"
+      },
+      "id": "1",
+      "name": "Get Worker",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1.1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "workerId",
+              "value": "={{ $json[\"id\"] }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Set WorkerId",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "projectId": "manitoxpress-cf855",
+        "collection": "offers",
+        "query": [
+          {
+            "field": "workerId",
+            "operator": "==",
+            "value": "={{ $json.workerId }}"
+          }
+        ]
+      },
+      "id": "3",
+      "name": "Get Offers",
+      "type": "n8n-nodes-base.googleFirebaseCloudFirestore",
+      "typeVersion": 1.1,
+      "position": [700, 300]
+    }
+  ],
+  "connections": {
+    "Get Worker": {
+      "main": [
+        [
+          {
+            "node": "Set WorkerId",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set WorkerId": {
+      "main": [
+        [
+          {
+            "node": "Get Offers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -537,17 +537,42 @@ class ApiService2 {
     }
   }
 
-  Future<List<Category>> fetchExpertises() async {
-    final response =
-    await http.get(Uri.parse('$baseUrl/categories/expertises'));
+Future<List<Category>> fetchExpertises() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/categories/expertises'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
+      final decoded = json.decode(response.body);
+
+      final List<dynamic> data = decoded is List
+          ? decoded
+          : decoded['categories'] ?? [];
+
       return data.map((json) => Category.fromJson(json)).toList();
     } else {
+      print('HTTP Error ${response.statusCode}');
       throw Exception('Failed to load expertises');
     }
+  } catch (e) {
+    print('Error en fetchExpertises: $e');
+    rethrow;
   }
+}
+
+
 
   Future<http.Response> fetchServiceByExpertises(
       String userId, List<String> expertises) async {

@@ -13,6 +13,7 @@ import '../../models/serviceRequest_models.dart';
 import '../../provider/service_partner_provider.dart';
 import '../authUtils.dart';
 
+
 class ActionButtonsSection extends StatelessWidget {
   final BuildContext context;
   final ServicePartnerProvider prov;
@@ -111,7 +112,7 @@ class ActionButtonsSection extends StatelessWidget {
                   onPressed: () => _showUploadCompletionDialog(context, prov),
                   icon: Icons.work,
                   label: "Completar trabajo",
-                  backgroundColor: const Color(0xFF1A819A)!,
+                  backgroundColor: const Color(0xFF830A09)!,
                   textColor: Colors.white,
                   iconColor: Colors.white,
                 ),
@@ -450,11 +451,11 @@ class ActionButtonsSection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A819A).withOpacity(0.1),
+                      color: const Color(0xFF830A09).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.work,
-                        color: const Color(0xFF1A819A), size: 24),
+                        color: const Color(0xFF830A09), size: 24),
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -462,7 +463,7 @@ class ActionButtonsSection extends StatelessWidget {
                     style: GoogleFonts.karla(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1A819A),
+                      color: const Color(0xFF830A09),
                     ),
                   ),
                 ],
@@ -492,7 +493,7 @@ class ActionButtonsSection extends StatelessWidget {
                       child: InkWell(
                         onTap: () async {
                           _picked = await ImagePicker().pickImage(
-                              source: ImageSource.gallery, imageQuality: 80);
+                              source: ImageSource.camera, imageQuality: 80);
                           setSt(() {});
                         },
                         borderRadius: BorderRadius.circular(12),
@@ -535,7 +536,7 @@ class ActionButtonsSection extends StatelessWidget {
                       child: Text(
                         'Imagen seleccionada',
                         style: GoogleFonts.karla(
-                          color: const Color(0xFF1A819A),
+                          color: const Color(0xFF830A09),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -575,7 +576,7 @@ class ActionButtonsSection extends StatelessWidget {
                           Navigator.of(ctx2).pop();
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A819A),
+                    backgroundColor: const Color(0xFF830A09),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
