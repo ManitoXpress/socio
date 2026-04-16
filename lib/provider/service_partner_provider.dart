@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+
 
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
@@ -18,12 +19,11 @@ import '../ServiceResponse/requestUserData.dart';
 import '../ServiceResponse/requestWorker.dart';
 import '../Utils/authUtils.dart';
 import '../Utils/proposal.dart';
-import '../constans/service_constans.dart';
-import '../models/comments_models.dart';
-import '../models/offer_models.dart';
-import '../models/serviceRequest_models.dart';
-import '../models/workerDetails_models.dart';
-
+import '../constans/service_constant.dart';
+import '../models/comment_model.dart';
+import '../models/offerModels.dart';
+import '../models/serviceModels.dart';
+import '../models/workerModels.dart';
 
 class ServicePartnerProvider extends ChangeNotifier {
   final ServiceRequestModel serviceRequest;
@@ -152,16 +152,6 @@ class ServicePartnerProvider extends ChangeNotifier {
     _currentStatus = nueva.status;
 
     // Debug: Imprimir información del servicio
-    print('=== DEBUG PARSE SERVICE ===');
-    print('Service ID: ${nueva.id}');
-    print('Status: ${nueva.status}');
-    print('WorkerId: ${nueva.workerId}');
-    print('Firestore rawOffers length: ${nueva.rawOffers.length}');
-    print('Firestore rawOffers: ${nueva.rawOffers}');
-    print('Preserved rawOffers length: ${preservedRawOffers.length}');
-    print('Preserved rawOffers: ${preservedRawOffers}');
-    print('Current workerId: $workerId');
-
     // Usar los rawOffers preservados si están disponibles, sino usar los de Firestore
     final offersToUse =
         preservedRawOffers.isNotEmpty ? preservedRawOffers : nueva.rawOffers;
@@ -199,26 +189,20 @@ class ServicePartnerProvider extends ChangeNotifier {
         (o) => o['workerId'] == workerId,
         orElse: () => <String, dynamic>{},
       );
-      print('Found offer for workerId $workerId: $anyOffer');
       if (anyOffer.isNotEmpty) {
         final raw = anyOffer['offeredPrice'];
         _workerOfferedPrice =
             (raw is num) ? raw.toDouble() : double.tryParse(raw.toString());
-        print('Set workerOfferedPrice to: $_workerOfferedPrice');
       } else {
         _workerOfferedPrice = null;
-        print('No offer found, workerOfferedPrice set to null');
       }
     } else {
-      print('workerId is empty, cannot find offer');
     }
 
     // Si antes no había workerDetails y ahora sí, recargar
     if (_workerDetails == null && nueva.workerId.isNotEmpty) {
       _loadWorkerDetails();
     }
-
-    print('=== END DEBUG PARSE SERVICE ===');
     _notifyIfNeeded();
   }
 
@@ -259,10 +243,7 @@ class ServicePartnerProvider extends ChangeNotifier {
       final existing = existingLocal || existingBackend;
       _hasExistingProposal = existing;
       _proposalSent = existing;
-      
-      print('DEBUG: _checkExistingProposal - existingLocal: $existingLocal, existingBackend: $existingBackend, final: $existing');
     } catch (e) {
-      print('DEBUG: Error en _checkExistingProposal: $e');
       // Si hay error, asumimos que no existe aún
       _hasExistingProposal = false;
       _proposalSent = false;

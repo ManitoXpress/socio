@@ -1,10 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:socio/Utils/styles.dart';
+import 'package:socio/Utils/debt_blocker_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../Utils/debt_blocker_service.dart';
-import '../Utils/styles.dart';
 
 class DebtWarningScreen extends StatefulWidget {
   final double totalDebt;
@@ -45,7 +43,6 @@ class _DebtWarningScreenState extends State<DebtWarningScreen> {
         });
       }
     } catch (e) {
-      print('Error cargando deudas de advertencia: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -406,7 +403,6 @@ class _DebtWarningScreenState extends State<DebtWarningScreen> {
         );
       }
     } catch (e) {
-      print('Error enviando deudas a WhatsApp: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al procesar la solicitud.')),
       );
@@ -688,7 +684,6 @@ class _AllDebtsSheetState extends State<_AllDebtsSheet> {
         });
       }
     } catch (e) {
-      print('Error cargando todas las deudas: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }

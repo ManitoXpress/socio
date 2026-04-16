@@ -1,15 +1,14 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:socio/ServiceResponse/baseurl.dart';
+import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
-
-import '../ServiceResponse/baseurl.dart';
-import '../ServiceResponse/get.dart';
-import '../ServiceResponse/requestExpertise.dart';
-import '../ServiceResponse/requestServiceType.dart';
-import '../ServiceResponse/requestStatus.dart';
-import '../Utils/cacheLocal.dart';
-import '../main.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+import 'package:socio/Utils/cacheLocal.dart';
+import 'package:socio/main.dart';
 
 class ServiceRepositoryInProgress {
   final ApiService2 apiService;
@@ -155,7 +154,6 @@ class ServiceRepositoryInProgress {
       List<ServiceRequest> validServices = [];
       List<Future> offerRequests =
           serviceRequestsList.map((serviceRequest) async {
-        print('Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
         try {
           final List<ServiceRequest> offerResponses =
               await apiService.getOffers(
@@ -201,7 +199,6 @@ class ServiceRepositoryInProgress {
             validServices.add(serviceRequest);
           }
         } catch (e) {
-          print('Error obteniendo ofertas para ${serviceRequest.id}: $e');
         }
       }).toList();
 
@@ -211,7 +208,6 @@ class ServiceRepositoryInProgress {
       validServices.forEach(LocalCacheService.cacheServiceRequest);
       return validServices;
     } catch (e) {
-      print('Error crítico en _fetchServicesByInProgress: ${e.toString()}');
       return [];
     }
   }
@@ -231,7 +227,6 @@ class ServiceRepositoryInProgress {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir precio: $e');
         return 0.0;
       }
     } else if (value is num) {

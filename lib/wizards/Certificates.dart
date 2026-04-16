@@ -6,20 +6,26 @@ import 'package:camera/camera.dart';
 
 import 'dart:io';
 import 'package:image/image.dart' as img;
-import 'package:provider/provider.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/provider/providerImage.dart';
+import 'package:provider/provider.dart';
+import '../controllers/RegisController.dart';
 
 import 'package:flutter/cupertino.dart';
 
+import '../Utils/styles.dart';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:file_picker/file_picker.dart';
 
-import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
+import '../provider/providerImage.dart';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
+
 class CertificateImageStep extends StatefulWidget {
   final RegistrationController registrationController;
   /// Ahora recibe lista de rutas
@@ -47,7 +53,7 @@ class CertificateImageStep extends StatefulWidget {
 }
 
 class _CertificateImageStepState extends State<CertificateImageStep> {
-  /// Ahora guardamos *múltiples* certificados en una lista
+  /// Ahora guardamos **múltiples** certificados en una lista
   final List<File> _certificateFiles = [];
 
   /// Y un único archivo para el título profesional / matrícula

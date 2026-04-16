@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -7,11 +7,9 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/cupertino.dart';
-
-import '../ServiceResponse/requestUserData.dart';
-import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
-
+import 'package:socio/controllers/RegisController.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/Utils/styles.dart';
 
 class Step9FormData {
   final List<String> jobCompleteImagePaths;
@@ -70,10 +68,7 @@ class _PhotoStepState extends State<PhotoStep> {
       setState(() {
         _isCameraReady = true;
       });
-
-      print("Cámara inicializada correctamente");
     } catch (e) {
-      print("Error al inicializar la cámara: $e");
     }
   }
 
@@ -289,8 +284,6 @@ class _PhotoStepState extends State<PhotoStep> {
       });
 
       final XFile image = await _cameraController.takePicture();
-      print("Foto capturada en: ${image.path}");
-
       // Guardar la imagen
       setState(() {
         capturedImages.add(image);
@@ -307,7 +300,6 @@ class _PhotoStepState extends State<PhotoStep> {
         criminalRecordImagePath: '', referralCode: '', medicalLicenseImagePath: '', professionalTitleImagePath: '', jobCompletePath: image.path, jobCompletePaths: [],
       );
     } catch (e) {
-      print("Error al tomar la foto: $e");
     } finally {
       // Marcar como captura finalizada
       setState(() {

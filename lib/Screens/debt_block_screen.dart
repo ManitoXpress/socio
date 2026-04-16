@@ -1,12 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import 'package:socio/Utils/styles.dart';
+import 'package:socio/Utils/debt_blocker_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-
-import '../Utils/debt_blocker_service.dart';
-import '../Utils/styles.dart';
-import 'debt_warning_screen.dart';
+import 'package:socio/Screens/debt_warning_screen.dart';
 
 class DebtBlockScreen extends StatefulWidget {
   final double totalDebt;
@@ -42,7 +39,6 @@ class _DebtBlockScreenState extends State<DebtBlockScreen> {
         });
       }
     } catch (e) {
-      print('Error cargando deudas vencidas: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -351,7 +347,6 @@ class _DebtBlockScreenState extends State<DebtBlockScreen> {
         );
       }
     } catch (e) {
-      print('Error enviando deudas a WhatsApp: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error al procesar la solicitud.')),
       );

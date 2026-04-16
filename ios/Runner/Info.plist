@@ -40,8 +40,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GMSApiKey</key>
 	<string>AIzaSyCSp5RbLBZKMLHT0RJH3Zk5JRXZ4LOrQYc</string>
+	<key>GIDClientID</key>
+	<string>933474056744-dd50i7ubuoto1krkvavre1fjse1fe4v3.apps.googleusercontent.com</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
+	<true/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>google</string>

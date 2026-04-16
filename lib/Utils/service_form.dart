@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -177,7 +177,6 @@ class _ServiceFormState extends State<ServiceForm> {
                     "address": addressController.text,
                     "rating": rating,
                   };
-                  print(formData);
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(

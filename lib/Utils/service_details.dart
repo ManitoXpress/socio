@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:socio/Screens/Home.dart';
 
-import '../Screens/Home.dart';
 import '../controllers/RegisController.dart';
 import '../ServiceResponse/requestUserData.dart';
 
@@ -30,13 +30,6 @@ class _ServiceRequestState extends State<ServiceRequest> {
   void submitForm() {
     if (_formKey.currentState!.validate()) {
       // Form validation successful
-      print('Servicio: ${_serviceNameController.text}');
-      print('Direccion: ${_addressController.text}');
-      print('Ciudad: ${_cityController.text}');
-      print('Tipo de servicio: ${_stateController.text}');
-      print('Precio: ${_zipCodeController.text}');
-      print('Additional Notes: ${_additionalNotesController.text}');
-
       // Create a new ServiceRequest object with the form data
       ServiceRequest newRequest = ServiceRequest(
         buttonText: widget.buttonText,
@@ -92,12 +85,10 @@ class _ServiceRequestState extends State<ServiceRequest> {
           ),
         );
       } else {
-        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Error de autenticación. Intente nuevamente.')));
       }
     } catch (error) {
-      print('Error al navegar a HomeScreen: $error');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error al cargar la pantalla principal. Intente nuevamente.')));
     }

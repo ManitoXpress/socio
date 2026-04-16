@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -8,15 +8,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:socio/provider/providerImage.dart';
+import 'package:provider/provider.dart';
 
 import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+
+import '../provider/providerImage.dart';
+
 class CriminalRecordImageStep extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String) onImageSelected;
@@ -64,13 +69,10 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                         source: ImageSource.camera,
                       );
                       if (image != null) {
-                        print('Imagen capturada: ${image.path}');
                         _processImage(image);
                       } else {
-                        print('No se capturó ninguna imagen.');
                       }
                     } catch (e) {
-                      print('Error al acceder a la cámara: $e');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -94,13 +96,10 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
                       if (result != null) {
                         final PlatformFile file = result.files.first;
                         final File pdfFile = File(file.path!);
-                        print('Archivo PDF seleccionado: ${pdfFile.path}');
                         _processImage(XFile(pdfFile.path));
                       } else {
-                        print('No se seleccionó ningún archivo.');
                       }
                     } catch (e) {
-                      print('Error al seleccionar el archivo PDF: $e');
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -117,7 +116,6 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
         },
       );
     } catch (e) {
-      print('Error al mostrar el cuadro de diálogo: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Ocurrió un error: $e'),
@@ -140,11 +138,7 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
         idDocumentImagePath2: '',
         certificateImagePaths: [],
         criminalRecordImagePath: file.path,
-        referralCode: '',
-        medicalLicenseImagePath: '', // Provide appropriate value
-        professionalTitleImagePath: '', // Provide appropriate value
-        jobCompletePath: '', // Provide appropriate value
-        jobCompletePaths: [], // Provide appropriate value
+        referralCode: '', medicalLicenseImagePath: '', professionalTitleImagePath: '', jobCompletePath: '', jobCompletePaths: [],
       );
 
       // Actualizamos el provider dependiendo del tipo de archivo.
@@ -155,8 +149,6 @@ class _CriminalRecordImageStepState extends State<CriminalRecordImageStep> {
       } else {
         imageProvider.setCriminalRecordImage(File(file.path));
       }
-
-      print('Archivo seleccionado: ${file.path}');
     }
   }
 

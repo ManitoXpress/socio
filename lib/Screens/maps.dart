@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -40,11 +40,9 @@ class _WalletScreenState extends State<WalletScreen> {
     super.initState();
     // Inicializar formato de fechas para español
     initializeDateFormatting('es');
-    print('[DEBUG] initState - Starting skeleton loader');
     // Simula skeleton loader por 1s
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
-        print('[DEBUG] initState - Hiding skeleton loader');
         setState(() => _showSkeleton = false);
       }
     });
@@ -52,20 +50,11 @@ class _WalletScreenState extends State<WalletScreen> {
 
   Stream<QuerySnapshot> _getOffers() {
     final user = FirebaseAuth.instance.currentUser;
-    print('[DEBUG] _getOffers - User ID: ${user?.uid}');
-    print('[DEBUG] _getOffers - User is null: ${user == null}');
-
     if (user == null) {
-      print('[DEBUG] _getOffers - Returning empty stream because user is null');
       return const Stream.empty();
     }
-
-    print('[DEBUG] _getOffers - Using API REST instead of Firestore');
-
     // Usar API REST en lugar de Firestore para evitar problemas de reglas
     return Stream.fromFuture(_getOffersFromAPI(user.uid)).handleError((error) {
-      print('[DEBUG] _getOffers - API Error: $error');
-      print('[DEBUG] _getOffers - Error type: ${error.runtimeType}');
       // Retornar stream vacío en caso de error
       return Stream.value(FirebaseFirestore.instance
           .collection('offers')
@@ -79,9 +68,6 @@ class _WalletScreenState extends State<WalletScreen> {
     try {
       final apiService = ApiService2();
       final offers = await apiService.getWorkerOffers(workerId);
-
-      print('[DEBUG] _getOffersFromAPI - Got ${offers.length} offers from API');
-
       // Si la API funciona, usar Firestore con los datos de la API
       // Esto evita problemas de reglas pero mantiene la compatibilidad
       final firestoreQuery = FirebaseFirestore.instance
@@ -112,7 +98,6 @@ class _WalletScreenState extends State<WalletScreen> {
 
       return firestoreDocs;
     } catch (e) {
-      print('[DEBUG] _getOffersFromAPI - Error: $e');
       // Fallback a Firestore si la API falla
       return FirebaseFirestore.instance
           .collection('offers')
@@ -267,11 +252,9 @@ class _WalletScreenState extends State<WalletScreen> {
                   builder: (context, snapshot) {
                     print(
                         '[DEBUG] StreamBuilder - Connection State: ${snapshot.connectionState}');
-                    print('[DEBUG] StreamBuilder - Has Data: ${snapshot.hasData}');
                     print(
                         '[DEBUG] StreamBuilder - Has Error: ${snapshot.hasError}');
                     if (snapshot.hasError) {
-                      print('[DEBUG] StreamBuilder - Error: ${snapshot.error}');
                       print(
                           '[DEBUG] StreamBuilder - Error type: ${snapshot.error.runtimeType}');
                     }
@@ -289,23 +272,16 @@ class _WalletScreenState extends State<WalletScreen> {
                           adeudado: 0, ingresos: 0, pagado: 0);
                     }
                     final offers = snapshot.data!.docs;
-                    print('[DEBUG] Processing ${offers.length} offers');
-
                     // Log cada documento para verificar acceso a datos
                     for (int i = 0; i < offers.length; i++) {
                       try {
                         final doc = offers[i];
                         final data = doc.data() as Map<String, dynamic>;
-                        print('[DEBUG] Doc $i - ID: ${doc.id}');
-                        print('[DEBUG] Doc $i - workerId: ${data['workerId']}');
-                        print('[DEBUG] Doc $i - status: ${data['status']}');
                         print(
                             '[DEBUG] Doc $i - paymentStatus: ${data['paymentStatus']}');
                         print(
                             '[DEBUG] Doc $i - offeredPrice: ${data['offeredPrice']}');
-                        print('[DEBUG] Doc $i - commission: ${data['commission']}');
                       } catch (e) {
-                        print('[DEBUG] Doc $i - Error accessing data: $e');
                       }
                     }
 
@@ -429,11 +405,9 @@ class _WalletScreenState extends State<WalletScreen> {
                           return _buildSkeletonLoader();
                         }
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          print('[DEBUG] ListStreamBuilder - Connection waiting');
                           return const Center(child: CircularProgressIndicator());
                         }
                         if (snapshot.hasError) {
-                          print('[DEBUG] ListStreamBuilder - Showing error state');
                           return const Center(
                               child: Text('Error al cargar los datos.'));
                         }
@@ -452,14 +426,11 @@ class _WalletScreenState extends State<WalletScreen> {
                           try {
                             final doc = offers[i];
                             final data = doc.data() as Map<String, dynamic>;
-                            print('[DEBUG] ListDoc $i - ID: ${doc.id}');
                             print(
                                 '[DEBUG] ListDoc $i - workerId: ${data['workerId']}');
-                            print('[DEBUG] ListDoc $i - status: ${data['status']}');
                             print(
                                 '[DEBUG] ListDoc $i - paymentStatus: ${data['paymentStatus']}');
                           } catch (e) {
-                            print('[DEBUG] ListDoc $i - Error accessing data: $e');
                           }
                         }
 
@@ -2046,7 +2017,6 @@ class _WalletScreenState extends State<WalletScreen> {
           'total': debtAmount,
         });
       } catch (e) {
-        print('Documento no encontrado para debtId: $debtId');
         continue;
       }
     }

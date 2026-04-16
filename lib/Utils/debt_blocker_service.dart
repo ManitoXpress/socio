@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,8 +63,6 @@ class DebtBlockerService {
           .collection('offers')
           .where('workerId', isEqualTo: user.uid)
           .get(const GetOptions(source: Source.server));
-
-      print('Total de ofertas encontradas: ${offersSnapshot.docs.length}');
       final debts = <Map<String, dynamic>>[];
 
       for (final doc in offersSnapshot.docs) {
@@ -72,12 +70,8 @@ class DebtBlockerService {
         final status = data['status']?.toString().trim().toLowerCase();
         final paymentStatus =
             data['paymentStatus']?.toString().trim().toLowerCase();
-
-        print('Oferta ${doc.id}: status=$status, paymentStatus=$paymentStatus');
-
         // Solo considerar servicios completados que no han sido pagados
         if (status == 'completed' && paymentStatus != 'pagado') {
-          print('✅ Agregando deuda: ${doc.id} - paymentStatus: $paymentStatus');
           final commission = (data['commission'] ?? 0.0) as num;
           final extraCosts = (data['extraCosts'] ?? 0.0) as num;
           final serviceId = data['serviceId'] ?? 'Sin ID';
@@ -118,16 +112,12 @@ class DebtBlockerService {
               '❌ Excluyendo oferta: ${doc.id} - status: $status, paymentStatus: $paymentStatus');
         }
       }
-
-      print('Total de deudas encontradas: ${debts.length}');
-
       // Ordenar por fecha de vencimiento (más próximas primero)
       debts.sort((a, b) =>
           (a['dueDate'] as DateTime).compareTo(b['dueDate'] as DateTime));
 
       return debts;
     } catch (e) {
-      print('Error obteniendo deudas con información de vencimiento: $e');
       return [];
     }
   }
@@ -135,15 +125,12 @@ class DebtBlockerService {
   /// Obtiene solo las deudas que deben bloquear la aplicación
   Future<List<Map<String, dynamic>>> getOverdueDebts() async {
     final allDebts = await getAllDebtsWithDueInfo();
-    print('getOverdueDebts - Total deudas: ${allDebts.length}');
-
     // NUEVA LÓGICA: Solo bloquear si han pasado 3 días Y paymentStatus es "debe"
     final overdueDebts =
         allDebts.where((debt) => debt['shouldBlockByTime'] == true).toList();
 
     print(
         'getOverdueDebts - Deudas que bloquean (3 días + paymentStatus "debe"): ${overdueDebts.length}');
-    print('getOverdueDebts - Detalles de todas las deudas:');
     for (final debt in allDebts) {
       print(
           '  - ${debt['serviceId']}: paymentStatus=${debt['paymentStatus']}, isOverdue=${debt['isOverdue']}, shouldBlockByStatus=${debt['shouldBlockByStatus']}, shouldBlockByTime=${debt['shouldBlockByTime']}');
@@ -159,7 +146,6 @@ class DebtBlockerService {
       return debts.fold<double>(
           0.0, (sum, debt) => sum + (debt['total'] as double));
     } catch (e) {
-      print('Error calculando deuda total: $e');
       return 0.0;
     }
   }
@@ -171,7 +157,6 @@ class DebtBlockerService {
       return overdueDebts.fold<double>(
           0.0, (sum, debt) => sum + (debt['total'] as double));
     } catch (e) {
-      print('Error calculando deuda vencida total: $e');
       return 0.0;
     }
   }
@@ -179,10 +164,7 @@ class DebtBlockerService {
   /// Verifica si debe mostrar la advertencia de deuda
   Future<bool> shouldShowDebtWarning() async {
     final debts = await getAllDebtsWithDueInfo();
-    print('shouldShowDebtWarning - Total deudas: ${debts.length}');
-
     if (debts.isEmpty) {
-      print('shouldShowDebtWarning - No hay deudas, no mostrar advertencia');
       return false;
     }
 
@@ -192,7 +174,6 @@ class DebtBlockerService {
 
     print(
         'shouldShowDebtWarning - Deudas de advertencia (paymentStatus "debe" pero no vencidas): ${warningDebts.length}');
-    print('shouldShowDebtWarning - Detalles de deudas:');
     for (final debt in debts) {
       print(
           '  - ${debt['serviceId']}: paymentStatus=${debt['paymentStatus']}, isOverdue=${debt['isOverdue']}, shouldShowWarning=${debt['shouldShowWarning']}');
@@ -212,7 +193,6 @@ class DebtBlockerService {
         'shouldBlockApp - ¿Debe bloquear por deudas vencidas? $hasOverdueDebts');
 
     if (hasOverdueDebts) {
-      print('shouldBlockApp - Detalles de deudas que bloquean:');
       for (final debt in overdueDebts) {
         print(
             '  - ${debt['serviceId']}: paymentStatus=${debt['paymentStatus']}, isOverdue=${debt['isOverdue']}, shouldBlockByTime=${debt['shouldBlockByTime']}');
@@ -240,7 +220,6 @@ class DebtBlockerService {
     // Para producción, verificar cada 5 minutos
     _timer = Timer.periodic(const Duration(minutes: 5), (timer) async {
       final shouldBlock = await shouldBlockApp();
-      print('Monitoreo: ¿Debe bloquear? $shouldBlock');
       _blockStateController.add(shouldBlock);
     });
   }
@@ -277,7 +256,6 @@ class DebtBlockerService {
         'serviceIds': serviceIds,
       };
     } catch (e) {
-      print('Error obteniendo detalles de deuda vencida: $e');
       return {'totalAmount': 0.0, 'debts': [], 'serviceIds': []};
     }
   }
@@ -302,7 +280,6 @@ class DebtBlockerService {
         'serviceIds': serviceIds,
       };
     } catch (e) {
-      print('Error obteniendo detalles de deuda de advertencia: $e');
       return {'totalAmount': 0.0, 'debts': [], 'serviceIds': []};
     }
   }
@@ -312,12 +289,8 @@ class DebtBlockerService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        print('debugFirestoreData - No hay usuario autenticado');
         return;
       }
-
-      print('debugFirestoreData - Verificando datos para usuario: ${user.uid}');
-
       // Forzar recarga sin caché
       final offersSnapshot = await FirebaseFirestore.instance
           .collection('offers')
@@ -335,21 +308,10 @@ class DebtBlockerService {
         final commission = data['commission'] ?? 0.0;
         final extraCosts = data['extraCosts'] ?? 0.0;
         final serviceId = data['serviceId'] ?? 'Sin ID';
-
-        print('debugFirestoreData - Oferta ${doc.id}:');
-        print('  - serviceId: $serviceId');
-        print('  - status: "$status"');
-        print('  - paymentStatus: "$paymentStatus"');
-        print('  - commission: $commission');
-        print('  - extraCosts: $extraCosts');
-        print('  - status == "completed": ${status == 'completed'}');
-        print('  - paymentStatus != "pagado": ${paymentStatus != 'pagado'}');
         print(
             '  - Debería ser deuda: ${status == 'completed' && paymentStatus != 'pagado'}');
-        print('  ---');
       }
     } catch (e) {
-      print('debugFirestoreData - Error: $e');
     }
   }
 
@@ -381,7 +343,6 @@ class DebtBlockerService {
 
         // Solo considerar servicios completados que no han sido pagados
         if (status == 'completed' && paymentStatus != 'pagado') {
-          print('✅ Agregando deuda: ${doc.id} - paymentStatus: $paymentStatus');
           final commission = (data['commission'] ?? 0.0) as num;
           final extraCosts = (data['extraCosts'] ?? 0.0) as num;
           final serviceId = data['serviceId'] ?? 'Sin ID';
@@ -441,19 +402,11 @@ class DebtBlockerService {
   /// Método para limpiar caché y forzar recarga completa
   Future<void> clearCacheAndRefresh() async {
     try {
-      print('clearCacheAndRefresh - Limpiando caché de Firestore...');
-
       // Limpiar caché de Firestore
       await FirebaseFirestore.instance.clearPersistence();
-
-      print('clearCacheAndRefresh - Caché limpiado, forzando recarga...');
-
       // Forzar recarga de datos
       await debugFirestoreData();
-
-      print('clearCacheAndRefresh - Recarga completada');
     } catch (e) {
-      print('clearCacheAndRefresh - Error: $e');
     }
   }
 

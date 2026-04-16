@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../Utils/styles.dart';
 import 'package:share_plus/share_plus.dart';
-
 class ReferralScreen extends StatelessWidget {
   final String codeReferral; // Código de referido del usuario
 
@@ -18,73 +17,73 @@ class ReferralScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
-        title: const Text(
-          'Referidos',
-          style: MyTextStyles.buttonTextStyle,
+        appBar: AppBar(
+          iconTheme: IconThemeData(color: Colors.white),
+          title: const Text(
+            'Referidos',
+            style: MyTextStyles.buttonTextStyle,
+          ),
         ),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 20.0),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Text(
-                  '¡Gana puntos invitando a tus amigos!',
-                  style: MyTextStyles.welcomeTotheJungle,
-                  textAlign: TextAlign.center,
+        body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 20.0),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Text(
+                      '¡Gana puntos invitando a tus amigos!',
+                      style: MyTextStyles.welcomeTotheJungle,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Tu código de referido:',
-              style: MyTextStyles.inputTextStyle1,
-            ),
-            Text(
-              codeReferral, // Muestra el UID como código de referido
-              style: MyTextStyles.inputTextStyle1,
-            ),
-            const SizedBox(height: 30), // Espaciado antes del botón
+                const SizedBox(height: 20),
+                const Text(
+                  'Tu código de referido:',
+                  style: MyTextStyles.inputTextStyle1,
+                ),
+                Text(
+                  codeReferral, // Muestra el UID como código de referido
+                  style: MyTextStyles.inputTextStyle1,
+                ),
+                const SizedBox(height: 30), // Espaciado antes del botón
 
-            // Botón de compartir
-            GestureDetector(
-              onTap: () {
-                _compartirEnlaceReferido(codeReferral);
-                // Aquí puedes agregar lógica adicional si es necesario
-              },
-              child: Container(
-                width: 250,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF841813),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const FaIcon(
-                      FontAwesomeIcons.shareFromSquare,
-                      color: Colors.white,
-                      size: 20,
+                // Botón de compartir
+                GestureDetector(
+                  onTap: () {
+                    _compartirEnlaceReferido(codeReferral);
+                    // Aquí puedes agregar lógica adicional si es necesario
+                  },
+                  child: Container(
+                    width: 250,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF841813),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Invitar a amigos',
-                      style: MyTextStyles.serviceTitleTextStyle,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const FaIcon(
+                          FontAwesomeIcons.shareFromSquare,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Invitar a amigos',
+                          style: MyTextStyles.serviceTitleTextStyle,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
+            ),
+        );
+    }
 }

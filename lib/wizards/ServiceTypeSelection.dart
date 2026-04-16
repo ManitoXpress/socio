@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import 'package:socio/ServiceResponse/requestCategory.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/Utils/styles.dart';
 
 import '../controllers/RegisController.dart';
+
 class ServiceTypeSelection extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function() onNextStep;
@@ -48,16 +49,12 @@ class _ServiceTypeSelectionState extends State<ServiceTypeSelection> {
         fetchCategories = categories.cast<Category>();
 
         // Imprime las categorías para verificar cómo se cargan
-        print('Categorías cargadas:');
         fetchCategories?.forEach((category) {
-          print('Categoría: ${category.name}');
           category.expertises.forEach((expertise) {
-            print(' - Especialidad: ${expertise.name}');
           });
         });
       });
     }).catchError((error) {
-      print('Error fetching categories: $error');
     });
   }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -22,9 +22,7 @@ class CameraHelper {
       );
 
       await _cameraController.initialize();
-      print("Cámara inicializada correctamente");
     } catch (e) {
-      print("Error al inicializar la cámara: $e");
     }
   }
 
@@ -64,7 +62,6 @@ class CameraHelper {
         // Puedes realizar acciones con cada frame de la cámara si es necesario
       });
     } catch (e) {
-      print("Error al cambiar de cámara: $e");
     }
   }
 
@@ -76,7 +73,6 @@ class CameraHelper {
     try {
       await _cameraController.startImageStream(onImageAvailable);
     } catch (e) {
-      print("Error al iniciar la vista previa de la cámara: $e");
     }
   }
 
@@ -84,7 +80,6 @@ class CameraHelper {
     try {
       await _cameraController.stopImageStream();
     } catch (e) {
-      print("Error al detener la vista previa de la cámara: $e");
     }
   }
 
@@ -98,7 +93,6 @@ class CameraHelper {
 
       return file;
     } catch (e) {
-      print("Error al tomar la foto: $e");
       return null;
     }
   }

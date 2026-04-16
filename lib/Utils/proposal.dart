@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-import '../ServiceResponse/post.dart';
-import '../ServiceResponse/request.dart';
-import '../ServiceResponse/requestUserData.dart';
-
+import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 
 
 
@@ -33,7 +31,6 @@ class ProposalService {
         workerId,
       );
     } catch (e) {
-      debugPrint('Error verificando propuesta: $e');
       return false;
     }
   }
@@ -80,7 +77,6 @@ class ProposalService {
       return true;
     } catch (e) {
       Navigator.of(context).pop(); // cierro loader
-      debugPrint('Error al enviar la propuesta: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al enviar la propuesta: $e')),
       );

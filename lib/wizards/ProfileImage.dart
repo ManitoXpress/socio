@@ -1,23 +1,24 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:camera/camera.dart';
-import 'package:provider/provider.dart';
-
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
-
-import 'package:image/image.dart' as img;
-import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:socio/provider/providerImage.dart';
-import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+import 'package:provider/provider.dart';
+import 'package:google_mlkit_commons/google_mlkit_commons.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+
+
+
 
 import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
-
+import '../provider/providerImage.dart';
 class ProfileImage extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String imagePath) onImageSelected;
@@ -49,9 +50,6 @@ class _ProfileImageState extends State<ProfileImage>
   bool _isProcessing = false;
   bool _faceDetected = false;
   String? _faceError;
-
-  // Agregar canal de plataforma
-  static const platform = MethodChannel('face_detection_channel');
 
   @override
   void initState() {
@@ -171,14 +169,12 @@ class _ProfileImageState extends State<ProfileImage>
           '${directory.path}/profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
       await persistentFile.writeAsBytes(img.encodeJpg(processedImage));
 
-      // Detección de rostro usando canal de plataforma (Core Image)
-      final bool faceDetected =
-          await detectFaceWithCoreImage(persistentFile.path);
-      if (!faceDetected) {
+      // Detección de rostro mejorada
+      final faceValidationResult = await _detectFaceAdvanced(persistentFile, processedImage.width, processedImage.height);
+      if (!faceValidationResult['accepted']) {
         setState(() {
           _faceDetected = false;
-          _faceError =
-              'No se detectó un rostro válido en la imagen. Intenta nuevamente.';
+          _faceError = faceValidationResult['message'];
         });
         persistentFile.delete();
         return;
@@ -197,20 +193,45 @@ class _ProfileImageState extends State<ProfileImage>
         _faceError = null;
       });
     } catch (e) {
-      _showErrorSnackbar('Error procesando imagen:  [${e.toString()}');
+      _showErrorSnackbar('Error procesando imagen: ${e.toString()}');
     }
   }
 
-  // Nuevo método para llamar al canal de plataforma
-  Future<bool> detectFaceWithCoreImage(String imagePath) async {
-    try {
-      final bool result =
-          await platform.invokeMethod('detectFace', {'path': imagePath});
-      return result;
-    } on PlatformException catch (e) {
-      print("Error usando Core Image: $e");
-      return false;
+  /// Valida que haya exactamente un rostro, que no esté en el borde y que sea suficientemente grande
+  Future<Map<String, dynamic>> _detectFaceAdvanced(File imageFile, int imgWidth, int imgHeight) async {
+    final inputImage = InputImage.fromFilePath(imageFile.path);
+    final options = FaceDetectorOptions(
+      performanceMode: FaceDetectorMode.accurate,
+      enableContours: false,
+      enableLandmarks: false,
+    );
+    final faceDetector = FaceDetector(options: options);
+    final faces = await faceDetector.processImage(inputImage);
+    await faceDetector.close();
+
+    if (faces.isEmpty) {
+      return {'accepted': false, 'message': 'No se detectó un rostro en la imagen. Intenta nuevamente.'};
     }
+    if (faces.length > 1) {
+      return {'accepted': false, 'message': 'Se detectaron múltiples rostros en la imagen. Por favor, asegúrate de que solo tú aparezcas en la foto.'};
+    }
+    final face = faces.first;
+    final boundingBox = face.boundingBox;
+    // Validar tamaño mínimo del rostro (al menos 20% del ancho y alto de la imagen)
+    final minWidth = imgWidth * 0.2;
+    final minHeight = imgHeight * 0.2;
+    if (boundingBox.width < minWidth || boundingBox.height < minHeight) {
+      return {'accepted': false, 'message': 'El rostro detectado es muy pequeño. Acércate más a la cámara y asegúrate de que tu cara ocupe una parte importante de la imagen.'};
+    }
+    // Validar que el rostro no esté en el borde (al menos 5% de margen)
+    final margin = 0.05;
+    if (boundingBox.left < imgWidth * margin ||
+        boundingBox.top < imgHeight * margin ||
+        boundingBox.right > imgWidth * (1 - margin) ||
+        boundingBox.bottom > imgHeight * (1 - margin)) {
+      return {'accepted': false, 'message': 'El rostro está demasiado cerca del borde de la imagen. Por favor, centra tu cara en la foto.'};
+    }
+    return {'accepted': true};
   }
 
   img.Image _applyImageProcessing(img.Image image) {
@@ -365,6 +386,6 @@ class _ProfileImageState extends State<ProfileImage>
             size: 80,
             color: Color(0xA3C9D2D2),
           ),
-        ),
-      );
+     ),
+  );
 }

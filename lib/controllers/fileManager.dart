@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -35,11 +35,8 @@ class FileManager {
 
       // Copiar el archivo a la nueva ubicación
       final File newFile = await file.copy(newFilePath);
-
-      print('Archivo guardado exitosamente en: ${newFile.path}');
       return newFile.path;
     } catch (e) {
-      print('Error al guardar el archivo: $e');
       // Si ocurre un error, devolvemos la ruta original
       return file.path;
     }
@@ -65,11 +62,8 @@ class FileManager {
 
       // Copiar el archivo a la nueva ubicación
       final File newFile = await pdfFile.copy(newFilePath);
-
-      print('PDF guardado exitosamente en: ${newFile.path}');
       return newFile.path;
     } catch (e) {
-      print('Error al guardar el PDF: $e');
       // Si ocurre un error, devolvemos la ruta original
       return pdfFile.path;
     }
@@ -81,12 +75,10 @@ class FileManager {
       final File file = File(filePath);
       if (await file.exists()) {
         await file.delete();
-        print('Archivo eliminado exitosamente: $filePath');
         return true;
       }
       return false;
     } catch (e) {
-      print('Error al eliminar el archivo: $e');
       return false;
     }
   }

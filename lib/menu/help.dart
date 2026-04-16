@@ -76,7 +76,7 @@ class _HelpScreenState extends State<HelpScreen> {
         ),
         backgroundColor: const Color(0xFF841813),
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),

@@ -1,4 +1,4 @@
-
+﻿
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -56,7 +56,6 @@ class NotificationService {
   // Manejar la respuesta a la notificación (Aceptar o Rechazar)
   void handleNotificationResponse(NotificationResponse response) {
     // Aquí puedes manejar la acción según la respuesta de la notificación
-    print('Notificación seleccionada: ${response.payload}');
   }
 
   // Mostrar una notificación local

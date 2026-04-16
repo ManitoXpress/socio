@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -37,7 +37,6 @@ class _WhatsAppUserContactScreenState extends State<WhatsAppUserContactScreen> {
         });
       }
     } catch (e) {
-      print('Error al obtener datos del trabajador: $e');
     }
   }
 

@@ -1,19 +1,19 @@
-
+﻿
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:socio/Utils/styles.dart';
+
 import 'package:socio/controllers/RegisController.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/Utils/Colors.dart';
+import 'package:socio/Utils/serviceType.dart';
+import 'package:socio/Utils/styles.dart';
 
 
-
-import '../ServiceResponse/get.dart';
-import '../ServiceResponse/post.dart';
 import '../ServiceResponse/requestExpertise.dart';
-import '../Utils/Colors.dart';
 import '../Utils/serviceCategories.dart';
-import '../Utils/serviceType.dart';
 
 class EditProfileDialog extends StatefulWidget {
   final String displayName;
@@ -106,18 +106,15 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
         );
 
         if (response.statusCode == 200) {
-          print('Usuario actualizado con éxito');
           Navigator.pop(context);
           widget.onUpdateProfile?.call();
         } else {
-          print('Error en la respuesta del servidor: ${response.statusCode}');
         }
       } else {
         print(
             'Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
       }
     } catch (error) {
-      print('Error durante el proceso de registro: $error');
     }
   }
 

@@ -1,7 +1,6 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:socio/ServiceResponse/requestExpertise.dart';
 import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestStatus.dart';
@@ -246,7 +245,6 @@ class ServiceRequest {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
         return 0.0;
       }
     } else if (value is num) {

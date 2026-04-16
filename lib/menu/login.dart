@@ -6,12 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:socio/controllers/loginController.dart';
+import 'package:socio/Screens/Home.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/Utils/styles.dart';
+import 'package:rive/rive.dart' as rive;
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:socio/Screens/Home.dart';
 import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/deleteAccount.dart';
+
 import 'package:socio/Utils/styles.dart';
 import 'package:rive/rive.dart' as rive;
 import 'package:google_fonts/google_fonts.dart';
@@ -249,6 +256,61 @@ class _LoginFormState extends State<LoginScreen> {
     }
   }
 
+  Widget _buildLoginButton({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required Color backgroundColor,
+    required Color textColor,
+    required Color borderColor,
+    required bool isLoading,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: 0.85.sw,
+      height: 55.h,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.r),
+            side: BorderSide(color: borderColor, width: 1.5),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
+        ),
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading
+            ? SizedBox(
+                width: 24.w,
+                height: 24.w,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                ),
+              )
+            : Stack(
+                alignment: Alignment.center,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Icon(icon, color: iconColor, size: 26.sp),
+                  ),
+                  Text(
+                    title,
+                    style: GoogleFonts.lato(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -282,10 +344,11 @@ class _LoginFormState extends State<LoginScreen> {
         child: Center(
           child: Container(
             width: 1.sw,
-            padding: EdgeInsets.symmetric(horizontal: 10.w),
+            padding: EdgeInsets.symmetric(horizontal: 20.w),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                SizedBox(height: 10.h),
                 if (_teddyArtboard != null)
                   SizedBox(
                     width: 0.8.sw,
@@ -295,130 +358,66 @@ class _LoginFormState extends State<LoginScreen> {
                       fit: BoxFit.fitWidth,
                     ),
                   ),
-                SizedBox(height: 10.h),
+                SizedBox(height: 5.h),
                 Text(
-                  'Bienvenidos a Manitos Xpress',
-                  style: MyTextStyles.welcomeTotheJungle1,
+                  'Bienvenidos a',
+                  style: GoogleFonts.lato(
+                    fontSize: 20.sp,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                SizedBox(height: 10.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Botón de Google
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF841813),
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: isLoadingGoogle ? null : signInWithGoogle,
-                      child: isLoadingGoogle
-                          ? CircularProgressIndicator() // Indicador de carga
-                          : CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 40.r,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 37.r,
-                                child: CircleAvatar(
-                                  radius: 35.r,
-                                  backgroundColor: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.google,
-                                        color: Color(0xFF841813),
-                                      ),
-                                      Text(
-                                        'Inicio',
-                                        style: MyTextStyles.linkTextStyle,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
-                    SizedBox(width: 10.w), // Espacio entre los botones
-         
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF841813),
-                        shape: CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: isLoadingApple ? null : signInWithApple,
-                      child: isLoadingApple
-                          ? CircularProgressIndicator() // Indicador de carga
-                          : CircleAvatar(
-                              backgroundColor: Colors.white,
-                              radius: 40.r,
-                              child: CircleAvatar(
-                                backgroundColor: Colors.white,
-                                radius: 37.r,
-                                child: CircleAvatar(
-                                  radius: 35.r,
-                                  backgroundColor: Colors.white,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        FontAwesomeIcons.apple,
-                                        color: Color(0xFF841813),
-                                      ),
-                                      Text(
-                                        'Apple',
-                                        style: MyTextStyles.linkTextStyle,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
-                    // Botón de Apple
-                  ],
+                Text(
+                  'Manitos Xpress',
+                  style: MyTextStyles.welcomeTotheJungle1.copyWith(
+                    fontSize: 32.sp,
+                  ),
                 ),
-                 SizedBox(height: 20.h), 
-                // Row with Delete and Guest buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                 
-                    // Invitado
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        shape: const CircleBorder(),
-                        padding: EdgeInsets.all(3.w),
-                      ),
-                      onPressed: isLoadingAnonymous ? null : _signInAsGuest,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        radius: 35.r,
-                        child: isLoadingAnonymous
-                            ? const CircularProgressIndicator()
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.person_outline, color: Colors.black, size: 30.r),
-                                  SizedBox(height: 4.h),
-                                  Text(
-                                    'Invitado',
-                                    style: GoogleFonts.lato(
-                                      color: Colors.black,
-                                      fontSize: 14.sp,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                      ),
-                    ),
-                  ],
+                SizedBox(height: 8.h),
+                Text(
+                  'Inicia sesión para continuar',
+                  style: GoogleFonts.lato(
+                    fontSize: 14.sp,
+                    color: Colors.grey[500],
+                  ),
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 35.h),
+                // Botón de Google
+                _buildLoginButton(
+                  title: 'Continuar con Google',
+                  icon: FontAwesomeIcons.google,
+                  iconColor: Color(0xFF841813),
+                  backgroundColor: Colors.white,
+                  textColor: Color(0xFF841813),
+                  borderColor: Color(0xFF841813),
+                  isLoading: isLoadingGoogle,
+                  onPressed: signInWithGoogle,
+                ),
+                SizedBox(height: 15.h), 
+                // Botón de Apple
+                _buildLoginButton(
+                  title: 'Continuar con Apple',
+                  icon: FontAwesomeIcons.apple,
+                  iconColor: Colors.white,
+                  backgroundColor: Color(0xFF841813),
+                  textColor: Colors.white,
+                  borderColor: Color(0xFF841813),
+                  isLoading: isLoadingApple,
+                  onPressed: signInWithApple,
+                ),
+                SizedBox(height: 15.h), 
+                // Botón Invitado
+                _buildLoginButton(
+                  title: 'Ingresar como Invitado',
+                  icon: Icons.person_outline,
+                  iconColor: Colors.grey[700]!,
+                  backgroundColor: Colors.white,
+                  textColor: Colors.grey[800]!,
+                  borderColor: Colors.grey[400]!,
+                  isLoading: isLoadingAnonymous,
+                  onPressed: _signInAsGuest,
+                ),
+                SizedBox(height: 40.h),
               ],
             ),
           ),

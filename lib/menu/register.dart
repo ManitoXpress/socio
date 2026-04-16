@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_wizard/flutter_wizard.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,12 +18,8 @@ class RegisterScreen extends StatelessWidget {
 
       if (user != null) {
         // Imprimir el UID del usuario recién registrado
-        print('User registered with UID: ${user.uid}');
-
         // Obtener el ID token del usuario
         String? token = await user.getIdToken();
-        print("User's ID Token: $token");
-
         // Aquí podrías enviar el token a tu servidor, por ejemplo:
         // final response = await http.post(
         //   'https://your-server-endpoint.com/api/verify-token',
@@ -63,12 +59,9 @@ class RegisterScreen extends StatelessWidget {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (userDoc.exists) {
         Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-        print('User data: $userData');
       } else {
-        print('Usuario no existe!');
       }
     } catch (e) {
-      print('Error getting user data: $e');
     }
   }
   @override

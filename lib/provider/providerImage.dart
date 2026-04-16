@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
+import '../controllers/RegisController.dart';
 
 import 'package:flutter/foundation.dart';
 
-import '../controllers/RegisController.dart';
 
 class ImageStateProvider extends ChangeNotifier {
   // Imágenes de perfil

@@ -40,15 +40,15 @@ class WorkerDetails {
       id: map['id'] ?? '',
       // Si viene como lista o como string CSV, atacamos ambos casos:
       certificateImagePaths: map['certificateImagePaths'] is List
-        ? List<String>.from(map['certificateImagePaths'])
-        : (map['certificateImagePaths'] is String
-            // opcionalmente parsea CSV antiguo
-            ? (map['certificateImagePaths'] as String)
-                .split(',')
-                .map((s) => s.trim())
-                .where((s) => s.isNotEmpty)
-                .toList()
-            : <String>[]),
+          ? List<String>.from(map['certificateImagePaths'])
+          : (map['certificateImagePaths'] is String
+      // opcionalmente parsea CSV antiguo
+          ? (map['certificateImagePaths'] as String)
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList()
+          : <String>[]),
       idDocumentImagePath: map['idDocumentImagePath'] ?? '',
       imagePath: map['imagePath'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
@@ -56,8 +56,8 @@ class WorkerDetails {
       email: map['email'] ?? '',
       expLevel: List<String>.from(map['expLevel'] ?? []),
       expertises: (map['expertises'] as List<dynamic>?)
-              ?.map((item) => Expertise.fromMap(item))
-              .toList() ??
+          ?.map((item) => Expertise.fromMap(item))
+          .toList() ??
           [],
       criminalRecordImagePath: map['criminalRecordImagePath'] ?? '',
       fcmToken: map['fcmToken'] ?? '',
@@ -71,20 +71,20 @@ class WorkerDetails {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'certificateImagePaths': certificateImagePaths,  // ← Lista directamente
-      'idDocumentImagePath': idDocumentImagePath,
-      'imagePath': imagePath,
-      'phoneNumber': phoneNumber,
-      'displayName': displayName,
-      'email': email,
-      'expLevel': expLevel,
-      'expertises': expertises.map((e) => e.toMap()).toList(),
-      'criminalRecordImagePath': criminalRecordImagePath,
-      'fcmToken': fcmToken,
-      'location': location.toMap(),
-      'verificationStatus': verificationStatus,
-      'idCardNumber': idCardNumber,
-    };
-  }
+    'id': id,
+    'certificateImagePaths': certificateImagePaths,  // ← Lista directamente
+    'idDocumentImagePath': idDocumentImagePath,
+    'imagePath': imagePath,
+    'phoneNumber': phoneNumber,
+    'displayName': displayName,
+    'email': email,
+    'expLevel': expLevel,
+    'expertises': expertises.map((e) => e.toMap()).toList(),
+    'criminalRecordImagePath': criminalRecordImagePath,
+    'fcmToken': fcmToken,
+    'location': location.toMap(),
+    'verificationStatus': verificationStatus,
+    'idCardNumber': idCardNumber,
+      };
+    }
 }

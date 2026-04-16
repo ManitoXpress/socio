@@ -1,66 +1,67 @@
 import 'dart:io';
-
+import 'package:rive/rive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socio/Screens/Home.dart';
-
-import 'package:socio/ServiceResponse/post.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/Utils/debt_blocker_wrapper.dart';
 import 'package:socio/Utils/fcmToken.dart';
-import 'package:socio/provider/providerImage.dart';
 import 'package:socio/provider/providerRegistration.dart';
 import 'package:socio/provider/providerService.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'Screens/Home.dart';
+import 'ServiceResponse/get.dart';
+import 'ServiceResponse/post.dart';
+import 'ServiceResponse/requestUserData.dart';
 import 'controllers/RegisController.dart';
+import 'provider/providerImage.dart';
 import 'firebase_options.dart';
 import 'menu/Loading.dart';
 import 'menu/login.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'Utils/debt_blocker_wrapper.dart';
+
+import 'package:provider/provider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Es importante inicializar Firebase cuando se reciba una notificación en segundo plano.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  print("Handling a background message: ${message.messageId}");
-
-  // Manejar la notificación en segundo plano con NotificationService
-  // Aquí puedes agregar la lógica para mostrar la notificación
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RiveFile.initialize();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (e) {
+    if (e is FirebaseException && e.code == 'duplicate-app') {
+    } else {
+    }
+  }
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Configurar el handler para mensajes en segundo plano
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  try {
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+      appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
+    );
+  } catch (e) {
+  }
 
-  // Inicializar Firebase App Check
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.appAttest,
-  );
-  // Obtener y guardar Device ID
+  // El permiso de notificaciones es llamado en initState de MyApp.
+  // Quitarlo del main() evita que congele el renderizado inicial (Pantalla negra)
+  // await requestNotificationPermissions();
   final deviceId = await obtenerDeviceId();
-  print("Device ID: $deviceId");
-
-  final ApiService apiService = ApiService();
-
-  final registrationController = RegistrationController();
-  final completeRegistrationCallback = () {
-    print("Registro completado con éxito");
-  };
-
+  // ApiService y RegistrationController
+  final apiService = ApiService();
+  final regController = RegistrationController();
+  final regCallback = () => print("Registro completado");
   runApp(
     MultiProvider(
       providers: [
@@ -68,8 +69,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HistorialProvider()),
         ChangeNotifierProvider(
           create: (_) => RegistrationProvider(
-            registrationController: registrationController,
-            completeRegistrationCallback: completeRegistrationCallback,
+            registrationController: regController,
+            completeRegistrationCallback: regCallback,
             apiService: apiService,
           ),
         ),
@@ -78,21 +79,10 @@ void main() async {
         designSize: Size(375, 812),
         minTextAdapt: true,
         splitScreenMode: true,
-        builder: (context, child) => MyApp(deviceId: deviceId),
+        builder: (_, __) => MyApp(deviceId: deviceId),
       ),
     ),
   );
-}
-
-Future<void> requestTrackingPermission() async {
-  if (Platform.isIOS) {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      final result =
-          await AppTrackingTransparency.requestTrackingAuthorization();
-      print("Estado de ATT: \$result");
-    }
-  }
 }
 
 Future<void> requestNotificationPermissions() async {
@@ -103,8 +93,6 @@ Future<void> requestNotificationPermissions() async {
     badge: true,
     sound: true,
   );
-
-  print('User granted permission: ${settings.authorizationStatus}');
 }
 
 Future<String> obtenerDeviceId() async {
@@ -122,7 +110,6 @@ Future<String> obtenerDeviceId() async {
       return 'Unsupported Platform';
     }
   } catch (e) {
-    print('Error obteniendo Device ID: $e');
     return 'Error Device ID';
   }
 }
@@ -146,14 +133,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Espera al primer render para no bloquear la UI:
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      requestLocationPermissions();
       requestNotificationPermissions(); // 🔔 Solicita permiso de notificaciones
-      requestTrackingPermission(); // ← Mover aquí la solicitud de ATT
       _checkLoginStatus();
     });
-
-    isLoading = true;
-    _checkLoginStatus(); // Llama directamente a la función
   }
 
   Future<void> _checkLoginStatus() async {
@@ -161,22 +147,43 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     bool loggedIn = prefs.getBool('isLoggedIn') ?? false;
 
     if (loggedIn) {
-      // Obtén el usuario actual
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Obtén los datos del usuario y de registro
         userData = await fetchUserData(user.uid);
         registrationData = userData?.registrationData;
+        
+        // Safety check: if user data failed to load, revert login state
+        if (userData == null || registrationData == null) {
+          loggedIn = false;
+          await prefs.setBool('isLoggedIn', false);
+        }
+      } else {
+        // user is null but prefs say true, fix it
+        loggedIn = false;
+        await prefs.setBool('isLoggedIn', false);
       }
     }
 
-    // Simular tiempo de carga si es necesario
+    // Simula tiempo de carga si es necesario
     await Future.delayed(const Duration(seconds: 5));
 
     setState(() {
       isLoggedIn = loggedIn;
       isLoading = false;
     });
+  }
+
+  Future<void> requestLocationPermissions() async {
+    // Pido permiso sólo mientras la app está en uso
+    final status = await Permission.locationWhenInUse.request();
+
+    if (status.isGranted) {
+      // Si necesito ubicación en background:
+      if (await Permission.locationAlways.isDenied) {
+        await Permission.locationAlways.request();
+      }
+    }
+    // Removido else if (status.isPermanentlyDenied) para que NO vaya a configuraciones directamente
   }
 
   @override
@@ -189,9 +196,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      print('App is in foreground');
     } else if (state == AppLifecycleState.paused) {
-      print('App is in background');
     }
   }
 
@@ -237,11 +242,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 }
 
-// Ejemplo de función para obtener los datos del usuario
+/// Lee los datos del worker desde Firestore
 Future<UserData> fetchUserData(String userId) async {
-  // Aquí debes implementar la lógica para obtener los datos del usuario
-  // Por ejemplo, desde una base de datos o un servicio web
-  // Este es solo un ejemplo de retorno
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('workers')
+        .doc(userId)
+        .get();
+    final data = doc.data();
+    if (data != null) {
+      data['id'] = userId;
+      return UserData.fromJson(data);
+    }
+  } catch (e) {
+    debugPrint('fetchUserData error: $e');
+  }
+  // Fallback mínimo si Firestore falla
   return UserData(
     userId: userId,
     displayName: '',
@@ -262,6 +278,10 @@ Future<UserData> fetchUserData(String userId) async {
     location: null,
     paymentType: '',
     email: '',
+    referrerWorkerId: '',
+    referralCode: '',
+    verificationStatus: '',
+    points: 0,
     registrationData: RegistrationData(
       userId: userId,
       devicesId: '',
@@ -286,9 +306,5 @@ Future<UserData> fetchUserData(String userId) async {
       codeReferral: '',
       verificationStatus: '',
     ),
-    referrerWorkerId: '',
-    referralCode: '',
-    points: 0,
-    verificationStatus: '',
   );
 }

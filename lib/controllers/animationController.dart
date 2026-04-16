@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'package:socio/Screens/Home.dart';
 
 
 import 'package:rive/rive.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../Screens/Home.dart';
 import '../ServiceResponse/requestUserData.dart';
 import 'RegisController.dart';
 class EstrellaController {
@@ -72,7 +71,6 @@ class EstrellaController {
       }
     } catch (e) {
       failTrigger?.fire();
-      print("Error al iniciar sesión: $e");
       _showFailedLoginDialog(context, "Error al iniciar sesión. Inténtalo de nuevo.");
     }
   }

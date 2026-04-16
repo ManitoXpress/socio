@@ -1,16 +1,14 @@
-import 'package:camera/camera.dart';
+﻿import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:socio/controllers/RegisController.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
 import 'package:provider/provider.dart';
 
-import 'package:socio/ServiceResponse/requestUserData.dart';
-import 'package:socio/provider/providerImage.dart';
-
 import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
-
+import '../provider/providerImage.dart';
 class IdCardImageStep extends StatefulWidget {
   final RegistrationController registrationController;
   final void Function(String) onImageSelected;
@@ -75,13 +73,10 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
                         source: ImageSource.camera,
                       );
                       if (image != null) {
-                        print('Imagen capturada: ${image.path}');
                         _processImage(image); // Procesa la imagen capturada
                       } else {
-                        print('No se capturó ninguna imagen.');
                       }
                     } catch (e) {
-                      print('Error al acceder a la cámara: $e');
                       if (mounted) { // Verificar si el widget sigue montado
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -101,7 +96,6 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
         },
       );
     } catch (e) {
-      print('Error al mostrar el cuadro de diálogo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -132,19 +126,11 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
           idDocumentImagePath2: '',
           certificateImagePaths: [],
           criminalRecordImagePath: '',
-          referralCode: '',
-          medicalLicenseImagePath: '', // Add this argument
-          professionalTitleImagePath: '', // Add this argument
-          jobCompletePath: '', // Add this argument
-          jobCompletePaths: [], // Add this argument
+          referralCode: '', medicalLicenseImagePath: '', professionalTitleImagePath: '', jobCompletePath: '', jobCompletePaths: [],
         );
-
-        print('Imagen de documento seleccionada: ${image.path}');
-
         // Notificar que la imagen fue capturada
         widget.isImageCaptured.value = true;
       } catch (e) {
-        print('Error al procesar la imagen: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error al procesar la imagen: $e')),
@@ -156,57 +142,95 @@ class _IdCardImageStepState extends State<IdCardImageStep> {
 
   @override
   Widget build(BuildContext context) {
-    // Usar Consumer para escuchar cambios en el provider
-    return Consumer<ImageStateProvider>(
-      builder: (context, imageProvider, child) {
-        final File? displayImage = imageProvider.idFrontImage ??
-            (widget.idDocumentImagePath.isNotEmpty ? File(widget.idDocumentImagePath) : null);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Consumer<ImageStateProvider>(
+        builder: (context, imageProvider, child) {
+          final File? displayImage = imageProvider.idFrontImage ??
+              (widget.idDocumentImagePath.isNotEmpty ? File(widget.idDocumentImagePath) : null);
 
-        return Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text(
-                "Paso 5: Necesitamos una foto de su carnet de la parte frontal",
-                style: MyTextStyles.drawerButtonTextStyle2,
-              ),
-            ),
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xA3C9D2D2)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: displayImage == null
-                    ? const Center(
-                  child: Icon(
-                    Icons.cloud_upload,
-                    size: 48,
-                    color: Color(0xA3C9D2D2),
-                  ),
-                )
-                    : Image.file(
-                  displayImage,
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            if (displayImage == null)
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               const Padding(
-                padding: EdgeInsets.all(8.0),
+                padding: EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  'Saca una foto antes de continuar.',
-                  style: TextStyle(color: Color(0xFF830A09)),
+                  "Paso 5: Necesitamos una foto de su carnet de la parte frontal",
+                  style: MyTextStyles.drawerButtonTextStyle2,
                 ),
               ),
-          ],
-        );
-      },
+              Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 240,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: displayImage == null ? Color(0xFF830A09) : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: displayImage == null
+                            ? Container(
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: Icon(
+                                    Icons.credit_card,
+                                    size: 64,
+                                    color: Color(0xA3C9D2D2),
+                                  ),
+                                ),
+                              )
+                            : Image.file(
+                                displayImage,
+                                width: 240,
+                                height: 160,
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 12,
+                      child: ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: Icon(displayImage == null ? Icons.camera_alt : Icons.refresh, color: Colors.white),
+                        label: Text(displayImage == null ? 'Tomar foto' : 'Repetir foto', style: TextStyle(color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF830A09),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (displayImage == null)
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Saca una foto antes de continuar.',
+                    style: TextStyle(color: Color(0xFF830A09)),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

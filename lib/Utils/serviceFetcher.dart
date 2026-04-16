@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,17 +6,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-
-
-import '../ServiceResponse/baseurl.dart';
-import '../ServiceResponse/get.dart';
-import '../ServiceResponse/post.dart';
-import '../ServiceResponse/request.dart';
-import '../ServiceResponse/requestExpertise.dart';
-import '../ServiceResponse/requestServiceType.dart';
-import '../ServiceResponse/requestStatus.dart';
-import '../main.dart';
-import 'cacheLocal.dart';
+import 'package:socio/ServiceResponse/baseurl.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/ServiceResponse/post.dart';
+import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+import 'package:socio/Utils/cacheLocal.dart';
+import 'package:socio/main.dart';
 
 class ServiceRepository {
   final ApiService apiService;
@@ -83,20 +81,12 @@ class ServiceRepository {
           await LocalCacheService.getCachedServiceRequest(userId);
       if (cachedRequest != null) {
         if (cachedRequest.status.id == 'available') {
-          print('Datos del caché encontrados y filtrados por available...');
           return [cachedRequest];
         } else {
-          print('Datos en caché no tienen estado available...');
           return [];
         }
       } else {
         final deviceId = await obtenerDeviceId();
-
-        print('Parámetro type: $type');
-        print('Parámetro column: $column');
-        print('Parámetro userId: $userId');
-        print('Parámetro deviceId: $deviceId');
-
         // 1. Obtener especialidades del trabajador
         final workerExpertises = await ApiService2().getWorkerExpertises();
         final expertiseNames = workerExpertises
@@ -128,20 +118,16 @@ class ServiceRepository {
 
               return serviceRequestsList;
             } catch (e) {
-              print('Error procesando servicios: $e');
               return [];
             }
           } else {
-            print('No hay servicios disponibles');
             return [];
           }
         } else {
-          print('Error HTTP: ${response.statusCode}');
           return [];
         }
       }
     } catch (e) {
-      print('Error general: $e');
       return [];
     }
   }
@@ -204,7 +190,6 @@ class ServiceRepository {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
         return 0.0;
       }
     } else if (value is num) {

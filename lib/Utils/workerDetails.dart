@@ -1,14 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../ServiceResponse/requestWorker.dart';
-
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:socio/ServiceResponse/requestWorker.dart';
 
 
 class ServiceDataFetcher {
   // Obtener los detalles del trabajador
   Future<WorkerDetails?> fetchWorkerDetails(String? workerId) async {
     if (workerId == null || workerId.isEmpty) {
-      print('workerId está vacío o es nulo');
       return null;
     }
 
@@ -21,10 +18,8 @@ class ServiceDataFetcher {
       if (workerSnapshot.exists) {
         return WorkerDetails.fromMap(workerSnapshot.data()!);
       } else {
-        print('No se encontró al trabajador con ID: $workerId');
       }
     } catch (e) {
-      print('Error al obtener los detalles del trabajador: $e');
     }
     return null;
   }
@@ -32,7 +27,6 @@ class ServiceDataFetcher {
   // Obtener el precio ofertado para un servicio específico
   Future<double?> fetchOfferedPrice(String? serviceId) async {
     if (serviceId == null || serviceId.isEmpty) {
-      print('serviceId está vacío o es nulo');
       return null;
     }
 
@@ -47,10 +41,8 @@ class ServiceDataFetcher {
         final offerData = querySnapshot.docs.first.data();
         return double.tryParse(offerData['offeredPrice'].toString());
       } else {
-        print('No se encontró oferta para el servicio con ID: $serviceId');
       }
     } catch (e) {
-      print('Error al obtener el precio ofertado: $e');
     }
     return null;
   }

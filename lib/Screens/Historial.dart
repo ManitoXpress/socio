@@ -3,13 +3,12 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:socio/controllers/workers.dart';
+import 'package:socio/Utils/styles.dart';
 
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-import '../Utils/styles.dart';
-import '../controllers/workers.dart';
 
 
 

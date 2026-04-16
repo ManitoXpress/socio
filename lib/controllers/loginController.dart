@@ -3,7 +3,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -247,7 +246,11 @@ static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alread
   // Inicio de sesión con Google
   static Future<void> signInWithGoogle(BuildContext context) async {
     try {
-      final googleSignInAccount = await GoogleSignIn().signIn();
+      // ⚡ FUNDAMENTAL: Limpia sesiones "colgadas" (evita que se quede en blanco en iOS)
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+      
+      final googleSignInAccount = await googleSignIn.signIn();
       if (googleSignInAccount != null) {
         final googleAuth = await googleSignInAccount.authentication;
         final credential = GoogleAuthProvider.credential(
@@ -262,7 +265,15 @@ static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alread
           final alreadyRegistered = await _checkIfUserIsRegistered(user.uid);
           await storeUserData(user);
 
-          await _updateLoginState(alreadyRegistered); // Actualizar estado de login
+          // Guardar token FCM en Firestore
+          String? fcmToken = await FirebaseMessaging.instance.getToken();
+          if (fcmToken != null) {
+            await FirebaseFirestore.instance.collection('workers').doc(user.uid).set({
+              'fcmToken': fcmToken,
+            }, SetOptions(merge: true));
+          }
+
+          await _updateLoginState(true); // Siempre logeado
 
           print('Inicio de sesión con Google exitoso para ${user.displayName}');
           await _navigateToRegisterScreen(
@@ -272,8 +283,15 @@ static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alread
         }
       }
     } catch (e) {
-      print('Error durante el inicio de sesión con Google: $e');
-      _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
+      final errorStr = e.toString();
+      if (!errorStr.contains('sign_in_canceled') &&
+          !errorStr.contains('canceled') &&
+          !errorStr.contains('network_error')) {
+        print('Error durante el inicio de sesión con Google: $e');
+        if (context.mounted) {
+          _showErrorDialog(context, 'No se pudo iniciar sesión con Google. Inténtelo de nuevo.');
+        }
+      }
     }
   }
 

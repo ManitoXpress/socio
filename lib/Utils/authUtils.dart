@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,7 +11,6 @@ class AuthUtils {
         String? idToken = await user.getIdToken();
         return idToken;
       } catch (e) {
-        print('Error al obtener el token: $e');
         return null;
       }
     }
@@ -32,7 +31,6 @@ class AuthUtils {
 
       print('Device ID: $deviceId'); // Imprimir el ID del dispositivo
     } catch (e) {
-      print('Error al obtener el ID del dispositivo: $e');
     }
 
     return deviceId;

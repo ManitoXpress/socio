@@ -2,9 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_wizard/flutter_wizard.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-import '../ServiceResponse/requestExpertise.dart';
-
+import 'package:socio/ServiceResponse/requestExpertise.dart';
 class RegistrationController {
   RegistrationData registrationData = RegistrationData(
     userId: '',
@@ -113,6 +111,8 @@ class RegistrationData {
   double? latitude;
   double? longitude;
   String? address;
+  String? city; // Ciudad donde opera el trabajador
+  String? region; // Región/Departamento
 
   /// Favoritos e información extra
   bool? isFavorite;
@@ -158,6 +158,8 @@ class RegistrationData {
     longitude = location?['lng'];
     // Inicializar opcionales
     address = null;
+    city = null;
+    region = null;
     isFavorite = false;
     additionalInfo = null;
   }

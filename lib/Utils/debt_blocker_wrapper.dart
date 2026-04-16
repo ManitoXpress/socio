@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
-
-
-import '../Screens/debt_block_screen.dart';
-import '../Screens/debt_warning_screen.dart';
-import 'debt_blocker_service.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:socio/Utils/debt_blocker_service.dart';
+import 'package:socio/Screens/debt_warning_screen.dart';
+import 'package:socio/Screens/debt_block_screen.dart';
 
 class DebtBlockerWrapper extends StatefulWidget {
   final Widget child;
@@ -37,8 +35,6 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
 
   void _initializeDebtMonitoring() async {
     try {
-      print('Iniciando monitoreo de deudas vencidas...');
-
       // Debug: Verificar datos de Firestore
       await _debtService.debugFirestoreData();
 
@@ -51,7 +47,6 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
           '¿Debe bloquear por deudas vencidas (3 días + paymentStatus "debe")? $shouldBlock');
 
       if (shouldBlock && mounted) {
-        print('Bloqueando aplicación por deudas vencidas...');
         final totalOverdueDebt = await _debtService.getTotalOverdueDebt();
         setState(() {
           _isBlockedByDebt = true;
@@ -68,9 +63,7 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
           '¿Debe mostrar advertencia (paymentStatus "debe" pero no vencidas)? $shouldShowWarning, ¿Ya se mostró hoy? $hasShownToday');
 
       if (shouldShowWarning && !hasShownToday && mounted) {
-        print('Mostrando advertencia de deuda próxima a vencer...');
         final daysUntilNextDue = await _debtService.getDaysUntilNextDue();
-        print('Días hasta próximo vencimiento: $daysUntilNextDue');
         _showDebtWarning(daysUntilNextDue);
         await _debtService.setWarningShownToday();
       }
@@ -78,13 +71,11 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
       // Iniciar monitoreo continuo cada 5 minutos
       _debtService.startDebtMonitoring();
       _debtService.blockStateStream.listen((isBlocked) {
-        print('Stream de bloqueo: $isBlocked');
         if (mounted) {
           setState(() {
             _isBlockedByDebt = isBlocked;
           });
           if (isBlocked) {
-            print('Bloqueando desde stream...');
             _checkAndShowBlockScreen();
           }
         }
@@ -94,7 +85,6 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      print('Error inicializando monitoreo de deudas: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -121,7 +111,6 @@ class _DebtBlockerWrapperState extends State<DebtBlockerWrapper> {
         });
       }
     } catch (e) {
-      print('Error verificando bloqueo: $e');
     }
   }
 

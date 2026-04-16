@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:socio/Screens/uploadDocument.dart';
 
 import '../Utils/Colors.dart';
 import '../Utils/styles.dart';
 import '../menu/profilescreen.dart';
 import '../provider/providerRegistration.dart';
-import 'uploadDocument.dart';
 class DocumentsScreen extends StatelessWidget {
   final RegistrationProvider provider;
   final ProfileData profileData;

@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:socio/controllers/RegisController.dart';
+import 'package:socio/ServiceResponse/requestCategory.dart';
+import 'package:socio/ServiceResponse/requestExpertise.dart';
 
-
-import '../ServiceResponse/requestCategory.dart';
-import '../ServiceResponse/requestExpertise.dart';
-import '../controllers/RegisController.dart';
 import 'styles.dart';
 
 class ServiceTypeListScreen extends StatefulWidget {
@@ -46,7 +45,6 @@ class _ServiceTypeListScreenState extends State<ServiceTypeListScreen> {
         fetchCategories = categories;
       });
     }).catchError((error) {
-      print('Error fetching categories: $error');
     });
   }
 

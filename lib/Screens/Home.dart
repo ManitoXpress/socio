@@ -1,21 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/Screens/Cartscreen.dart';
+import 'package:socio/ServiceResponse/get.dart';
+import 'package:socio/Utils/styles.dart';
+import 'package:socio/menu/help.dart';
+import 'package:socio/menu/profilescreen.dart';
+import 'package:socio/menu/referidos.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
-import '../ServiceResponse/get.dart';
 import '../ServiceResponse/requestUserData.dart';
 import '../Utils/fcmToken.dart';
 import '../Utils/debt_blocker_wrapper.dart';
 import '../Utils/maps.dart';
-import '../Utils/styles.dart';
-import '../controllers/RegisController.dart';
-import '../menu/help.dart';
-import '../menu/profilescreen.dart';
-import '../menu/referidos.dart';
 import 'documentScreen.dart';
 import 'homeData.dart';
 import 'dart:async';
@@ -273,7 +273,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   } catch (e) {
-                    print('Error al obtener datos del usuario: $e');
                   }
                 }
                 // ... tu navegación a ProfilePage ...

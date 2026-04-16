@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,14 +9,11 @@ import 'package:flutter/scheduler.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-
 import '../Screens/Home.dart';
 import '../ServiceResponse/post.dart';
 import '../ServiceResponse/requestUserData.dart';
-
-import 'package:image/image.dart' as img;
-
 import '../controllers/RegisController.dart';
+import 'package:image/image.dart' as img;
 
 
 
@@ -160,7 +157,7 @@ class RegistrationProvider extends ChangeNotifier {
   }
 
   void nextStep() {
-    if (currentStep < 7) {
+    if (currentStep < 5) {
       currentStep++;
       notifyListeners();
     }
@@ -246,7 +243,6 @@ class RegistrationProvider extends ChangeNotifier {
       final url = await uploadFn(compressed, uid);
       if (url.isNotEmpty) setUrl(url);
     } catch (e) {
-      debugPrint('Error subiendo $localPath: $e');
     }
   }
 
@@ -260,7 +256,6 @@ class RegistrationProvider extends ChangeNotifier {
         final url = await apiService.uploadImageToFirebaseStorage4(compressed, uid);
         if (url.isNotEmpty) urls.add(url);
       } catch (e) {
-        debugPrint('Error subiendo certificado $path: $e');
       }
     }
     return urls;
@@ -325,7 +320,6 @@ class RegistrationProvider extends ChangeNotifier {
               registrationData.criminalRecordImagePath = pdfUrl;
             }
           } catch (e) {
-            debugPrint('Error subiendo PDF criminal: $e');
           }
         }
       }
@@ -372,7 +366,6 @@ class RegistrationProvider extends ChangeNotifier {
         throw Exception('Error en servidor: \${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error en completeRegistration: \$e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error completando registro: \$e')),
       );

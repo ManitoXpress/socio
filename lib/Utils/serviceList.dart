@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-
+import 'package:socio/Screens/customtickets.dart';
+import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+import 'package:socio/ServiceResponse/requestUserData.dart';
+import 'package:socio/Utils/styles.dart';
+import 'package:socio/Utils/timeLines.dart';
+import 'package:socio/Utils/workerDetails.dart';
 import 'package:provider/provider.dart';
 
-import '../Screens/customtickets.dart';
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
-import '../ServiceResponse/request.dart';
 import '../ServiceResponse/requestExpertise.dart';
-
-import '../ServiceResponse/requestUserData.dart';
-import '../models/expertise_models.dart';
-import '../models/offer_models.dart';
-import '../models/serviceRequest_models.dart';
+import '../models/expertiseModels.dart';
+import '../models/offerModels.dart';
+import '../models/serviceModels.dart';
 import '../provider/service_partner_provider.dart';
-import 'styles.dart';
-import 'timeLines.dart';
-import 'workerDetails.dart';
 class ServiceListBuilder {
   /// Lista de servicios en estado "offer" (ofertas hechas por el socio).
   static Widget buildOfferList(

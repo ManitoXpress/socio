@@ -7,12 +7,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../Screens/commentScreen.dart';
-
-import '../../constans/service_constans.dart';
-import '../../models/serviceRequest_models.dart';
+import '../../constans/service_constant.dart';
+import '../../models/serviceModels.dart';
 import '../../provider/service_partner_provider.dart';
 import '../authUtils.dart';
-
 
 class ActionButtonsSection extends StatelessWidget {
   final BuildContext context;

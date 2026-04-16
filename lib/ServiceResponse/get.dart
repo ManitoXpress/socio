@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,14 +6,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
+import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
+import 'package:socio/ServiceResponse/requestCategory.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
 import 'package:socio/ServiceResponse/requestUserData.dart';
-
-import '../Utils/authUtils.dart';
-import 'baseurl.dart';
-import 'requestCategory.dart';
-import 'requestServiceType.dart';
-
+import 'package:socio/Utils/authUtils.dart';
 
 class ApiService2 {
   final String baseUrl = ApiConfiguration.baseUrl;
@@ -79,7 +77,6 @@ class ApiService2 {
       throw Exception('Token de autenticación no disponible');
     }
     final url = Uri.parse('$baseUrl/offers/$serviceId');
-    print('🎯 GET Offer URL: $url');
     final resp = await http.get(
       url,
       headers: {
@@ -87,7 +84,6 @@ class ApiService2 {
         'Content-Type': 'application/json',
       },
     );
-    print('📥 Status: ${resp.statusCode}, Body: ${resp.body}');
     if (resp.statusCode == 404) {
       throw Exception('Oferta no encontrada para serviceId $serviceId');
     }
@@ -104,19 +100,12 @@ class ApiService2 {
 
   // 2) PATCH /offers/{offerId}
   Future<void> patchOffer(String offerId, Map<String, dynamic> body) async {
-    debugPrint('▶️ patchOffer iniciado para offerId=$offerId');
-    debugPrint('   • Payload body: ${json.encode(body)}');
-
     final user = FirebaseAuth.instance.currentUser;
     final token = await user?.getIdToken(true);
     if (token == null) {
       throw Exception('Token de autenticación no disponible');
     }
-    debugPrint('   • Token tras inicializar: $token');
-
     final url = Uri.parse('$baseUrl/offers/$offerId');
-    debugPrint('   • URL PATCH → $url');
-
     final resp = await http.patch(
       url,
       headers: {
@@ -125,26 +114,15 @@ class ApiService2 {
       },
       body: json.encode(body),
     );
-
-    debugPrint('   • Código de respuesta: ${resp.statusCode}');
-    debugPrint('   • Cuerpo de respuesta: ${resp.body}');
-
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      debugPrint('   ❌ Error al actualizar oferta via HTTP: ${resp.statusCode}');
       throw Exception('Error al actualizar oferta via HTTP: ${resp.statusCode}');
     }
-
-    debugPrint('✅ patchOffer HTTP completado para offerId=$offerId');
-
     // ————— Ahora parcheamos en Firestore —————
     try {
       final docRef = FirebaseFirestore.instance
           .collection('offers').doc(offerId);
-      debugPrint('   • Firestore update en offers/$offerId con $body');
       await docRef.update(body);
-      debugPrint('✅ Firestore update completado para offers/$offerId');
     } catch (e) {
-      debugPrint('❌ Error al actualizar Firestore offers/$offerId: $e');
       // Dependiendo de tu lógica, podrías tirar aquí o solo notificar:
       // throw;
     }
@@ -175,9 +153,6 @@ class ApiService2 {
 
   Future<void> updateWorkerPoints(String workerId, String token) async {
     final url = Uri.parse('$baseUrl/workers/$workerId');
-
-    print('Token usado para la autenticación: $token');
-
     try {
       // Primero debemos obtener los valores actuales del trabajador en Firestore
       final workerDoc = await FirebaseFirestore.instance
@@ -186,7 +161,6 @@ class ApiService2 {
           .get();
 
       if (!workerDoc.exists) {
-        print('No se encontró el documento del trabajador');
         return;
       }
 
@@ -208,12 +182,9 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Puntos actualizados correctamente en el backend.');
       } else {
-        print('Error al actualizar puntos en el backend: ${response.body}');
       }
     } catch (e) {
-      print('Error en la solicitud PATCH: $e');
     }
   }
 
@@ -252,7 +223,6 @@ class ApiService2 {
         'Content-Type': 'application/json',
       },
     );
-    print('getOffers2 status: [32m[1m[4m${response.statusCode}[0m, body: ${response.body}');
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       return data.map<Map<String, dynamic>>((item) => Map<String, dynamic>.from(item as Map)).toList();
@@ -296,7 +266,6 @@ class ApiService2 {
         throw Exception('Error HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('[ApiService2] Error: $e');
       rethrow;
     }
   }
@@ -319,21 +288,14 @@ class ApiService2 {
           final List<ServiceResponse> services = responseData
               .map((data) => ServiceResponse.fromJson(data))
               .toList();
-
-          print('Total de servicios obtenidos del backend: ${services.length}');
-
           return services;
         } else {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
-
         throw Exception('Error al cargar los servicios desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
@@ -351,13 +313,10 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
       } else {
-        print('Solicitud HTTP fallida con código: ${response.statusCode}');
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -377,13 +336,10 @@ class ApiService2 {
       );
 
       if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
       } else {
-        print('Solicitud HTTP: ${response.statusCode}');
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -442,7 +398,6 @@ class ApiService2 {
       await Future.wait(requests);
       return allOffers;
     } catch (e) {
-      print('Error al obtener ofertas del backend: $e');
       throw Exception('Error al obtener ofertas');
     }
   }
@@ -487,8 +442,6 @@ class ApiService2 {
         Uri.parse('$baseUrl/workers/$userId'),
         headers: headers,
       );
-      print('Respuesta de la API: ${response.body}');
-
       if (response.statusCode == 200) {
         final dynamic responseData = json.decode(response.body);
 
@@ -501,7 +454,6 @@ class ApiService2 {
         throw Exception('Solicitud HTTP fallida: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -518,8 +470,6 @@ class ApiService2 {
         Uri.parse('$baseUrl/workers?userId=$userId'),
         headers: headers,
       );
-      print('Respuesta de la API: ${response.body}');
-
       if (response.statusCode == 200) {
         final dynamic responseData = json.decode(response.body);
 
@@ -532,47 +482,42 @@ class ApiService2 {
         throw Exception('Solicitud HTTP fallida: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
     }
   }
 
-Future<List<Category>> fetchExpertises() async {
-  try {
-    final user = FirebaseAuth.instance.currentUser;
-    final token = await user?.getIdToken(true);
+  Future<List<Category>> fetchExpertises() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final token = await user?.getIdToken(true);
 
-    if (token == null) {
-      throw Exception('Token de autenticación no disponible');
-    }
+      if (token == null) {
+        throw Exception('Token de autenticación no disponible');
+      }
 
-    final response = await http.get(
-      Uri.parse('$baseUrl/categories/expertises'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+      final response = await http.get(
+        Uri.parse('$baseUrl/categories/expertises'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
 
-      final List<dynamic> data = decoded is List
-          ? decoded
-          : decoded['categories'] ?? [];
+        final List<dynamic> data = decoded is List
+            ? decoded
+            : decoded['categories'] ?? [];
 
-      return data.map((json) => Category.fromJson(json)).toList();
-    } else {
-      print('HTTP Error ${response.statusCode}');
-      throw Exception('Failed to load expertises');
-    }
-  } catch (e) {
-    print('Error en fetchExpertises: $e');
+        return data.map((json) => Category.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load expertises');
+      }
+    } catch (e) {
     rethrow;
+    }
   }
-}
-
-
 
   Future<http.Response> fetchServiceByExpertises(
       String userId, List<String> expertises) async {
@@ -587,13 +532,11 @@ Future<List<Category>> fetchExpertises() async {
       );
 
       if (response.statusCode == 200) {
-        print('Datos recibidos del backend con éxito');
       } else {
         _logError(response);
       }
       return response;
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al obtener datos del backend');
     }
   }
@@ -605,7 +548,6 @@ Future<List<Category>> fetchExpertises() async {
 
       if (user == null) {
         // Manejar el caso en el que el usuario no está autenticado
-        print('Error: Usuario no autenticado.');
         return null;
       }
 
@@ -631,8 +573,6 @@ Future<List<Category>> fetchExpertises() async {
 
         // Obtener la URL de descarga de la primera imagen
         final imageUrl = await firstImageRef.getDownloadURL();
-        print('URL de la primera imagen en Firebase Storage: $imageUrl');
-
         return imageUrl;
       } else {
         print(
@@ -640,7 +580,6 @@ Future<List<Category>> fetchExpertises() async {
         return null;
       }
     } catch (e) {
-      print('Error al obtener la URL de la imagen desde Firebase Storage: $e');
       throw Exception(
           'Error al obtener la URL de la imagen desde Firebase Storage: $e');
     }
@@ -671,19 +610,14 @@ Future<List<Category>> fetchExpertises() async {
           throw Exception('La respuesta del backend está vacía.');
         }
       } else {
-        print('Error: ${response.statusCode}');
-        print('Mensaje de error: ${response.body}');
         throw Exception('Error al cargar los servicios desde el backend');
       }
     } catch (e) {
-      print('Error en la solicitud HTTP: $e');
       throw Exception('Error al cargar los servicios desde el backend');
     }
   }
 
   void _logError(http.Response response) {
-    print('Error: ${response.statusCode}');
-    print('Mensaje de error: ${response.body}');
   }
 
   // Obtiene todas las ofertas de un worker
@@ -751,11 +685,9 @@ Future<List<Category>> fetchExpertises() async {
         return offers.map((e) => Map<String, dynamic>.from(e)).toList();
       } else {
         // Si el endpoint específico no existe, usar el método anterior pero filtrar
-        print('Endpoint específico no disponible, usando método alternativo');
         return await _getWorkerOffersAlternative(workerId);
       }
     } catch (e) {
-      print('Error al obtener ofertas del worker: $e');
       // Fallback al método anterior
       return await _getWorkerOffersAlternative(workerId);
     }
@@ -790,7 +722,6 @@ Future<List<Category>> fetchExpertises() async {
             .toList();
       }
     } catch (e) {
-      print('Error en método alternativo: $e');
     }
 
     return workerOffers;

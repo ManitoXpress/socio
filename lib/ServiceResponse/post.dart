@@ -1,19 +1,12 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-
 import 'package:firebase_storage/firebase_storage.dart';
-
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/ServiceResponse/baseurl.dart';
 import 'package:socio/ServiceResponse/request.dart';
-import 'package:path/path.dart' as path;
-import 'package:http/http.dart' as http;
-import 'package:socio/controllers/RegisController.dart';
 class ApiService {
   final String baseUrl = ApiConfiguration.baseUrl;
   final FirebaseStorage storage = FirebaseStorage.instance;
@@ -35,14 +28,11 @@ class ApiService {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ FCM token actualizado en backend');
       } else {
-        debugPrint('❌ Error al actualizar FCM token: ${response.statusCode}');
       }
 
       return response;
     } catch (e) {
-      debugPrint('❌ Excepción actualizando FCM token: $e');
       rethrow;
     }
   }
@@ -58,14 +48,11 @@ class ApiService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        debugPrint('✅ Worker eliminado correctamente');
         return true;
       } else {
-        debugPrint('❌ Error al eliminar worker: ${response.statusCode} - ${response.body}');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Excepción al eliminar worker: $e');
       return false;
     }
   }
@@ -89,7 +76,6 @@ class ApiService {
       );
       return response;
     } catch (e) {
-      print('Error al enviar datos al servidor: $e');
       throw Exception('Error al enviar datos al servidor: $e');
     }
   }
@@ -132,7 +118,6 @@ class ApiService {
     try {
       String token = await FirebaseAuth.instance.currentUser?.getIdToken(true) ?? '';
       if (token.isEmpty) {
-        print('Error: No se pudo renovar el token de autenticación.');
         throw Exception('No se ha proporcionado un token de autenticación válido.');
       }
 
@@ -143,24 +128,16 @@ class ApiService {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('DEBUG: checkProposalExists - response.statusCode:  [${response.statusCode}]');
-      print('DEBUG: checkProposalExists - response.body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('DEBUG: checkProposalExists - data: $data');
         // Si el backend retorna una lista de ofertas:
         List<dynamic> offers = data is List ? data : (data['offers'] ?? []);
-        print('DEBUG: checkProposalExists - offers: $offers');
         // Filtra por workerId
         final exists = offers.any((offer) => offer['workerId'] == workerId);
-        print('DEBUG: checkProposalExists - exists for workerId: $exists');
         return exists;
       }
       return false;
     } catch (e) {
-      print('Error al verificar oferta existente: $e');
       return false;
     }
   }
@@ -175,7 +152,6 @@ class ApiService {
       );
       return response;
     } catch (e) {
-      print('Error al enviar token al servidor: $e');
       throw Exception('Error al enviar token al servidor: $e');
     }
   }
@@ -190,12 +166,9 @@ class ApiService {
     try {
       var response = await request.send();
       if (response.statusCode == 200) {
-        print('Imagen subida exitosamente');
       } else {
-        print('Error al subir la imagen: ${response.reasonPhrase}');
       }
     } catch (e) {
-      print('Error al subir la imagen: $e');
     }
   }
 
@@ -209,7 +182,6 @@ class ApiService {
       ) async {
     try {
       if (workerId.isEmpty) {
-        print('workerId es nulo o vacío');
         throw Exception('workerId es nulo o vacío');
       }
 
@@ -217,7 +189,6 @@ class ApiService {
       String newToken = await FirebaseAuth.instance.currentUser?.getIdToken(true) ?? '';
 
       if (newToken.isEmpty) {
-        print('Error: No se pudo renovar el token de autenticación.');
         throw Exception('No se ha proporcionado un token de autenticación válido.');
       }
 
@@ -244,15 +215,12 @@ class ApiService {
       );
 
       if (response.statusCode == 201) {
-        print('Oferta enviada con éxito al servidor');
       } else {
-        print('Error al enviar oferta al servidor: ${response.body}');
         throw Exception('Error al enviar oferta al servidor: ${response.body}');
       }
 
       return response;
     } catch (e) {
-      print('Error al enviar oferta al servidor: $e');
       throw Exception('Error al enviar oferta al servidor: $e');
     }
   }
@@ -334,9 +302,6 @@ class ApiService {
         'codeReferral': codeReferral,
         'requiresInvoice': registrationData.requiresInvoice ?? 'NO',
       };
-
-      print('Request Body: $requestBody');
-
       final response = await http.patch(
         Uri.parse('$baseUrl/workers/$userId'),
         headers: {
@@ -345,13 +310,8 @@ class ApiService {
         },
         body: jsonEncode(requestBody),
       );
-
-      print('Response Status Code: ${response.statusCode}');
-      print('Response Body: ${response.body}');
-
       return response;
     } catch (e) {
-      print('Error al actualizar el usuario: $e');
       throw Exception('Error al actualizar el usuario: $e');
     }
   }
@@ -388,17 +348,14 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
@@ -418,17 +375,14 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
@@ -438,8 +392,6 @@ class ApiService {
 
   Future<String> uploadImageToFirebaseStorage2(File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       // Crear una extensión basada en el nombre del archivo de imagen
       final String extension = image.path.split('.').last;
 
@@ -457,27 +409,21 @@ class ApiService {
         final UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         // Obtener la URL de descarga de la imagen cargada
         final String imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
-
         return imageUrl; // Devolver la URL de la imagen
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
 
   Future<String> uploadImageToFirebaseStorage3(File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       // Crear una extensión basada en el nombre del archivo de imagen
       final String extension = image.path.split('.').last;
 
@@ -495,32 +441,25 @@ class ApiService {
         final UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         // Obtener la URL de descarga de la imagen cargada
         final String imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
-
         return imageUrl; // Devolver la URL de la imagen
       } else {
         throw Exception('El archivo de imagen no existe.');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
   Future<String> uploadImageToFirebaseStorage4(
       File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       final FirebaseAuth auth = FirebaseAuth.instance;
       final User? user = auth.currentUser;
 
       if (user == null) {
-        print('Error: Usuario no autenticado.');
         throw Exception('Usuario no autenticado');
       }
 
@@ -537,31 +476,24 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
-        print('Error: El archivo de imagen no existe.');
         throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
   Future<String> uploadImageToFirebaseStorage5(
       File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       final FirebaseAuth auth = FirebaseAuth.instance;
       final User? user = auth.currentUser;
 
       if (user == null) {
-        print('Error: Usuario no autenticado.');
         throw Exception('Usuario no autenticado');
       }
 
@@ -582,31 +514,24 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
-        print('Error: El archivo de imagen no existe.');
         throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
   Future<String> uploadImageToFirebaseStorage6(
       File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       final FirebaseAuth auth = FirebaseAuth.instance;
       final User? user = auth.currentUser;
 
       if (user == null) {
-        print('Error: Usuario no autenticado.');
         throw Exception('Usuario no autenticado');
       }
 
@@ -627,31 +552,24 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
-        print('Error: El archivo de imagen no existe.');
         throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }
   Future<String> uploadImageToFirebaseStorage7(
       File image, String userId) async {
     try {
-      print('Comenzando la carga de la imagen a Firebase Storage');
-
       final FirebaseAuth auth = FirebaseAuth.instance;
       final User? user = auth.currentUser;
 
       if (user == null) {
-        print('Error: Usuario no autenticado.');
         throw Exception('Usuario no autenticado');
       }
 
@@ -672,18 +590,14 @@ class ApiService {
         UploadTask uploadTask = ref.putFile(image);
 
         await uploadTask.whenComplete(() {
-          print('Imagen cargada con éxito en Firebase Storage');
         });
 
         final imageUrl = await ref.getDownloadURL();
-        print('URL de la imagen en Firebase Storage: $imageUrl');
         return imageUrl;
       } else {
-        print('Error: El archivo de imagen no existe.');
         throw Exception('El archivo de imagen no existe');
       }
     } catch (e) {
-      print('Error al cargar la imagen en Firebase Storage: $e');
       throw Exception('Error al cargar la imagen en Firebase Storage: $e');
     }
   }

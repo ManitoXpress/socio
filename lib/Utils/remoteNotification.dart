@@ -1,4 +1,4 @@
-
+﻿
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,9 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:socio/Screens/Home.dart';
 
-
-import '../Screens/Home.dart';
 import '../controllers/RegisController.dart';
 import '../ServiceResponse/requestUserData.dart';
 class NotificationService {
@@ -40,7 +39,6 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print('Notificación seleccionada: ${response.payload}');
         // Navegar a la pantalla de inicio cuando la notificación es seleccionada
         if (response.payload != null) {
           _navigateToHomeScreen(context, response.payload!);
@@ -113,12 +111,10 @@ class NotificationService {
           ),
         );
       } else {
-        print('Advertencia: usuario es nulo. Asegúrate de que el usuario esté autenticado correctamente.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Error de autenticación. Intente nuevamente.')));
       }
     } catch (error) {
-      print('Error al navegar a HomeScreen: $error');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Error al cargar la pantalla principal. Intente nuevamente.')));
     }
@@ -221,7 +217,6 @@ class NotificationService {
               .update({
             'fcmToken': fcmToken,
           });
-          print("FCM Token actualizado en Firestore.");
         } else {
           // Si no existe el documento, lo creamos
           await FirebaseFirestore.instance
@@ -231,13 +226,10 @@ class NotificationService {
             'deviceId': deviceId,
             'fcmToken': fcmToken,
           });
-          print("FCM Token y Device ID guardados en Firestore con éxito.");
         }
       } else {
-        print("Error: No se pudo obtener el deviceId o el fcmToken.");
       }
     } catch (e) {
-      print("Error al registrar el FCM Token: $e");
     }
   }
 }

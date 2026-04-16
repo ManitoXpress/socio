@@ -1,8 +1,7 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
+import 'package:socio/ServiceResponse/request.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../ServiceResponse/request.dart';
 
 
 class LocalCacheService {
@@ -13,7 +12,6 @@ class LocalCacheService {
       final String serviceRequestJson = jsonEncode(serviceRequest.toMap());
       await prefs.setString(serviceRequestKey, serviceRequestJson);
     } catch (e) {
-      print('Error al cachear el servicio: $e');
     }
   }
 
@@ -28,7 +26,6 @@ class LocalCacheService {
 
       }
     } catch (e) {
-      print('Error al obtener el servicio del caché: $e');
     }
     return null;
   }

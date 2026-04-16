@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -6,22 +6,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-
-import 'package:socio/ServiceResponse/get.dart';
-import 'package:socio/ServiceResponse/request.dart';
-import 'package:socio/Utils/Colors.dart';
-import 'package:socio/Utils/deleteAccount.dart';
-import 'package:socio/Utils/styles.dart';
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/menu/login.dart';
-import 'package:socio/provider/providerRegistration.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../Screens/documentScreen.dart';
+import '../controllers/editController.dart';
+import '../ServiceResponse/get.dart';
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestUserData.dart';
-import '../controllers/RegisController.dart';
+import '../Utils/Colors.dart';
+import '../Utils/styles.dart';
+import '../provider/providerRegistration.dart';
+
 class ProfileData {
   String displayName;
   String email;
@@ -109,7 +107,7 @@ class _ProfilePageState extends State<ProfilePage> {
           phoneNumber: userData.phoneNumber,
           paymentType: userData.paymentType,
           expertises:
-          userData.expertises.map((expertise) => expertise.name).toList(),
+              userData.expertises.map((expertise) => expertise.name).toList(),
           expLevel: userData.expLevel,
           imagePath: profileImageUrl ?? '',
           userData: UserData(
@@ -145,7 +143,6 @@ class _ProfilePageState extends State<ProfilePage> {
         throw 'No se pudo obtener el ID del usuario autenticado.';
       }
     } catch (e) {
-      print('Error loading user data: $e');
       return ProfileData(
         displayName: 'Error',
         email: '',
@@ -193,7 +190,6 @@ class _ProfilePageState extends State<ProfilePage> {
         userData = Future.value(updatedUserData);
       });
     } catch (e) {
-      print('Error durante la carga de datos de usuario: $e');
     }
   }
 
@@ -202,10 +198,9 @@ class _ProfilePageState extends State<ProfilePage> {
       await FirebaseAuth.instance.signOut();
       Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (context) => LoginScreen(
-            deviceId: '',
-          )));
+                deviceId: '',
+              )));
     } catch (e) {
-      print('Error al cerrar sesión: $e');
     }
   }
 
@@ -285,44 +280,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       style: MyTextStyles.buttonTextStyle),
                 ),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        final authToken = await user.getIdToken();
-                        showDialog(
-                          context: context,
-                          builder: (_) => DeleteAccountByIdDialog(
-                            userId: user.uid,
-                            authToken: authToken!,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade700,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 3,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.delete_forever, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'Eliminar Cuenta',
-                          style: MyTextStyles.buttonTextStyle.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                 _buildInfoCard(profile),
               ],
             ),
@@ -364,8 +321,8 @@ class _ProfilePageState extends State<ProfilePage> {
               child: expandable
                   ? _buildExpandableText(value)
                   : Text(value,
-                  style: MyTextStyles.formsdetails,
-                  overflow: TextOverflow.ellipsis),
+                      style: MyTextStyles.formsdetails,
+                      overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -381,9 +338,9 @@ class _ProfilePageState extends State<ProfilePage> {
       title: Text('Ver más', style: MyTextStyles.formsdetails),
       children: items
           .map((t) => Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: Text(t, style: MyTextStyles.servicesButtonTextStyle),
-      ))
+                padding: const EdgeInsets.only(left: 16),
+                child: Text(t, style: MyTextStyles.servicesButtonTextStyle),
+              ))
           .toList(),
     );
   }

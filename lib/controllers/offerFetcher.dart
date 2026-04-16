@@ -1,15 +1,13 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:socio/ServiceResponse/get.dart';
 import 'package:socio/ServiceResponse/request.dart';
-
-import '../ServiceResponse/get.dart';
-import '../ServiceResponse/requestExpertise.dart';
-import '../ServiceResponse/requestServiceType.dart';
-import '../ServiceResponse/requestStatus.dart';
-import '../Utils/cacheLocal.dart';
-import '../Utils/workerDetails.dart';
-
+import 'package:socio/ServiceResponse/requestExpertise.dart';
+import 'package:socio/ServiceResponse/requestServiceType.dart';
+import 'package:socio/ServiceResponse/requestStatus.dart';
+import 'package:socio/Utils/cacheLocal.dart';
+import 'package:socio/Utils/workerDetails.dart';
 
 class OfferRepository {
   final ApiService2 apiService2;
@@ -104,7 +102,6 @@ class OfferRepository {
       final cachedRequest =
           await LocalCacheService.getCachedServiceRequest(workerId);
       if (cachedRequest != null) {
-        print('Datos del caché encontrados.');
         return [cachedRequest];
       } else {
         print(
@@ -119,12 +116,6 @@ class OfferRepository {
           workerId,
           type,
         );
-
-        print('token=$token');
-        print('Filtrando por workerId: $workerId');
-        print('type=$type');
-        print('deviceId=$deviceId');
-
         if (response.statusCode == 200) {
           final List<Map<String, dynamic>> servicesData =
               List<Map<String, dynamic>>.from(json.decode(response.body));
@@ -248,20 +239,16 @@ class OfferRepository {
 
               return finalServiceRequests;
             } catch (e) {
-              print('Error al procesar los datos del servicio: $e');
               return [];
             }
           } else {
-            print('No se encontraron servicios disponibles.');
             return [];
           }
         } else {
-          print('Error en la solicitud HTTP: ${response.statusCode}');
           return [];
         }
       }
     } catch (e) {
-      print('Error en la solicitud: $e');
       return [];
     }
   }
@@ -287,7 +274,6 @@ class OfferRepository {
       try {
         return double.parse(value);
       } catch (e) {
-        print('Error al convertir el precio ofrecido a double: $e');
       }
     } else if (value is num) {
       return value.toDouble();

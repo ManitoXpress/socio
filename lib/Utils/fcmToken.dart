@@ -1,4 +1,4 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
+﻿import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:convert';
@@ -58,9 +58,7 @@ class FCMService {
 
       // Llamar al API con los parámetros posicionales esperados
       await ApiService().updateFcmToken(userId, authToken!, fcmToken);
-      debugPrint('✅ FCM token enviado al backend');
     } catch (e) {
-      debugPrint('❌ Error actualizando FCM token: \$e');
     }
   }
 
@@ -109,7 +107,6 @@ class FCMService {
 
     // Cuando la app se abre desde la notificación
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage msg) {
-      debugPrint('Notificación abierta por el usuario');
       // Navegación u otra lógica
     });
   }

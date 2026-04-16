@@ -1,9 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:socio/controllers/RegisController.dart';
 import 'package:socio/ServiceResponse/requestExpertise.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-import '../controllers/RegisController.dart';
 class UserData {
   String userId;
   String displayName;
@@ -154,36 +151,6 @@ class UserData {
       'points': points,
       'requiresInvoice': requiresInvoice,
     };
-  }
-  /// Constructor para invitados
-  factory UserData.guest() {
-    return UserData(
-      userId: '',
-      displayName: 'Invitado',
-      idCardNumber: '',
-      phoneNumber: '',
-      getToken: null,
-      imagePath: '',
-      pdfPathController: '',
-      criminalRecordImagePath: '',
-      idDocumentImagePath: '',
-      idDocumentImagePath2: '',
-      medicalLicenseImagePath: '',
-      professionalTitleImagePath: '',
-      requiresInvoice: null, // Inicializa como null
-      selectedCountryCode: '',
-      expertises: [],
-      expLevel: [],
-      certificateImagePaths: [],
-      location: null,
-      paymentType: '',
-      email: '',
-      registrationData: RegistrationData.guest(), // asegúrate de tener esto en tu clase RegistrationData
-      referrerWorkerId: '',
-      referralCode: '',
-      verificationStatus: 'Invitado',
-      points: 0,
-    );
   }
 
   static List<String> _convertToList(dynamic value) {

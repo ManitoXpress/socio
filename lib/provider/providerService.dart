@@ -1,11 +1,9 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import '../ServiceResponse/get.dart';
 import '../ServiceResponse/post.dart';
-
 import '../ServiceResponse/request.dart';
 import '../ServiceResponse/requestExpertise.dart';
 import '../ServiceResponse/requestServiceType.dart';
@@ -92,9 +90,7 @@ class HistorialProvider extends ChangeNotifier {
   }) async {
     // Cache: solo recarga si pasaron 30s o forceRefresh
     final now = DateTime.now();
-    if (!forceRefresh &&
-        _lastLoaded['all'] != null &&
-        now.difference(_lastLoaded['all']!).inSeconds < 30) {
+    if (!forceRefresh && _lastLoaded['all'] != null && now.difference(_lastLoaded['all']!).inSeconds < 30) {
       return;
     }
     isLoading = true;
@@ -104,7 +100,6 @@ class HistorialProvider extends ChangeNotifier {
     // 1) Disponibles
     final availableFut = _repoAvailable.fetchServicesByStatus(
         'available', 'status', userId, token, []).catchError((e, _) {
-      debugPrint('Error en available: $e');
       return <ServiceRequest>[];
     });
 
@@ -144,13 +139,14 @@ class HistorialProvider extends ChangeNotifier {
       deviceId,
     )
         .catchError((e, _) {
-      debugPrint('Error en offer: $e');
       return <ServiceRequest>[];
     });
 
-    // 3) En progreso → solo usamos 'in_progress'
+    // 3) En progreso → combinamos tres estados
     final estados = [
       'in_progress',
+      'pending_confirmation',
+      'pending_confirmation2',
     ];
 
     final inProgressFut = Future.wait(
@@ -162,7 +158,6 @@ class HistorialProvider extends ChangeNotifier {
             token,
           )
               .catchError((e, _) {
-            debugPrint('Error en $st: $e');
             return <ServiceRequest>[];
           })),
     ).then((listas) {
@@ -174,15 +169,12 @@ class HistorialProvider extends ChangeNotifier {
     final completedFut = _repoComplete
         .fetchServicesByComplete('completed', userId, 'status', token)
         .catchError((e, _) {
-      debugPrint('Error en completed: $e');
       return <ServiceRequest>[];
     });
 
     // 5) Cancelados
-    final cancelledFut = _repoCancelled
-        .fetchServicesByCancelled('cancelled', userId, 'status', token)
-        .catchError((e, _) {
-      debugPrint('Error en cancelled: $e');
+    final cancelledFut = _repoCancelled.fetchServicesByCancelled(
+        'cancelled', userId, 'status', token).catchError((e, _) {
       return <ServiceRequest>[];
     });
 
@@ -226,10 +218,8 @@ class HistorialProvider extends ChangeNotifier {
         bool updated = false;
         for (var list in _byStatus.values) {
           for (final service in list) {
-            if (service.isNew == true &&
-                _newServiceTimestamps[service.id] != null) {
-              final diff =
-                  DateTime.now().difference(_newServiceTimestamps[service.id]!);
+            if (service.isNew == true && _newServiceTimestamps[service.id] != null) {
+              final diff = DateTime.now().difference(_newServiceTimestamps[service.id]!);
               if (diff.inSeconds >= 5) {
                 service.isNew = false;
                 updated = true;
@@ -241,7 +231,6 @@ class HistorialProvider extends ChangeNotifier {
       });
     } catch (e, st) {
       errorMessage = 'Error cargando historial';
-      debugPrint('loadAll fallo inesperado: $st');
     } finally {
       isLoading = false;
       notifyListeners();
@@ -277,8 +266,7 @@ class HistorialProvider extends ChangeNotifier {
     required String token,
     required String deviceId,
   }) =>
-      loadAll(
-          userId: userId, token: token, deviceId: deviceId, forceRefresh: true);
+      loadAll(userId: userId, token: token, deviceId: deviceId, forceRefresh: true);
 
   /// Inicia el polling automático cada 30 segundos
   void startAutoRefresh({
