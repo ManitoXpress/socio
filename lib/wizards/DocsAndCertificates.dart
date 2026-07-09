@@ -75,7 +75,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
           jobCompletePath: '',
           jobCompletePaths: [],
         );
-        final imgProv = Provider.of<ImageStateProvider>(context, listen: false);
+        final imgProv =
+            Provider.of<ImageStateProvider>(context, listen: false);
         if (file.path.toLowerCase().endsWith('.pdf')) {
           imgProv.setCriminalRecordPdf(file);
         } else {
@@ -95,7 +96,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
       onPicked: (file) {
         setState(() => _certificateFiles.add(file));
         _notifyCerts();
-        final imgProv = Provider.of<ImageStateProvider>(context, listen: false);
+        final imgProv =
+            Provider.of<ImageStateProvider>(context, listen: false);
         if (file.path.toLowerCase().endsWith('.pdf')) {
           imgProv.addCertificatePdf(file);
         } else {
@@ -121,7 +123,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
       onPicked: (file) {
         setState(() => _titleFile = file);
         _notifyCerts();
-        final imgProv = Provider.of<ImageStateProvider>(context, listen: false);
+        final imgProv =
+            Provider.of<ImageStateProvider>(context, listen: false);
         if (file.path.toLowerCase().endsWith('.pdf')) {
           imgProv.setTitlePdf(file);
         } else {
@@ -140,7 +143,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
 
   // ── HELPERS ─────────────────────────────────────────────────────
 
-  List<String> _certPaths() => _certificateFiles.map((f) => f.path).toList();
+  List<String> _certPaths() =>
+      _certificateFiles.map((f) => f.path).toList();
 
   void _notifyCerts() {
     final paths = _certPaths();
@@ -230,11 +234,11 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
                 Navigator.pop(ctx);
                 final result = await FilePicker.platform.pickFiles(
                   type: FileType.custom,
-                  allowedExtensions: allowPdf
-                      ? ['pdf', 'jpg', 'jpeg', 'png']
-                      : ['jpg', 'jpeg', 'png'],
+                  allowedExtensions:
+                      allowPdf ? ['pdf', 'jpg', 'jpeg', 'png'] : ['jpg', 'jpeg', 'png'],
                 );
-                if (result != null && result.files.single.path != null) {
+                if (result != null &&
+                    result.files.single.path != null) {
                   onPicked(File(result.files.single.path!));
                 }
               },
@@ -254,7 +258,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFFF7F7F9),
           borderRadius: BorderRadius.circular(14),
@@ -361,14 +366,16 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
         // Aviso campos obligatorios
         if (_criminalFile == null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF830A09).withOpacity(0.7),
+              color: const Color(0xFF830A09).withOpacity(0.07),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: const [
-                Icon(Icons.info_outline, color: Color(0xFF830A09), size: 16),
+                Icon(Icons.info_outline,
+                    color: Color(0xFF830A09), size: 16),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -465,7 +472,7 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
         width: double.infinity,
         height: 90,
         decoration: BoxDecoration(
-          color: hasFile
+            color: hasFile
               ? const Color(0xFF830A09).withOpacity(0.05)
               : Colors.grey[50],
           borderRadius: BorderRadius.circular(14),
@@ -537,8 +544,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
                     onTap: onRemove,
                     child: Padding(
                       padding: const EdgeInsets.all(14),
-                      child:
-                          Icon(Icons.close, color: Colors.grey[400], size: 20),
+                      child: Icon(Icons.close,
+                          color: Colors.grey[400], size: 20),
                     ),
                   ),
                 ],
@@ -580,8 +587,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
             borderRadius: BorderRadius.circular(10),
             child: isPdf
                 ? const Center(
-                    child:
-                        Icon(Icons.picture_as_pdf, color: Colors.red, size: 36),
+                    child: Icon(Icons.picture_as_pdf,
+                        color: Colors.red, size: 36),
                   )
                 : Image.file(file, fit: BoxFit.cover),
           ),
@@ -604,8 +611,8 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
                   ),
                 ],
               ),
-              child:
-                  const Icon(Icons.close, color: Color(0xFF830A09), size: 14),
+              child: const Icon(Icons.close,
+                  color: Color(0xFF830A09), size: 14),
             ),
           ),
         ),
@@ -622,17 +629,16 @@ class _DocsAndCertificatesStepState extends State<DocsAndCertificatesStep> {
         height: 80,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
+            border: Border.all(
               color: const Color(0xFF830A09).withOpacity(0.3),
               width: 1.5,
               style: BorderStyle.solid),
-          color: const Color(0xFF830A09).withOpacity(0.04),
+            color: const Color(0xFF830A09).withOpacity(0.04),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add,
-                color: const Color(0xFF830A09).withOpacity(0.6), size: 28),
+            Icon(Icons.add, color: const Color(0xFF830A09).withOpacity(0.6), size: 28),
             const SizedBox(height: 2),
             Text(
               'Agregar',

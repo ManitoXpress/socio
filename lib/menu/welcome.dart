@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:socio/ServiceResponse/requestUserData.dart';
 
 import '../ServiceResponse/post.dart';
 import '../controllers/RegisController.dart';
@@ -10,7 +9,7 @@ import '../ServiceResponse/get.dart';
 class FirstTimeLoginScreen extends StatefulWidget {
   final RegistrationController registrationController;
 
-  FirstTimeLoginScreen({required this.registrationController, required UserData userData});
+  FirstTimeLoginScreen({required this.registrationController});
 
   @override
   State<FirstTimeLoginScreen> createState() => _FirstTimeLoginScreenState();
@@ -145,7 +144,7 @@ class _FirstTimeLoginScreenState extends State<FirstTimeLoginScreen>
                                 height: 0.60.sw,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withOpacity(0.07),
                                 ),
                               ),
                               Container(
@@ -181,8 +180,8 @@ class _FirstTimeLoginScreenState extends State<FirstTimeLoginScreen>
                 opacity: _fadeIn,
                 child: SingleChildScrollView(
                   physics: const ClampingScrollPhysics(),
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 24.w, vertical: 20.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -191,7 +190,8 @@ class _FirstTimeLoginScreenState extends State<FirstTimeLoginScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF830A09).withOpacity(0.9),
+                          color:
+                              const Color(0xFF830A09).withOpacity(0.09),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -270,14 +270,13 @@ class _FirstTimeLoginScreenState extends State<FirstTimeLoginScreen>
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF830A09),
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 15),
+                              padding: const EdgeInsets.symmetric(vertical: 15),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               elevation: 3,
-                              shadowColor:
-                                  const Color(0xFF830A09).withOpacity(0.4),
+                                shadowColor: const Color(0xFF830A09)
+                                  .withOpacity(0.4),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,

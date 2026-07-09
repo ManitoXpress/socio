@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:rive/rive.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,6 +25,7 @@ import 'menu/Loading.dart';
 import 'menu/login.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'Utils/debt_blocker_wrapper.dart';
+import 'services/remote_config_service.dart';
 
 import 'package:provider/provider.dart';
 
@@ -36,7 +37,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await RiveFile.initialize();
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   } catch (e) {
@@ -53,6 +53,9 @@ void main() async {
     );
   } catch (e) {
   }
+
+  // Inicializa Remote Config (para avisos de mantenimiento, etc.)
+  await RemoteConfigService().initialize();
 
   // El permiso de notificaciones es llamado en initState de MyApp.
   // Quitarlo del main() evita que congele el renderizado inicial (Pantalla negra)
@@ -151,16 +154,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       if (user != null) {
         userData = await fetchUserData(user.uid);
         registrationData = userData?.registrationData;
-        
-        // Safety check: if user data failed to load, revert login state
-        if (userData == null || registrationData == null) {
-          loggedIn = false;
-          await prefs.setBool('isLoggedIn', false);
-        }
-      } else {
-        // user is null but prefs say true, fix it
-        loggedIn = false;
-        await prefs.setBool('isLoggedIn', false);
       }
     }
 
@@ -182,8 +175,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       if (await Permission.locationAlways.isDenied) {
         await Permission.locationAlways.request();
       }
+    } else if (status.isPermanentlyDenied) {
+      openAppSettings();
     }
-    // Removido else if (status.isPermanentlyDenied) para que NO vaya a configuraciones directamente
   }
 
   @override
@@ -242,22 +236,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 }
 
-/// Lee los datos del worker desde Firestore
+// Ejemplo de función para obtener los datos del usuario
 Future<UserData> fetchUserData(String userId) async {
-  try {
-    final doc = await FirebaseFirestore.instance
-        .collection('workers')
-        .doc(userId)
-        .get();
-    final data = doc.data();
-    if (data != null) {
-      data['id'] = userId;
-      return UserData.fromJson(data);
-    }
-  } catch (e) {
-    debugPrint('fetchUserData error: $e');
-  }
-  // Fallback mínimo si Firestore falla
+  // Aquí debes implementar la lógica para obtener los datos del usuario
+  // Por ejemplo, desde una base de datos o un servicio web
+  // Este es solo un ejemplo de retorno
   return UserData(
     userId: userId,
     displayName: '',
@@ -269,8 +252,6 @@ Future<UserData> fetchUserData(String userId) async {
     criminalRecordImagePath: '',
     idDocumentImagePath: '',
     idDocumentImagePath2: '',
-    medicalLicenseImagePath: '',
-    professionalTitleImagePath: '',
     selectedCountryCode: '',
     expertises: [],
     expLevel: [],
@@ -278,10 +259,6 @@ Future<UserData> fetchUserData(String userId) async {
     location: null,
     paymentType: '',
     email: '',
-    referrerWorkerId: '',
-    referralCode: '',
-    verificationStatus: '',
-    points: 0,
     registrationData: RegistrationData(
       userId: userId,
       devicesId: '',
@@ -306,5 +283,11 @@ Future<UserData> fetchUserData(String userId) async {
       codeReferral: '',
       verificationStatus: '',
     ),
+    referrerWorkerId: '',
+    referralCode: '',
+    points: 0,
+    verificationStatus: '',
+    medicalLicenseImagePath: '',
+    professionalTitleImagePath: '',
   );
 }

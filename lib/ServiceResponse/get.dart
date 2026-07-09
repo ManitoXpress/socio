@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -725,6 +725,120 @@ class ApiService2 {
     }
 
     return workerOffers;
+  }
+
+  // Obtener conversaciones del servicio (GET /conversations?serviceId=...)
+  // El backend filtra automáticamente por el uid del token (cliente o worker)
+  Future<List<Map<String, dynamic>>> getConversationsByServiceId(
+      String serviceId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    final response = await http.get(
+      Uri.parse('$baseUrl/conversations?serviceId=$serviceId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception(
+          'Error al obtener conversaciones: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  // Iniciar o recuperar una conversación (POST /conversations)
+  Future<Map<String, dynamic>> createConversation(
+      String serviceId, String workerId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    final response = await http.post(
+      Uri.parse('$baseUrl/conversations'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'serviceId': serviceId, 'workerId': workerId}),
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception(
+          'Error al iniciar conversación: ${response.statusCode}');
+    }
+  }
+
+  // Obtener mensajes de una conversación (GET /conversations/:id/messages)
+  Future<List<Map<String, dynamic>>> getConversationMessages(
+      String convId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    final response = await http.get(
+      Uri.parse('$baseUrl/conversations/$convId/messages?limit=100'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.cast<Map<String, dynamic>>();
+    } else {
+      throw Exception(
+          'Error al obtener mensajes: ${response.statusCode}');
+    }
+  }
+
+  // Enviar un mensaje (POST /conversations/:id/messages)
+  Future<void> sendConversationMessage(String convId, String text) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    final response = await http.post(
+      Uri.parse('$baseUrl/conversations/$convId/messages'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'text': text}),
+    );
+
+    if (response.statusCode != 201) {
+      throw Exception(
+          'Error al enviar mensaje: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  // Marcar como leído (PATCH /conversations/:id/read)
+  Future<void> markConversationAsRead(String convId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken(true);
+    if (token == null) {
+      throw Exception('Token de autenticación no disponible');
+    }
+    final response = await http.patch(
+      Uri.parse('$baseUrl/conversations/$convId/read'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al marcar como leido: ${response.statusCode}');
+    }
   }
 }
 

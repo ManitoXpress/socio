@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../Screens/commentScreen.dart';
+import '../../Screens/conversations_inbox.dart';
 import '../../constans/service_constant.dart';
 import '../../models/serviceModels.dart';
 import '../../provider/service_partner_provider.dart';
@@ -94,13 +96,9 @@ class ActionButtonsSection extends StatelessWidget {
               iconColor: hasExistingProposal ? Colors.grey[600]! : Colors.white,
             ),
             const SizedBox(height: 16),
-            _buildModernButton(
-              onPressed: () => _showCommentsModal(context, prov),
-              icon: Icons.chat_bubble_rounded,
-              label: 'Comentarios ($commentCount)',
-              backgroundColor: Colors.black87,
-              textColor: Colors.white,
-              iconColor: Colors.white,
+            _buildMessagesButton(
+              context: context,
+              serviceId: serviceData.id,
             ),
           ],
           if (status == ServiceStatus.inProgress) ...[
@@ -278,6 +276,21 @@ class ActionButtonsSection extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Botón glassmorphic premium para Mensajes
+  Widget _buildMessagesButton({
+    required BuildContext context,
+    required String serviceId,
+  }) {
+    return _MessagesGlassButton(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ConversationsInbox(serviceId: serviceId),
         ),
       ),
     );
@@ -616,6 +629,168 @@ class ActionButtonsSection extends StatelessWidget {
       builder: (_) {
         return CommentsBottomSheet(provider: provider);
       },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Botón Mensajes — glassmorphic premium con gradiente y animación de pulso
+// ─────────────────────────────────────────────────────────────────────────────
+class _MessagesGlassButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _MessagesGlassButton({required this.onTap, Key? key}) : super(key: key);
+
+  @override
+  State<_MessagesGlassButton> createState() => _MessagesGlassButtonState();
+}
+
+class _MessagesGlassButtonState extends State<_MessagesGlassButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _scale;
+  bool _pressed = false;
+
+  static const Color _kPrimary = Color(0xFF830A09);
+  static const Color _kLight = Color(0xFFB71C1C);
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.04).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _scale,
+      builder: (_, child) => Transform.scale(
+        scale: _pressed ? 0.96 : _scale.value,
+        child: child,
+      ),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: Container(
+          width: double.infinity,
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              colors: [_kPrimary, _kLight],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _kPrimary.withOpacity(0.45),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+                spreadRadius: -2,
+              ),
+              BoxShadow(
+                color: _kLight.withOpacity(0.20),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+              child: Stack(
+                children: [
+                  // Shimmer highlight superior
+                  Positioned(
+                    top: 0,
+                    left: 16,
+                    right: 80,
+                    child: Container(
+                      height: 1.5,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.0),
+                            Colors.white.withOpacity(0.5),
+                            Colors.white.withOpacity(0.0),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ),
+                  // Contenido central
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Ícono con fondo glass
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.25),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.chat_bubble_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Mensajes',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Flecha sutil
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: Colors.white,
+                            size: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

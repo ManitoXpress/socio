@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -61,9 +61,16 @@ class HistorialProvider extends ChangeNotifier {
         );
 
   List<ServiceRequest> _ordenarPorFecha(List<ServiceRequest> lista) {
+    // Ordenar por serviceDateTime (campo estable del servidor)
+    // Evitamos CreatedAt porque se asigna como DateTime.now() al parsear,
+    // lo que produce parpadeos en la UI y duplicados falsos.
     lista.sort((a, b) {
-      final aDate = DateTime.tryParse(a.CreatedAt ?? '') ?? DateTime(1900);
-      final bDate = DateTime.tryParse(b.CreatedAt ?? '') ?? DateTime(1900);
+      final aDate = a.serviceDateTime.isNotEmpty
+          ? a.serviceDateTime
+          : (a.selectedDate ?? '');
+      final bDate = b.serviceDateTime.isNotEmpty
+          ? b.serviceDateTime
+          : (b.selectedDate ?? '');
       return bDate.compareTo(aDate); // Descendente: más reciente primero
     });
     return lista;

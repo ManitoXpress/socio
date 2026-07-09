@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:socio/ServiceResponse/get.dart';
@@ -98,155 +98,140 @@ class OfferRepository {
     String deviceId,
   ) async {
     try {
-      // Si existe un servicio en caché para este trabajador, lo retornamos.
-      final cachedRequest =
-          await LocalCacheService.getCachedServiceRequest(workerId);
-      if (cachedRequest != null) {
-        return [cachedRequest];
-      } else {
-        print(
-            'Enviando solicitud a getAllServices para el servicio ID: ${service.id}');
+      // NO usar caché aquí: los servicios cambian de estado frecuentemente
+      // (available → offer → in_progress) y el caché queda desactualizado.
 
-        // Se llama a la API para obtener los servicios. Nota: puede que el filtro
-        // "workerId" no funcione a nivel de servicio, ya que estos pueden estar "disponibles"
-        // sin asignación, por lo que se recuperan todos los servicios "available".
-        final response = await apiService2.getAllServices(
-          token,
-          "workerId", // filtro (revisar si es el correcto en tu API)
-          workerId,
-          type,
-        );
-        if (response.statusCode == 200) {
-          final List<Map<String, dynamic>> servicesData =
-              List<Map<String, dynamic>>.from(json.decode(response.body));
+      // Se llama a la API para obtener los servicios con el workerId.
+      final response = await apiService2.getAllServices(
+        token,
+        "workerId",
+        workerId,
+        type,
+      );
 
-          if (servicesData.isNotEmpty) {
-            try {
-              // Mapear la respuesta para crear una lista de ServiceRequest.
-              // Aquí solo se filtran por estado "available".
-              final List<ServiceRequest> serviceRequestsList = servicesData
-                  .map((item) {
-                    final statusName = item['status'] as String? ?? 'offer';
-                    final statusObject = Status(
-                      id: statusName,
-                      name: Status.getNameById(statusName),
-                    );
+      if (response.statusCode == 200) {
+        final List<Map<String, dynamic>> servicesData =
+            List<Map<String, dynamic>>.from(json.decode(response.body));
 
-                    return ServiceRequest(
-                      expertises: _extractExpertises(item),
-                      id: item['id'] ?? '',
-                      serviceDateTime: item['serviceDateTime'] ?? '',
-                      description: item['description'] ?? '',
-                      images: (item['images'] as List<dynamic>?)
-                              ?.map((image) => image as String? ?? '')
-                              .toList() ??
-                          [],
-                      location: Map<String, double>.from(
-                        (item['location'] as Map<String, dynamic>?)
-                                ?.map((key, value) {
-                              return MapEntry(key,
-                                  (value is int) ? value.toDouble() : value);
-                            }) ??
-                            {},
-                      ),
-                      offeredPrice: _parseOfferedPrice(item['offeredPrice']),
-                      userId: item['userId'] ?? '',
-                      workerId: item['workerId'] ?? '',
-                      status: statusObject,
-                      isFavorite: item['isFavorite'] as bool? ?? false,
-                      acceptedTerms: item['acceptedTerms'] as bool? ?? false,
-                      serviceType: ServiceType(
-                        name: item['serviceType'] ?? '',
-                        id: '',
-                        selectedDate: '',
-                        selectedTime: '',
-                      ),
-                      devicesId: '',
-                      hasOffer: false,
-                      offers: [],
-                      subcategoryName: item['subcategoryName'] ?? '',
-                      CreatedAt: '',
-                    );
-                  })
-                  .where((service) => service.status.id == 'available')
-                  .toList();
-
-              // Cacheamos las solicitudes de servicio para este trabajador.
-              for (var request in serviceRequestsList) {
-                LocalCacheService.cacheServiceRequest(request);
-              }
-
-              // Para cada servicio, se solicitan las ofertas correspondientes.
-              List<Future> offerRequests =
-                  serviceRequestsList.map((serviceRequest) async {
-                print(
-                    'Solicitando ofertas para el servicio ID: ${serviceRequest.id}');
-                try {
-                  final offerResponses = await apiService2.getOffers(
-                    "workerId", // Filtrar por la columna "workerId"
-                    workerId, // Valor del trabajador autenticado
-                    "offer", // Tipo de filtro (ajusta según tu lógica)
-                    deviceId,
-                    [serviceRequest],
-                    "offer",
+        if (servicesData.isNotEmpty) {
+          try {
+            // Mapear la respuesta. Incluimos 'available' Y 'offer' porque:
+            // - 'available': servicios a los que el socio puede ofertar
+            // - 'offer': servicios donde ya envió una oferta (deben aparecer en "En espera")
+            final List<ServiceRequest> serviceRequestsList = servicesData
+                .map((item) {
+                  final statusName = item['status'] as String? ?? 'offer';
+                  final statusObject = Status(
+                    id: statusName,
+                    name: Status.getNameById(statusName),
                   );
 
-                  // Mapeamos las ofertas y filtramos solo aquellas cuyo workerId coincide con el usuario autenticado.
-                  List<Offer> filteredOffers = offerResponses
-                      .map((serviceOffer) {
-                        final statusName = serviceOffer.status.id;
-                        final statusObject = Status(
-                          id: statusName,
-                          name: Status.getNameById(statusName),
-                        );
+                  return ServiceRequest(
+                    expertises: _extractExpertises(item),
+                    id: item['id'] ?? '',
+                    serviceDateTime: item['serviceDateTime'] ?? '',
+                    description: item['description'] ?? '',
+                    images: (item['images'] as List<dynamic>?)
+                            ?.map((image) => image as String? ?? '')
+                            .toList() ??
+                        [],
+                    location: Map<String, double>.from(
+                      (item['location'] as Map<String, dynamic>?)
+                              ?.map((key, value) {
+                            return MapEntry(
+                                key, (value is int) ? value.toDouble() : value);
+                          }) ??
+                          {},
+                    ),
+                    offeredPrice: _parseOfferedPrice(item['offeredPrice']),
+                    userId: item['userId'] ?? '',
+                    workerId: item['workerId'] ?? '',
+                    status: statusObject,
+                    isFavorite: item['isFavorite'] as bool? ?? false,
+                    acceptedTerms: item['acceptedTerms'] as bool? ?? false,
+                    serviceType: ServiceType(
+                      name: item['serviceType'] ?? '',
+                      id: '',
+                      selectedDate: '',
+                      selectedTime: '',
+                    ),
+                    devicesId: '',
+                    hasOffer: false,
+                    offers: [],
+                    subcategoryName: item['subcategoryName'] ?? '',
+                    CreatedAt: '',
+                  );
+                })
+                .where((svc) =>
+                    svc.status.id == 'available' || svc.status.id == 'offer')
+                .toList();
 
-                        return Offer(
-                          id: serviceOffer.id,
-                          workerId: serviceOffer.workerId,
-                          offeredPrice: serviceOffer.offeredPrice,
-                          hasOffer: serviceOffer.hasOffer,
-                          serviceId: serviceRequest.id,
-                          extraCosts: 0.0,
-                          totalPrice: serviceOffer.offeredPrice,
-                          status: statusObject,
-                          userToken: '',
-                          createdAt: DateTime.now(),
-                          expertises: serviceOffer.expertises,
-                          subcategoryName: serviceOffer.subcategoryName,
-                        );
-                      })
-                      .where((offer) => offer.workerId == workerId)
-                      .toList();
+            // Para cada servicio, obtener las ofertas del trabajador autenticado.
+            List<Future> offerRequests =
+                serviceRequestsList.map((serviceRequest) async {
+              try {
+                final offerResponses = await apiService2.getOffers(
+                  "workerId",
+                  workerId,
+                  "offer",
+                  deviceId,
+                  [serviceRequest],
+                  "offer",
+                );
 
-                  // Se asignan las ofertas filtradas al servicio correspondiente.
-                  serviceRequest.offers = filteredOffers;
-                  print(
-                      'Ofertas obtenidas para el servicio ${serviceRequest.id}: ${filteredOffers.length}');
-                } catch (e) {
-                  print(
-                      'Error al obtener ofertas para el servicio ${serviceRequest.id}: $e');
-                }
-              }).toList();
+                List<Offer> filteredOffers = offerResponses
+                    .map((serviceOffer) {
+                      final statusName = serviceOffer.status.id;
+                      final statusObject = Status(
+                        id: statusName,
+                        name: Status.getNameById(statusName),
+                      );
 
-              // Se espera a que finalicen todas las solicitudes de ofertas.
-              await Future.wait(offerRequests);
+                      return Offer(
+                        id: serviceOffer.id,
+                        workerId: serviceOffer.workerId,
+                        offeredPrice: serviceOffer.offeredPrice,
+                        hasOffer: serviceOffer.hasOffer,
+                        serviceId: serviceRequest.id,
+                        extraCosts: 0.0,
+                        totalPrice: serviceOffer.offeredPrice,
+                        status: statusObject,
+                        userToken: '',
+                        createdAt: DateTime.now(),
+                        expertises: serviceOffer.expertises,
+                        subcategoryName: serviceOffer.subcategoryName,
+                      );
+                    })
+                    .where((offer) => offer.workerId == workerId)
+                    .toList();
 
-              // Ahora, se filtran los servicios para conservar solo aquellos que tengan
-              // al menos una oferta del trabajador autenticado.
-              List<ServiceRequest> finalServiceRequests = serviceRequestsList
-                  .where((sr) => sr.offers.isNotEmpty)
-                  .toList();
+                serviceRequest.offers = filteredOffers;
+              } catch (e) {
+                // Si no se pueden obtener las ofertas del servicio, continuar
+              }
+            }).toList();
 
-              return finalServiceRequests;
-            } catch (e) {
-              return [];
-            }
-          } else {
+            await Future.wait(offerRequests);
+
+            // Conservar servicios con status=='offer' (ya ofertados)
+            // O servicios 'available' que tengan al menos una oferta del worker.
+            final List<ServiceRequest> finalServiceRequests =
+                serviceRequestsList.where((sr) {
+              // Si ya tiene status 'offer', siempre mostrar
+              if (sr.status.id == 'offer') return true;
+              // Si es 'available' y hay oferta del worker, mostrar
+              return sr.offers.isNotEmpty;
+            }).toList();
+
+            return finalServiceRequests;
+          } catch (e) {
             return [];
           }
         } else {
           return [];
         }
+      } else {
+        return [];
       }
     } catch (e) {
       return [];

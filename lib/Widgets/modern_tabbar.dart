@@ -1,63 +1,77 @@
 import 'package:flutter/material.dart';
 
 /// Badge widget moderno para mostrar contadores en los tabs
-import 'package:flutter/material.dart';
-
-/// Badge widget moderno para mostrar contadores en los tabs
 class ModernBadge extends StatelessWidget {
   final int count;
+  final bool isDot;
   final Color color;
-  const ModernBadge(
-      {required this.count, this.color = const Color(0xFF84090D), super.key});
+
+  const ModernBadge({
+    required this.count,
+    this.isDot = false,
+    this.color = const Color(0xFF830A09),
+    super.key,
+  });
+
   @override
   Widget build(BuildContext context) {
-    if (count <= 0) return SizedBox.shrink();
+    if (count <= 0) return const SizedBox.shrink();
+    if (isDot) {
+      return Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: Colors.redAccent,
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 1)),
+          ],
+        ),
+      );
+    }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.10),
             blurRadius: 2,
-            offset: Offset(0, 1),
+            offset: const Offset(0, 1),
           ),
         ],
       ),
-      constraints: const BoxConstraints(
-        minWidth: 12,
-        minHeight: 12,
-      ),
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       child: Text(
-        '$count',
+        count > 99 ? '99+' : '$count',
         style: const TextStyle(
-            color: Colors.white,
-            fontSize: 8,
-            fontWeight: FontWeight.bold,
-            height: 1),
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
         textAlign: TextAlign.center,
       ),
     );
   }
 }
 
-/// TabBar vertical clásico y compacto
+/// TabBar de 3 pestañas consolidadas: En espera / En proceso / Finalizados
 class ModernTabBar extends StatelessWidget {
   final TabController controller;
-  final int availableCount;
-  final int offerServiceCount;
+  final int waitCount;       // available + offer combinados
   final int inProgressCount;
-  final int completedCount;
+  final int completedCount;  // completed + cancelled combinados
   final Color mainColor;
+
   const ModernTabBar({
     super.key,
     required this.controller,
-    required this.availableCount,
-    required this.offerServiceCount,
+    required this.waitCount,
     required this.inProgressCount,
     required this.completedCount,
-    this.mainColor = const Color(0xFF84090D),
+    this.mainColor = const Color(0xFF830A09),
   });
 
   @override
@@ -66,73 +80,60 @@ class ModernTabBar extends StatelessWidget {
       controller: controller,
       isScrollable: false,
       indicator: BoxDecoration(
-        color: mainColor.withOpacity(0.15), // Un poco más visible
-        borderRadius: BorderRadius.circular(12), // Bordes curveados
+        color: mainColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
       ),
       labelColor: mainColor,
-      unselectedLabelColor: Colors.black54,
-      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+      unselectedLabelColor: Colors.grey,
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       unselectedLabelStyle:
-          const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+          const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
       tabs: [
         _buildTab(
-          icon: Icons.task_alt_outlined,
-          text: 'Disponibles',
-          count: availableCount,
+          icon: Icons.hourglass_empty_rounded,
+          text: 'En espera',
+          count: waitCount,
         ),
         _buildTab(
-          icon: Icons.local_offer_outlined,
-          text: 'Ofertados',
-          count: offerServiceCount,
-        ),
-        _buildTab(
-          icon: Icons.assignment_ind_outlined,
-          text: 'Asignados',
+          icon: Icons.construction_rounded,
+          text: 'En proceso',
           count: inProgressCount,
         ),
         _buildTab(
-          icon: Icons.check_circle_outline,
-          text: 'Completados',
+          icon: Icons.check_circle_outline_rounded,
+          text: 'Finalizados',
           count: completedCount,
         ),
       ],
     );
   }
 
-  Tab _buildTab(
-      {required IconData icon, required String text, required int count}) {
+  Tab _buildTab({required IconData icon, required String text, required int count}) {
     return Tab(
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          // Ajusta el tamaño según el ancho disponible
-          double iconSize = width > 90 ? 24 : (width > 70 ? 20 : 18);
-          double fontSize = width > 90 ? 13 : (width > 70 ? 11 : 10);
+          final double iconSize = width > 90 ? 24 : 20;
+          final double fontSize = width > 90 ? 13 : 11;
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(icon, size: iconSize),
-                  if (count > 0)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: ModernBadge(count: count, color: mainColor),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: fontSize, height: 1.1),
-                ),
+              Stack(clipBehavior: Clip.none, children: [
+                Icon(icon, size: iconSize),
+                if (count > 0)
+                  const Positioned(
+                    right: -2,
+                    top: -2,
+                    child: ModernBadge(count: 1, isDot: true),
+                  ),
+              ]),
+              const SizedBox(height: 4),
+              Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: fontSize, height: 1.1),
               ),
             ],
           );

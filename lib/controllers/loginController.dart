@@ -119,7 +119,6 @@ static Future<void> _navigateToRegisterScreen(BuildContext context, {bool alread
       MaterialPageRoute(
         builder: (context) => FirstTimeLoginScreen(
           registrationController: registrationController,
-          userData: userData, // 👉 Pasar userData también aquí
         ),
       ),
     );

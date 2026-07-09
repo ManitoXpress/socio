@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,6 +19,8 @@ import '../Utils/maps.dart';
 import 'documentScreen.dart';
 import 'homeData.dart';
 import 'dart:async';
+import '../services/remote_config_service.dart';
+import '../Widgets/maintenance_dialog.dart';
 
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   bool isVerified = false;
   late Future<UserData> _remoteUserFuture;
+  bool _maintenanceShown = false; // evita mostrarlo varias veces
 
   final customColor = const MaterialColor(0xFF830A09, {
     50: Color(0xFF830A09),
@@ -68,6 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pageController = PageController(initialPage: widget.initialPageIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FCMService().registerTokenForUser(widget.userData.userId);
+      _checkMaintenanceNotice();
     });
 
     if (widget.isGuest) {
@@ -81,6 +85,33 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = FirebaseAuth.instance.currentUser!;
     final token = await user.getIdToken();
     return await ApiService2().fetchUserData(user.uid, token!);
+  }
+
+  /// Muestra el aviso solo si está activado en Firebase Remote Config.
+  void _checkMaintenanceNotice() {
+    if (_maintenanceShown) return;
+    if (!RemoteConfigService().maintenanceEnabled) return;
+    _maintenanceShown = true;
+    _showMaintenanceNotice();
+  }
+
+  void _showMaintenanceNotice() {
+    final rc = RemoteConfigService();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.45),
+      builder: (_) => MaintenanceDialog(
+        primaryColor  : const Color(0xFF830A09),
+        darkTextColor : const Color(0xFF3A0505),
+        title         : rc.maintenanceTitle,
+        body1         : rc.maintenanceBody1,
+        body2         : rc.maintenanceBody2,
+        footer        : rc.maintenanceFooter,
+        badge         : rc.maintenanceBadge,
+        buttonLabel   : rc.maintenanceButton,
+      ),
+    );
   }
 
   void _openUploadDocuments(UserData remoteUser) async {

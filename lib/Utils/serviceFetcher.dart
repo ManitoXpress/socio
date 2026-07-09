@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -68,7 +68,6 @@ class ServiceRepository {
     }
   }
 
-  // Método privado para obtener los servicios por estado
   Future<List<ServiceRequest>> _fetchServicesByStatus(
     String type,
     String column,
@@ -77,55 +76,48 @@ class ServiceRepository {
     List<Offer> offers,
   ) async {
     try {
-      final cachedRequest =
-          await LocalCacheService.getCachedServiceRequest(userId);
-      if (cachedRequest != null) {
-        if (cachedRequest.status.id == 'available') {
-          return [cachedRequest];
-        } else {
-          return [];
-        }
-      } else {
-        final deviceId = await obtenerDeviceId();
-        // 1. Obtener especialidades del trabajador
-        final workerExpertises = await ApiService2().getWorkerExpertises();
-        final expertiseNames = workerExpertises
-            .map((e) => (e['name'] as String).toLowerCase().trim())
-            .toSet();
+      // NO usar caché aquí: cuando se envía una oferta el servicio pasa de
+      // 'available' a 'offer'. Si retornamos el caché, el servicio seguiría
+      // apareciendo como 'available' aunque ya esté ofertado.
+      final deviceId = await obtenerDeviceId();
+      // 1. Obtener especialidades del trabajador
+      final workerExpertises = await ApiService2().getWorkerExpertises();
+      final expertiseNames = workerExpertises
+          .map((e) => (e['name'] as String).toLowerCase().trim())
+          .toSet();
 
-        // 2. Obtener servicios del API
-        final response = await ApiService2()
-            .getAllServices(token, "status", type, "services");
+      // 2. Obtener servicios del API
+      final response = await ApiService2()
+          .getAllServices(token, "status", type, "services");
 
-        if (response.statusCode == 200) {
-          final List<Map<String, dynamic>> servicesData =
-              List<Map<String, dynamic>>.from(json.decode(response.body));
+      if (response.statusCode == 200) {
+        final List<Map<String, dynamic>> servicesData =
+            List<Map<String, dynamic>>.from(json.decode(response.body));
 
-          if (servicesData.isNotEmpty) {
-            try {
-              // 3. Filtrar servicios
-              final List<ServiceRequest> serviceRequestsList = servicesData
-                  .map((item) => _mapToServiceRequest(item))
-                  .where((service) =>
-                      service.status.id == 'available' &&
-                      expertiseNames.contains(
-                          service.subcategoryName.toLowerCase().trim()))
-                  .toList();
+        if (servicesData.isNotEmpty) {
+          try {
+            // 3. Filtrar servicios por estado y especialidades del worker
+            final List<ServiceRequest> serviceRequestsList = servicesData
+                .map((item) => _mapToServiceRequest(item))
+                .where((service) =>
+                    service.status.id == 'available' &&
+                    expertiseNames.contains(
+                        service.subcategoryName.toLowerCase().trim()))
+                .toList();
 
-              // 4. Cachear resultados
-              serviceRequestsList
-                  .forEach(LocalCacheService.cacheServiceRequest);
+            // 4. Cachear resultados
+            serviceRequestsList
+                .forEach(LocalCacheService.cacheServiceRequest);
 
-              return serviceRequestsList;
-            } catch (e) {
-              return [];
-            }
-          } else {
+            return serviceRequestsList;
+          } catch (e) {
             return [];
           }
         } else {
           return [];
         }
+      } else {
+        return [];
       }
     } catch (e) {
       return [];

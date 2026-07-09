@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 import '../ServiceResponse/get.dart';
@@ -391,16 +392,25 @@ class ServicePartnerProvider extends ChangeNotifier {
         extraCosts,
         workerId,
       );
-      
+
+      // ── Limpiar caché local para que el próximo loadAll() recargue del backend ──
+      // Sin esto, el caché mantiene el servicio con status 'available' y no muestra
+      // la oferta enviada en la pestaña "En espera".
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('service_request_${serviceRequest.id}');
+        await prefs.remove('service_request_$workerId');
+      } catch (_) {}
+
       // Actualizar estado inmediatamente después del envío exitoso
       _workerOfferedPrice = offeredPrice;
       _proposalSent = true;
       _hasExistingProposal = true;
       _proposalsSentForServiceIds.add(serviceRequest.id);
-      
+
       // Refresca el estado consultando el backend para confirmar
       await _checkExistingProposal();
-      
+
       _isSendingProposal = false;
       _notifyIfNeeded();
       return true;
